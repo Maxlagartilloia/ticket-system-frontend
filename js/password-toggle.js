@@ -1,9 +1,12 @@
-document.getElementById("togglePassword").addEventListener("click", () => {
+document.addEventListener("DOMContentLoaded", () => {
+  const toggle = document.getElementById("togglePassword");
   const passwordInput = document.getElementById("password");
 
-  if (passwordInput.type === "password") {
-    passwordInput.type = "text";
-  } else {
-    passwordInput.type = "password";
-  }
+  toggle.addEventListener("click", () => {
+    const type =
+      passwordInput.getAttribute("type") === "password"
+        ? "text"
+        : "password";
+    passwordInput.setAttribute("type", type);
+  });
 });
