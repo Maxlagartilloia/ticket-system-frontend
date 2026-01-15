@@ -7,32 +7,30 @@
 
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
 
 <div class="app-container">
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-logo">
             <img src="assets/copiermaster-logo.png" alt="CopierMaster">
         </div>
-
         <div class="sidebar-title">Reportes</div>
-
         <ul class="sidebar-menu">
             <li onclick="location.href='dashboard.html'">📊 Dashboard</li>
             <li onclick="location.href='tickets.html'">🎫 Tickets</li>
             <li class="active">📈 Reportes</li>
         </ul>
-
         <div class="sidebar-footer">
             <small>CopierMaster C&G<br>Gestión Ejecutiva</small>
         </div>
     </aside>
 
-    <!-- MAIN -->
     <main class="main-content">
 
         <header class="dashboard-header">
@@ -45,51 +43,45 @@
 
         <!-- FILTROS -->
         <section class="filters-section">
-
             <div class="input-group">
                 <label>Institución</label>
                 <select id="institucionSelect"></select>
             </div>
-
             <div class="input-group">
                 <label>Desde</label>
                 <input type="date" id="fechaInicio">
             </div>
-
             <div class="input-group">
                 <label>Hasta</label>
                 <input type="date" id="fechaFin">
             </div>
-
-            <button class="btn-primary" id="btnGenerar">
-                Generar Reporte
-            </button>
-
+            <button class="btn-primary" id="btnGenerar">Generar Reporte</button>
         </section>
 
-        <!-- RESUMEN -->
+        <!-- MÉTRICAS -->
         <section class="metrics-grid">
-
             <div class="metric-card">
                 <h3>Total Tickets</h3>
                 <span class="metric-number" id="totalTickets">0</span>
             </div>
-
             <div class="metric-card">
                 <h3>Abiertos</h3>
                 <span class="metric-number" id="abiertos">0</span>
             </div>
-
             <div class="metric-card">
                 <h3>En Proceso</h3>
                 <span class="metric-number" id="proceso">0</span>
             </div>
-
             <div class="metric-card">
                 <h3>Cerrados</h3>
                 <span class="metric-number" id="cerrados">0</span>
             </div>
+        </section>
 
+        <!-- GRÁFICO -->
+        <section class="chart-section">
+            <h2>Distribución de Estados</h2>
+            <canvas id="estadoChart"></canvas>
         </section>
 
         <!-- ACCIONES -->
@@ -99,7 +91,6 @@
         </section>
 
     </main>
-
 </div>
 
 <script src="js/reportes.js"></script>
