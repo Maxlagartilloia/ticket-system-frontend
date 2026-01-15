@@ -1,107 +1,54 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>CopierMaster | Sistema de Soporte</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>CopierMaster | Sistema de Soporte</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css">
-
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
+<body class="login-body">
 
-<body>
+  <div class="login-container">
+    <div class="login-left">
+      <img src="assets/logo.png" alt="CopierMaster" class="login-logo" />
+      <h1>CopierMaster</h1>
+      <p>Sistema Profesional de Soporte Técnico</p>
+    </div>
 
-<div class="app-container">
+    <div class="login-right">
+      <h2>Iniciar Sesión</h2>
 
-    <!-- PANEL IZQUIERDO -->
-    <aside class="sidebar">
+      <form id="loginForm">
+        <label>Correo electrónico</label>
+        <input
+          type="email"
+          id="email"
+          value="serviciotecnico@copiermastercyg.com.ec"
+          required
+        />
 
-        <div class="sidebar-logo">
-            <img src="assets/copiermaster-logo.png" alt="CopierMaster">
+        <label>Contraseña</label>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            id="password"
+            value="Criss1982@#"
+            required
+          />
+          <span id="togglePassword">👁</span>
         </div>
 
-        <div class="sidebar-title">
-            Sistema de Soporte
-        </div>
+        <button type="submit">Ingresar</button>
+      </form>
 
-        <ul class="sidebar-menu">
-            <li class="active">🔐 Acceso</li>
-            <li class="disabled">🎫 Tickets</li>
-            <li class="disabled">📊 Reportes</li>
-            <li class="disabled">👥 Instituciones</li>
-            <li class="disabled">⚙️ Configuración</li>
-        </ul>
+      <p class="login-footer">
+        © 2026 CopierMaster C&G Soluciones Digitales
+      </p>
+    </div>
+  </div>
 
-        <div class="sidebar-footer">
-            <small>CopierMaster C&G<br>© 2026</small>
-        </div>
-
-    </aside>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
-
-        <div class="login-wrapper">
-
-            <div class="login-header">
-                <h1>Centro de Soporte Técnico</h1>
-                <p>
-                    Ingrese con su correo institucional para gestionar tickets de soporte técnico.
-                </p>
-            </div>
-
-            <div class="login-card">
-
-                <div id="error-message" class="error-message"></div>
-
-                <form id="login-form">
-
-                    <div class="input-group">
-                        <label for="email">Correo electrónico</label>
-                        <input
-                            type="email"
-                            id="email"
-                            placeholder="usuario@institucion.gob.ec"
-                            required
-                        >
-                    </div>
-
-                    <div class="input-group">
-                        <label for="password">Contraseña</label>
-                        <input
-                            type="password"
-                            id="password"
-                            placeholder="••••••••"
-                            required
-                        >
-                    </div>
-
-                    <button type="submit" class="btn-login">
-                        Iniciar Sesión
-                    </button>
-
-                </form>
-
-            </div>
-
-            <div class="login-info">
-                <p>
-                    Este sistema permite reportar, dar seguimiento y gestionar incidencias técnicas
-                    de equipos bajo contrato con CopierMaster.
-                </p>
-            </div>
-
-        </div>
-
-    </main>
-
-</div>
-
-<!-- JS -->
-<script src="js/auth.js"></script>
-
+  <script src="js/auth.js"></script>
+  <script src="js/password-toggle.js"></script>
 </body>
 </html>
