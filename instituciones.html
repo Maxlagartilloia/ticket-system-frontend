@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CopierMaster | Institutions</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+<div class="app-container">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" alt="CopierMaster">
+    </div>
+
+    <div class="sidebar-title">Supervisor Panel</div>
+
+    <ul class="sidebar-menu">
+      <li onclick="location.href='dashboard.html'">Dashboard</li>
+      <li class="active">Institutions</li>
+      <li onclick="location.href='technicians.html'">Technicians</li>
+      <li onclick="location.href='tickets.html'">Tickets</li>
+    </ul>
+
+    <div class="sidebar-footer">
+      CopierMaster C&G<br/>Technical Support
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <header class="dashboard-header">
+      <h1>Institutions Management</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
+
+    <!-- CREATE -->
+    <section class="card">
+      <h2>Create Institution</h2>
+      <form id="institutionForm" class="form-grid">
+        <input type="text" id="name" placeholder="Institution Name" required />
+        <input type="text" id="location" placeholder="Location" required />
+        <button type="submit">Create</button>
+      </form>
+    </section>
+
+    <!-- LIST -->
+    <section class="card">
+      <h2>Institutions List</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody id="institutionsTable"></tbody>
+      </table>
+    </section>
+
+  </main>
+</div>
+
+<script src="js/institutions.js"></script>
+<script>
+  document.getElementById("logoutBtn").onclick = () => {
+    localStorage.removeItem("token");
+    location.href = "index.html";
+  };
+</script>
+</body>
+</html>
