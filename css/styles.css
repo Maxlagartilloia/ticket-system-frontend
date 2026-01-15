@@ -1,86 +1,66 @@
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
-  font-family: "Segoe UI", Tahoma, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
 }
 
 body {
+  margin: 0;
   background: #f4f6f8;
-  color: #2c2c2c;
-}
-
-/* LOGIN */
-
-.login-body {
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .login-container {
-  width: 900px;
-  height: 520px;
-  background: white;
   display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.login-card {
+  display: flex;
+  width: 900px;
+  background: #ffffff;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
 }
 
 .login-left {
   width: 45%;
-  background: linear-gradient(135deg, #2e7d32, #66bb6a);
+  background: #3c9d41;
   color: white;
   padding: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  text-align: center;
 }
 
-.login-logo {
-  width: 160px;
+.login-left .logo {
+  width: 120px;
   margin-bottom: 20px;
 }
 
 .login-left h1 {
-  font-size: 28px;
-  margin-bottom: 10px;
-}
-
-.login-left p {
-  font-size: 15px;
-  text-align: center;
+  margin: 10px 0;
 }
 
 .login-right {
   width: 55%;
-  padding: 50px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  padding: 40px;
 }
 
 .login-right h2 {
-  margin-bottom: 30px;
-  font-size: 26px;
-  color: #2e7d32;
+  color: #3c9d41;
+  margin-bottom: 20px;
 }
 
 .login-right label {
-  font-size: 14px;
-  margin-bottom: 6px;
+  display: block;
+  margin-top: 15px;
+  font-weight: bold;
 }
 
 .login-right input {
-  padding: 12px;
-  margin-bottom: 20px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 15px;
   width: 100%;
+  padding: 10px;
+  margin-top: 5px;
 }
 
 .password-wrapper {
@@ -89,29 +69,29 @@ body {
 
 .password-wrapper span {
   position: absolute;
-  right: 12px;
-  top: 12px;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   cursor: pointer;
-  font-size: 18px;
 }
 
-.login-right button {
+button {
+  margin-top: 25px;
+  padding: 12px;
+  width: 100%;
   background: #2e7d32;
   color: white;
   border: none;
-  padding: 14px;
   border-radius: 6px;
-  font-size: 16px;
   cursor: pointer;
 }
 
-.login-right button:hover {
-  background: #1b5e20;
+button:hover {
+  background: #256428;
 }
 
-.login-footer {
+.footer {
   margin-top: 30px;
   font-size: 12px;
-  color: #888;
-  text-align: center;
+  color: #777;
 }
