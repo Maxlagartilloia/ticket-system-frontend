@@ -2,11 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CopierMaster | Dashboard</title>
+  <title>CopierMaster | Supervisor Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <link rel="stylesheet" href="css/styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <!-- MAIN STYLES -->
+  <link rel="stylesheet" href="./css/styles.css" />
+
+  <!-- GOOGLE FONT -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+    rel="stylesheet"
+  />
 </head>
 
 <body>
@@ -15,8 +21,9 @@
 
   <!-- SIDEBAR -->
   <aside class="sidebar">
+
     <div class="sidebar-logo">
-      <img src="assets/logo.png" alt="CopierMaster Logo">
+      <img src="./assets/logo.png" alt="CopierMaster Logo">
     </div>
 
     <div class="sidebar-title">
@@ -25,48 +32,75 @@
 
     <ul class="sidebar-menu">
       <li class="active">Dashboard</li>
-      <li>Tickets</li>
+      <li onclick="location.href='tickets.html'">Tickets</li>
+      <li onclick="location.href='reportes.html'">Reports</li>
       <li>Institutions</li>
       <li>Technicians</li>
-      <li>Reports</li>
       <li>Settings</li>
     </ul>
 
     <div class="sidebar-footer">
       <small>CopierMaster C&G<br>Technical Support</small>
     </div>
+
   </aside>
 
-  <!-- MAIN -->
-  <main class="main-content">
+  <!-- MAIN CONTENT -->
+  <main class="main-content dashboard">
 
+    <!-- HEADER -->
     <header class="dashboard-header">
       <h1>Support Overview</h1>
-      <button id="logoutBtn" class="logout-btn">Logout</button>
+
+      <div class="user-info">
+        <span class="user-role">Supervisor</span>
+        <button id="logoutBtn" class="logout-btn">Logout</button>
+      </div>
     </header>
 
+    <!-- METRICS -->
     <section class="metrics-grid">
+
       <div class="metric-card">
         <h3>Open Tickets</h3>
         <span class="metric-number">18</span>
       </div>
+
       <div class="metric-card">
         <h3>In Progress</h3>
         <span class="metric-number">7</span>
       </div>
+
       <div class="metric-card">
         <h3>Resolved Today</h3>
         <span class="metric-number">5</span>
       </div>
+
       <div class="metric-card">
         <h3>Institutions</h3>
         <span class="metric-number">20</span>
       </div>
+
     </section>
 
   </main>
+
 </div>
 
-<script src="js/dashboard.js"></script>
+<script src="./js/dashboard.js"></script>
+
+<script>
+  // 🔐 Protect page
+  if (!localStorage.getItem("token")) {
+    window.location.href = "index.html";
+  }
+
+  // 🚪 Logout
+  document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("token");
+    window.location.href = "index.html";
+  });
+</script>
+
 </body>
 </html>
