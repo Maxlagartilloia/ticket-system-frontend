@@ -1,7 +1,7 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const correo = document.getElementById("correo").value.trim();
+  const email = document.getElementById("correo").value.trim();
   const password = document.getElementById("password").value.trim();
   const errorDiv = document.getElementById("error");
 
@@ -15,7 +15,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ correo, password })
+        body: JSON.stringify({
+          correo: email,
+          password: password
+        })
       }
     );
 
@@ -26,9 +29,10 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       return;
     }
 
+    // Save token
     localStorage.setItem("copiermaster_token", data.access_token);
 
-    // ✅ CORRECT REDIRECTION
+    // ✅ CORRECT REDIRECT
     window.location.href = "dashboard.html";
 
   } catch (error) {
