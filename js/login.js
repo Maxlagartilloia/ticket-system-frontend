@@ -1,5 +1,5 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault(); // ⛔ evita recarga
+  e.preventDefault();
 
   const correo = document.getElementById("correo").value.trim();
   const password = document.getElementById("password").value.trim();
@@ -22,18 +22,17 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const data = await response.json();
 
     if (!response.ok) {
-      errorDiv.textContent = data.detail || "Credenciales incorrectas";
+      errorDiv.textContent = data.detail || "Invalid credentials";
       return;
     }
 
-    // ✅ Guardamos token
-    localStorage.setItem("token", data.access_token);
+    localStorage.setItem("copiermaster_token", data.access_token);
 
-    // 🔁 Redirección
-    window.location.href = "tablero.html";
+    // ✅ CORRECT REDIRECTION
+    window.location.href = "dashboard.html";
 
-  } catch (err) {
-    console.error(err);
-    errorDiv.textContent = "Error de conexión con el servidor";
+  } catch (error) {
+    console.error(error);
+    errorDiv.textContent = "Server connection error";
   }
 });
