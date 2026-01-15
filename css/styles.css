@@ -1,177 +1,117 @@
-/* ===============================
-   VARIABLES DE COLOR COPIERMASTER
-   =============================== */
-:root {
-    --verde-primario: #1f7f4c;
-    --verde-secundario: #2ea66b;
-    --gris-oscuro: #1e1e1e;
-    --gris-medio: #6b6b6b;
-    --gris-claro: #f2f4f6;
-    --blanco: #ffffff;
-    --rojo-error: #c0392b;
-}
-
-/* ===============================
-   RESET BÁSICO
-   =============================== */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: "Inter", sans-serif;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, sans-serif;
 }
 
-/* ===============================
-   BODY
-   =============================== */
 body {
-    background: linear-gradient(
-        135deg,
-        var(--gris-claro) 0%,
-        #e6ece9 100%
-    );
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  background: #f4f6f8;
+  color: #2c2c2c;
 }
 
-/* ===============================
-   CONTENEDOR LOGIN
-   =============================== */
+/* LOGIN */
+
+.login-body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .login-container {
-    width: 100%;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
+  width: 900px;
+  height: 520px;
+  background: white;
+  display: flex;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15);
 }
 
-/* ===============================
-   TARJETA LOGIN
-   =============================== */
-.login-card {
-    background-color: var(--blanco);
-    width: 100%;
-    max-width: 420px;
-    padding: 40px 35px;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    text-align: center;
+.login-left {
+  width: 45%;
+  background: linear-gradient(135deg, #2e7d32, #66bb6a);
+  color: white;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-/* ===============================
-   LOGO
-   =============================== */
-.logo-container {
-    margin-bottom: 20px;
+.login-logo {
+  width: 160px;
+  margin-bottom: 20px;
 }
 
-.logo-container img {
-    max-width: 220px;
-    height: auto;
+.login-left h1 {
+  font-size: 28px;
+  margin-bottom: 10px;
 }
 
-/* ===============================
-   TÍTULOS
-   =============================== */
-.login-card h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--gris-oscuro);
-    margin-bottom: 8px;
+.login-left p {
+  font-size: 15px;
+  text-align: center;
 }
 
-.subtitle {
-    font-size: 14px;
-    color: var(--gris-medio);
-    margin-bottom: 30px;
+.login-right {
+  width: 55%;
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-/* ===============================
-   INPUTS
-   =============================== */
-.input-group {
-    text-align: left;
-    margin-bottom: 18px;
+.login-right h2 {
+  margin-bottom: 30px;
+  font-size: 26px;
+  color: #2e7d32;
 }
 
-.input-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--gris-oscuro);
-    margin-bottom: 6px;
+.login-right label {
+  font-size: 14px;
+  margin-bottom: 6px;
 }
 
-.input-group input {
-    width: 100%;
-    padding: 12px 14px;
-    border-radius: 8px;
-    border: 1px solid #dcdcdc;
-    font-size: 14px;
-    transition: border-color 0.2s, box-shadow 0.2s;
+.login-right input {
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 15px;
+  width: 100%;
 }
 
-.input-group input:focus {
-    outline: none;
-    border-color: var(--verde-primario);
-    box-shadow: 0 0 0 2px rgba(31, 127, 76, 0.15);
+.password-wrapper {
+  position: relative;
 }
 
-/* ===============================
-   BOTÓN LOGIN
-   =============================== */
-.btn-login {
-    width: 100%;
-    margin-top: 10px;
-    padding: 14px;
-    background-color: var(--verde-primario);
-    color: var(--blanco);
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+.password-wrapper span {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  cursor: pointer;
+  font-size: 18px;
 }
 
-.btn-login:hover {
-    background-color: var(--verde-secundario);
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.12);
+.login-right button {
+  background: #2e7d32;
+  color: white;
+  border: none;
+  padding: 14px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
 }
 
-.btn-login:active {
-    transform: scale(0.98);
+.login-right button:hover {
+  background: #1b5e20;
 }
 
-/* ===============================
-   MENSAJE DE ERROR
-   =============================== */
-.error-message {
-    margin-top: 15px;
-    font-size: 13px;
-    color: var(--rojo-error);
-    min-height: 18px;
-}
-
-/* ===============================
-   FOOTER LOGIN
-   =============================== */
 .login-footer {
-    margin-top: 30px;
-    font-size: 12px;
-    color: var(--gris-medio);
-}
-
-/* ===============================
-   RESPONSIVE
-   =============================== */
-@media (max-width: 480px) {
-    .login-card {
-        padding: 30px 20px;
-    }
-
-    .logo-container img {
-        max-width: 180px;
-    }
+  margin-top: 30px;
+  font-size: 12px;
+  color: #888;
+  text-align: center;
 }
