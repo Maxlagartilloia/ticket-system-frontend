@@ -1,150 +1,120 @@
-// =====================================
-// TICKETS - COPIERMASTER C&G
-// =====================================
-
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 const token = localStorage.getItem("copiermaster_token");
 const role = localStorage.getItem("copiermaster_role");
 
-// =====================================
-// PROTECCIÓN DE SESIÓN
-// =====================================
-if (!token) {
-    window.location.href = "/index.html";
-}
+if (!token) location.href = "/index.html";
 
-// =====================================
-// ELEMENTOS DOM
-// =====================================
 const ticketsBody = document.getElementById("ticketsBody");
 const btnNuevoTicket = document.getElementById("btnNuevoTicket");
 const modalTicket = document.getElementById("modalTicket");
-const cerrarModalBtn = document.getElementById("cerrarModal");
+const modalGestion = document.getElementById("modalGestion");
+const cerrarModal = document.getElementById("cerrarModal");
+const cerrarGestion = document.getElementById("cerrarGestion");
 const ticketForm = document.getElementById("ticketForm");
-const userRoleSpan = document.getElementById("userRole");
+const userRole = document.getElementById("userRole");
 const logoutBtn = document.querySelector(".logout-btn");
 
-// =====================================
-// MOSTRAR ROL
-// =====================================
-userRoleSpan.textContent = role.toUpperCase();
+let ticketActual = null;
 
-// =====================================
-// LOGOUT
-// =====================================
-logoutBtn.addEventListener("click", () => {
+userRole.textContent = role.toUpperCase();
+
+logoutBtn.onclick = () => {
     localStorage.clear();
-    window.location.href = "/index.html";
-});
+    location.href = "/index.html";
+};
 
-// =====================================
-// CONTROL DE VISIBILIDAD POR ROL
-// =====================================
-if (role === "tecnico") {
-    btnNuevoTicket.style.display = "none";
+if (role === "tecnico") btnNuevoTicket.style.display = "none";
+
+btnNuevoTicket.onclick = () => modalTicket.classList.remove("hidden");
+cerrarModal.onclick = () => modalTicket.classList.add("hidden");
+cerrarGestion.onclick = () => modalGestion.classList.add("hidden");
+
+// =====================
+// CARGAR TICKETS
+// =====================
+async function cargarTickets() {
+    const res = await fetch(`${API_BASE_URL}/tickets`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    const tickets = await res.json();
+    ticketsBody.innerHTML = "";
+
+    tickets.forEach(t => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${t.id}</td>
+            <td>${t.institucion_nombre}</td>
+            <td>${t.equipo}</td>
+            <td>${t.descripcion}</td>
+            <td class="status ${t.estado}">${t.estado}</td>
+            <td>${t.prioridad}</td>
+            <td>${t.tecnico_nombre || "—"}</td>
+            <td>
+                ${(role === "admin" || role === "supervisor")
+                    ? `<button class="btn-action" onclick="gestionarTicket(${t.id})">Gestionar</button>`
+                    : ""}
+            </td>
+        `;
+        ticketsBody.appendChild(tr);
+    });
 }
 
-// =====================================
-// MODAL
-// =====================================
-btnNuevoTicket.addEventListener("click", () => {
-    modalTicket.classList.remove("hidden");
-});
-
-cerrarModalBtn.addEventListener("click", () => {
+// =====================
+// CREAR TICKET
+// =====================
+ticketForm.onsubmit = async e => {
+    e.preventDefault();
+    await fetch(`${API_BASE_URL}/tickets`, {
+        method: "POST",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            equipo: equipo.value,
+            descripcion: descripcion.value,
+            prioridad: prioridad.value
+        })
+    });
     modalTicket.classList.add("hidden");
     ticketForm.reset();
-});
+    cargarTickets();
+};
 
-// =====================================
-// CARGAR TICKETS
-// =====================================
-async function cargarTickets() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/tickets`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+// =====================
+// GESTIÓN
+// =====================
+async function gestionarTicket(id) {
+    ticketActual = id;
+    modalGestion.classList.remove("hidden");
 
-        if (!response.ok) {
-            throw new Error("No se pudieron cargar los tickets");
-        }
+    const techRes = await fetch(`${API_BASE_URL}/usuarios?rol=tecnico`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    const tecnicos = await techRes.json();
 
-        const tickets = await response.json();
-        ticketsBody.innerHTML = "";
-
-        tickets.forEach(ticket => {
-            const tr = document.createElement("tr");
-
-            tr.innerHTML = `
-                <td>${ticket.id}</td>
-                <td>${ticket.institucion_nombre}</td>
-                <td>${ticket.equipo}</td>
-                <td>${ticket.descripcion}</td>
-                <td class="status ${ticket.estado}">${ticket.estado}</td>
-                <td>${ticket.prioridad}</td>
-                <td>${ticket.tecnico_nombre || "—"}</td>
-                <td>
-                    <button class="btn-action" onclick="verTicket(${ticket.id})">
-                        Ver
-                    </button>
-                </td>
-            `;
-
-            ticketsBody.appendChild(tr);
-        });
-
-    } catch (error) {
-        console.error("Error al cargar tickets:", error);
-    }
+    const selectTecnico = document.getElementById("selectTecnico");
+    selectTecnico.innerHTML = "<option value=''>Sin asignar</option>";
+    tecnicos.forEach(t => {
+        selectTecnico.innerHTML += `<option value="${t.id}">${t.nombre}</option>`;
+    });
 }
 
-// =====================================
-// CREAR TICKET
-// =====================================
-ticketForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+document.getElementById("guardarGestion").onclick = async () => {
+    await fetch(`${API_BASE_URL}/tickets/${ticketActual}/gestionar`, {
+        method: "PUT",
+        headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            tecnico_id: document.getElementById("selectTecnico").value || null,
+            estado: document.getElementById("selectEstado").value
+        })
+    });
 
-    const equipo = document.getElementById("equipo").value.trim();
-    const descripcion = document.getElementById("descripcion").value.trim();
-    const prioridad = document.getElementById("prioridad").value;
+    modalGestion.classList.add("hidden");
+    cargarTickets();
+};
 
-    try {
-        const response = await fetch(`${API_BASE_URL}/tickets`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                equipo: equipo,
-                descripcion: descripcion,
-                prioridad: prioridad
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error("Error al crear ticket");
-        }
-
-        modalTicket.classList.add("hidden");
-        ticketForm.reset();
-        cargarTickets();
-
-    } catch (error) {
-        console.error("Error creando ticket:", error);
-    }
-});
-
-// =====================================
-// VER DETALLE TICKET (BASE)
-// =====================================
-function verTicket(ticketId) {
-    alert("Detalle del ticket #" + ticketId + " (siguiente fase)");
-}
-
-// =====================================
-// INIT
-// =====================================
 cargarTickets();
