@@ -4,53 +4,51 @@
   <meta charset="UTF-8" />
   <title>CopierMaster | Sistema de Soporte</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="styles.css" />
+
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
-<body>
+<body class="login-body">
 
   <div class="login-container">
-    <div class="login-card">
+    <div class="login-left">
+      <img src="assets/logo.png" alt="CopierMaster" class="login-logo" />
+      <h1>CopierMaster</h1>
+      <p>Sistema Profesional de Soporte Técnico</p>
+    </div>
 
-      <div class="login-left">
-        <img src="logo.png" alt="CopierMaster" class="logo" />
-        <h1>CopierMaster</h1>
-        <p>Sistema Profesional de Soporte Técnico</p>
-      </div>
+    <div class="login-right">
+      <h2>Iniciar Sesión</h2>
 
-      <div class="login-right">
-        <h2>Iniciar Sesión</h2>
+      <form id="loginForm">
+        <label>Correo electrónico</label>
+        <input
+          type="email"
+          id="email"
+          value="correo"
+          required
+        />
 
-        <form id="loginForm">
-          <label>Correo electrónico</label>
+        <label>Contraseña</label>
+        <div class="password-wrapper">
           <input
-            type="email"
-            id="email"
-            placeholder="correo@empresa.com"
+            type="password"
+            id="password"
+            value="hide"
             required
           />
+          <span id="togglePassword">👁</span>
+        </div>
 
-          <label>Contraseña</label>
-          <div class="password-wrapper">
-            <input
-              type="password"
-              id="password"
-              placeholder="••••••••"
-              required
-            />
-            <span id="togglePassword">👁️</span>
-          </div>
+        <button type="submit">Ingresar</button>
+      </form>
 
-          <button type="submit">Ingresar</button>
-        </form>
-
-        <p class="footer">
-          © 2026 CopierMaster C&G Soluciones Digitales
-        </p>
-      </div>
-
+      <p class="login-footer">
+        © 2026 CopierMaster C&G Soluciones Digitales
+      </p>
     </div>
   </div>
 
-  <script src="login.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/password-toggle.js"></script>
 </body>
 </html>
