@@ -1,138 +1,71 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <title>CopierMaster | Sistema de Soporte</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+// ================================
+// AUTHENTICATION - COPIERMASTER
+// ================================
 
-  <!-- ESTILOS -->
-  <link rel="stylesheet" href="css/styles.css" />
+const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+// Elementos del DOM
+const loginForm = document.getElementById("login-form");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const errorBox = document.getElementById("error-message");
+
+// Evento submit
+loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    errorBox.textContent = "";
+
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+        errorBox.textContent = "Ingrese correo y contraseña.";
+        return;
     }
 
-    .login-container {
-      display: flex;
-      width: 900px;
-      height: 480px;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("Credenciales inválidas");
+        }
+
+        const data = await response.json();
+
+        // Guardar sesión
+        localStorage.setItem("copiermaster_token", data.access_token);
+        localStorage.setItem("copiermaster_role", data.role);
+        localStorage.setItem("copiermaster_user", JSON.stringify(data.user));
+
+        // Redirección según rol
+        switch (data.role) {
+            case "admin":
+                window.location.href = "/dashboard/admin.html";
+                break;
+            case "supervisor":
+                window.location.href = "/dashboard/supervisor.html";
+                break;
+            case "tecnico":
+                window.location.href = "/dashboard/tecnico.html";
+                break;
+            case "cliente":
+                window.location.href = "/dashboard/cliente.html";
+                break;
+            default:
+                errorBox.textContent = "Rol no reconocido.";
+        }
+
+    } catch (error) {
+        errorBox.textContent = "Correo o contraseña incorrectos.";
+        console.error(error);
     }
-
-    .login-left {
-      width: 45%;
-      background: #2e7d32;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 40px;
-      text-align: center;
-    }
-
-    .login-left img {
-      width: 140px;
-      margin-bottom: 20px;
-    }
-
-    .login-right {
-      width: 55%;
-      padding: 60px;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-      position: relative;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-
-    .toggle-password {
-      position: absolute;
-      right: 12px;
-      top: 38px;
-      cursor: pointer;
-    }
-
-    button {
-      background: #2e7d32;
-      color: white;
-      border: none;
-      padding: 12px;
-      width: 100%;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-
-    #error {
-      color: red;
-      margin-top: 10px;
-    }
-  </style>
-</head>
-
-<body>
-
-<div class="login-container">
-
-  <div class="login-left">
-    <img src="assets/logo.png" alt="CopierMaster Logo">
-    <h2>CopierMaster</h2>
-    <p>Sistema Profesional de Soporte Técnico</p>
-  </div>
-
-  <div class="login-right">
-    <h2>Iniciar Sesión</h2>
-
-    <form id="loginForm" autocomplete="off">
-
-      <div class="form-group">
-        <input
-          type="email"
-          id="correo"
-          placeholder="usuario@empresa.com"
-          autocomplete="off"
-          required
-        />
-      </div>
-
-      <div class="form-group">
-        <input
-          type="password"
-          id="password"
-          placeholder="********"
-          autocomplete="new-password"
-          required
-        />
-        <span class="toggle-password" id="togglePassword">👁</span>
-      </div>
-
-      <button type="submit">Ingresar</button>
-      <div id="error"></div>
-
-    </form>
-  </div>
-
-</div>
-
-<script src="js/password-toggle.js"></script>
-<script src="js/login.js"></script>
-
-</body>
-</html>
+});
