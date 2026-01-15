@@ -1,121 +1,107 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <title>CopierMaster | Sistema de Tickets</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <title>CopierMaster | Sistema de Soporte</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Estilos -->
-    <link rel="stylesheet" href="css/styles.css" />
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
 
-    <!-- Fuente elegante -->
+    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
 
-    <div class="login-container">
-        <div class="login-card">
+<div class="app-container">
 
-            <!-- LOGO -->
-            <div class="logo-container">
-                <img src="assets/logo.png" alt="CopierMaster" />
+    <!-- PANEL IZQUIERDO -->
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+            <img src="assets/copiermaster-logo.png" alt="CopierMaster">
+        </div>
+
+        <div class="sidebar-title">
+            Sistema de Soporte
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="active">🔐 Acceso</li>
+            <li class="disabled">🎫 Tickets</li>
+            <li class="disabled">📊 Reportes</li>
+            <li class="disabled">👥 Instituciones</li>
+            <li class="disabled">⚙️ Configuración</li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <small>CopierMaster C&G<br>© 2026</small>
+        </div>
+
+    </aside>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="main-content">
+
+        <div class="login-wrapper">
+
+            <div class="login-header">
+                <h1>Centro de Soporte Técnico</h1>
+                <p>
+                    Ingrese con su correo institucional para gestionar tickets de soporte técnico.
+                </p>
             </div>
 
-            <!-- TÍTULO -->
-            <h1>Sistema de Tickets</h1>
-            <p class="subtitle">
-                Acceso exclusivo para clientes y personal autorizado
-            </p>
+            <div class="login-card">
 
-            <!-- FORMULARIO -->
-            <form id="loginForm">
-                <div class="input-group">
-                    <label for="email">Correo electrónico</label>
-                    <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        placeholder="usuario@institucion.gob.ec"
-                        required
-                    />
-                </div>
+                <div id="error-message" class="error-message"></div>
 
-                <div class="input-group">
-                    <label for="password">Contraseña</label>
-                    <input
-                        type="password"
-                        id="password"
-                        name="password"
-                        placeholder="••••••••"
-                        required
-                    />
-                </div>
+                <form id="login-form">
 
-                <button type="submit" class="btn-login">
-                    Ingresar
-                </button>
-            </form>
+                    <div class="input-group">
+                        <label for="email">Correo electrónico</label>
+                        <input
+                            type="email"
+                            id="email"
+                            placeholder="usuario@institucion.gob.ec"
+                            required
+                        >
+                    </div>
 
-            <!-- MENSAJE DE ERROR -->
-            <div id="errorMessage" class="error-message"></div>
+                    <div class="input-group">
+                        <label for="password">Contraseña</label>
+                        <input
+                            type="password"
+                            id="password"
+                            placeholder="••••••••"
+                            required
+                        >
+                    </div>
 
-            <!-- FOOTER -->
-            <div class="login-footer">
-                <span>© 2026 CopierMaster C&amp;G</span>
+                    <button type="submit" class="btn-login">
+                        Iniciar Sesión
+                    </button>
+
+                </form>
+
+            </div>
+
+            <div class="login-info">
+                <p>
+                    Este sistema permite reportar, dar seguimiento y gestionar incidencias técnicas
+                    de equipos bajo contrato con CopierMaster.
+                </p>
             </div>
 
         </div>
-    </div>
 
-    <!-- JS -->
-    <script>
-        const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
+    </main>
 
-        const loginForm = document.getElementById("loginForm");
-        const errorMessage = document.getElementById("errorMessage");
+</div>
 
-        loginForm.addEventListener("submit", async function (e) {
-            e.preventDefault();
-            errorMessage.textContent = "";
-
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value.trim();
-
-            try {
-                const response = await fetch(API_BASE_URL + "/auth/login", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        password: password
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error("Credenciales incorrectas");
-                }
-
-                const data = await response.json();
-
-                // Guardar token y datos del usuario
-                localStorage.setItem("access_token", data.access_token);
-                localStorage.setItem("user_role", data.role);
-                localStorage.setItem("user_name", data.nombre);
-
-                // Redirección según rol
-                if (data.role === "admin" || data.role === "supervisor") {
-                    window.location.href = "dashboard.html";
-                } else {
-                    window.location.href = "tickets.html";
-                }
-
-            } catch (error) {
-                errorMessage.textContent = "Correo o contraseña incorrectos.";
-            }
-        });
-    </script>
+<!-- JS -->
+<script src="js/auth.js"></script>
 
 </body>
 </html>
