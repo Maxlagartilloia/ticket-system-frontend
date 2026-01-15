@@ -1,132 +1,107 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>CopierMaster | Tickets de Soporte</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="stylesheet" href="css/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>CopierMaster | Tickets</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 
 <body>
-
 <div class="app-container">
 
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="assets/copiermaster-logo.png" alt="CopierMaster">
-        </div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" alt="CopierMaster">
+    </div>
 
-        <div class="sidebar-title">Tickets de Soporte</div>
+    <div class="sidebar-title">Supervisor Panel</div>
 
-        <ul class="sidebar-menu">
-            <li onclick="location.href='dashboard.html'">📊 Dashboard</li>
-            <li class="active">🎫 Tickets</li>
-            <li>📈 Reportes</li>
-        </ul>
+    <ul class="sidebar-menu">
+      <li onclick="location.href='dashboard.html'">Dashboard</li>
+      <li onclick="location.href='institutions.html'">Institutions</li>
+      <li onclick="location.href='technicians.html'">Technicians</li>
+      <li class="active">Tickets</li>
+    </ul>
 
-        <div class="sidebar-footer">
-            <small>CopierMaster C&G<br>Soporte Técnico</small>
-        </div>
-    </aside>
+    <div class="sidebar-footer">
+      CopierMaster C&G<br/>Technical Support
+    </div>
+  </aside>
 
-    <!-- MAIN -->
-    <main class="main-content tickets">
+  <!-- MAIN -->
+  <main class="main-content">
 
-        <header class="dashboard-header">
-            <h1>Gestión de Tickets</h1>
-            <div class="user-info">
-                <span class="user-role" id="userRole"></span>
-                <button class="logout-btn">Cerrar sesión</button>
-            </div>
-        </header>
+    <header class="dashboard-header">
+      <h1>Ticket Management</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
+    </header>
 
-        <section class="tickets-actions">
-            <button class="btn-primary" id="btnNuevoTicket">+ Crear Ticket</button>
-        </section>
+    <!-- CREATE TICKET -->
+    <section class="card">
+      <h2>Create Ticket</h2>
 
-        <section class="tickets-section">
-            <table class="tickets-table">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Institución</th>
-                        <th>Equipo</th>
-                        <th>Problema</th>
-                        <th>Estado</th>
-                        <th>Prioridad</th>
-                        <th>Técnico</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="ticketsBody"></tbody>
-            </table>
-        </section>
+      <form id="ticketForm" class="form-grid">
 
-        <!-- MODAL CREAR -->
-        <div class="modal hidden" id="modalTicket">
-            <div class="modal-content">
-                <h2>Nuevo Ticket</h2>
+        <select id="institution" required>
+          <option value="">Select Institution</option>
+          <option>Municipality</option>
+          <option>Hospital</option>
+          <option>University</option>
+        </select>
 
-                <form id="ticketForm">
-                    <div class="input-group">
-                        <label>Equipo</label>
-                        <input type="text" id="equipo" required>
-                    </div>
+        <input type="text" id="department" placeholder="Department" required />
 
-                    <div class="input-group">
-                        <label>Descripción</label>
-                        <textarea id="descripcion" rows="4" required></textarea>
-                    </div>
+        <input type="text" id="equipment" placeholder="Equipment (e.g. Ricoh IM 7000)" required />
 
-                    <div class="input-group">
-                        <label>Prioridad</label>
-                        <select id="prioridad">
-                            <option value="baja">Baja</option>
-                            <option value="media">Media</option>
-                            <option value="alta">Alta</option>
-                        </select>
-                    </div>
+        <textarea id="description" placeholder="Problem description" required></textarea>
 
-                    <div class="modal-actions">
-                        <button class="btn-primary" type="submit">Crear</button>
-                        <button class="btn-secondary" type="button" id="cerrarModal">Cancelar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <select id="priority" required>
+          <option value="">Priority</option>
+          <option>Low</option>
+          <option>Medium</option>
+          <option>High</option>
+        </select>
 
-        <!-- MODAL GESTIÓN -->
-        <div class="modal hidden" id="modalGestion">
-            <div class="modal-content">
-                <h2>Gestión de Ticket</h2>
+        <select id="technician" required>
+          <option value="">Assign Technician</option>
+          <option>Juan Torres</option>
+          <option>Maria Salazar</option>
+        </select>
 
-                <div class="input-group">
-                    <label>Asignar Técnico</label>
-                    <select id="selectTecnico"></select>
-                </div>
+        <button type="submit">Create Ticket</button>
+      </form>
+    </section>
 
-                <div class="input-group">
-                    <label>Estado</label>
-                    <select id="selectEstado">
-                        <option value="abierto">Abierto</option>
-                        <option value="en_proceso">En proceso</option>
-                        <option value="cerrado">Cerrado</option>
-                    </select>
-                </div>
+    <!-- TICKETS LIST -->
+    <section class="card">
+      <h2>Tickets List</h2>
 
-                <div class="modal-actions">
-                    <button class="btn-primary" id="guardarGestion">Guardar</button>
-                    <button class="btn-secondary" id="cerrarGestion">Cancelar</button>
-                </div>
-            </div>
-        </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Institution</th>
+            <th>Equipment</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Technician</th>
+          </tr>
+        </thead>
+        <tbody id="ticketsTable"></tbody>
+      </table>
+    </section>
 
-    </main>
+  </main>
 </div>
 
 <script src="js/tickets.js"></script>
+<script>
+  document.getElementById("logoutBtn").onclick = () => {
+    localStorage.removeItem("token");
+    location.href = "index.html";
+  };
+</script>
 </body>
 </html>
