@@ -1,12 +1,12 @@
-// Protect dashboard
-const token = localStorage.getItem("copiermaster_token");
+// AUTH GUARD
+const token = localStorage.getItem("token");
 
 if (!token) {
   window.location.href = "index.html";
 }
 
-// Logout
+// LOGOUT
 document.getElementById("logoutBtn").addEventListener("click", () => {
-  localStorage.removeItem("copiermaster_token");
+  localStorage.removeItem("token");
   window.location.href = "index.html";
 });
