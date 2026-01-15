@@ -46,21 +46,9 @@
       margin-bottom: 20px;
     }
 
-    .login-left h2 {
-      margin: 10px 0;
-    }
-
     .login-right {
       width: 55%;
       padding: 60px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .login-right h2 {
-      margin-bottom: 20px;
-      color: #2e7d32;
     }
 
     .form-group {
@@ -68,18 +56,11 @@
       position: relative;
     }
 
-    .form-group label {
-      display: block;
-      margin-bottom: 6px;
-      font-weight: bold;
-    }
-
     .form-group input {
       width: 100%;
       padding: 12px;
-      font-size: 15px;
-      border: 1px solid #ccc;
       border-radius: 6px;
+      border: 1px solid #ccc;
     }
 
     .toggle-password {
@@ -87,7 +68,6 @@
       right: 12px;
       top: 38px;
       cursor: pointer;
-      font-size: 18px;
     }
 
     button {
@@ -95,87 +75,64 @@
       color: white;
       border: none;
       padding: 12px;
-      font-size: 16px;
+      width: 100%;
       border-radius: 6px;
       cursor: pointer;
     }
 
-    button:hover {
-      background: #256628;
-    }
-
     #error {
-      margin-top: 15px;
       color: red;
-      font-size: 14px;
-    }
-
-    footer {
-      margin-top: 25px;
-      font-size: 12px;
-      color: #888;
-      text-align: center;
+      margin-top: 10px;
     }
   </style>
 </head>
 
 <body>
 
-  <div class="login-container">
+<div class="login-container">
 
-    <!-- PANEL IZQUIERDO -->
-    <div class="login-left">
-      <img src="activos/logo.png" alt="CopierMaster Logo">
-      <h2>CopierMaster</h2>
-      <p>Sistema Profesional de Soporte Técnico</p>
-    </div>
-
-    <!-- PANEL DERECHO -->
-    <div class="login-right">
-      <h2>Iniciar Sesión</h2>
-
-      <!-- 🔐 FORMULARIO LOGIN -->
-      <form id="loginForm">
-
-        <div class="form-group">
-          <label for="correo">Correo electrónico</label>
-          <input
-            type="email"
-            id="correo"
-            placeholder="usuario@empresa.com"
-            autocomplete="username"
-            required
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="password">Contraseña</label>
-          <input
-            type="password"
-            id="password"
-            placeholder="********"
-            autocomplete="current-password"
-            required
-          />
-          <span class="toggle-password" id="togglePassword">👁</span>
-        </div>
-
-        <button type="submit">Ingresar</button>
-
-        <div id="error"></div>
-
-      </form>
-
-      <footer>
-        © 2026 CopierMaster C&G Soluciones Digitales
-      </footer>
-    </div>
-
+  <div class="login-left">
+    <img src="assets/logo.png" alt="CopierMaster Logo">
+    <h2>CopierMaster</h2>
+    <p>Sistema Profesional de Soporte Técnico</p>
   </div>
 
-  <!-- SCRIPTS -->
-  <script src="js/password-toggle.js"></script>
-  <script src="js/login.js"></script>
+  <div class="login-right">
+    <h2>Iniciar Sesión</h2>
+
+    <form id="loginForm" autocomplete="off">
+
+      <div class="form-group">
+        <input
+          type="email"
+          id="correo"
+          placeholder="usuario@empresa.com"
+          autocomplete="off"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <input
+          type="password"
+          id="password"
+          placeholder="********"
+          autocomplete="new-password"
+          required
+        />
+        <span class="toggle-password" id="togglePassword">👁</span>
+      </div>
+
+      <button type="submit">Ingresar</button>
+      <div id="error"></div>
+
+    </form>
+  </div>
+
+</div>
+
+<script src="js/password-toggle.js"></script>
+<script src="js/login.js"></script>
 
 </body>
 </html>
