@@ -1,7 +1,7 @@
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("correo").value.trim();
+  const correo = document.getElementById("correo").value.trim();
   const password = document.getElementById("password").value.trim();
   const errorDiv = document.getElementById("error");
 
@@ -12,13 +12,8 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       "https://ticket-system-backend-4h25.onrender.com/login",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          correo: email,
-          password: password
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ correo, password })
       }
     );
 
@@ -29,14 +24,13 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
       return;
     }
 
-    // Save token
-    localStorage.setItem("copiermaster_token", data.access_token);
+    // ✅ Save token
+    localStorage.setItem("token", data.access_token);
 
     // ✅ CORRECT REDIRECT
     window.location.href = "dashboard.html";
 
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
     errorDiv.textContent = "Server connection error";
   }
 });
