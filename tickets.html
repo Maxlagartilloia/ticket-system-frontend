@@ -5,10 +5,7 @@
     <title>CopierMaster | Tickets de Soporte</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- Styles -->
     <link rel="stylesheet" href="css/styles.css">
-
-    <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
@@ -18,32 +15,26 @@
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
-
         <div class="sidebar-logo">
             <img src="assets/copiermaster-logo.png" alt="CopierMaster">
         </div>
 
-        <div class="sidebar-title">
-            Tickets de Soporte
-        </div>
+        <div class="sidebar-title">Tickets de Soporte</div>
 
         <ul class="sidebar-menu">
-            <li onclick="window.location.href='dashboard.html'">📊 Dashboard</li>
+            <li onclick="location.href='dashboard.html'">📊 Dashboard</li>
             <li class="active">🎫 Tickets</li>
             <li>📈 Reportes</li>
-            <li>⚙️ Configuración</li>
         </ul>
 
         <div class="sidebar-footer">
             <small>CopierMaster C&G<br>Soporte Técnico</small>
         </div>
-
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- MAIN -->
     <main class="main-content tickets">
 
-        <!-- HEADER -->
         <header class="dashboard-header">
             <h1>Gestión de Tickets</h1>
             <div class="user-info">
@@ -52,16 +43,11 @@
             </div>
         </header>
 
-        <!-- ACTION BAR -->
         <section class="tickets-actions">
-            <button class="btn-primary" id="btnNuevoTicket">
-                + Crear Ticket
-            </button>
+            <button class="btn-primary" id="btnNuevoTicket">+ Crear Ticket</button>
         </section>
 
-        <!-- TABLE -->
         <section class="tickets-section">
-
             <table class="tickets-table">
                 <thead>
                     <tr>
@@ -75,29 +61,23 @@
                         <th>Acción</th>
                     </tr>
                 </thead>
-                <tbody id="ticketsBody">
-                    <!-- JS inserta aquí -->
-                </tbody>
+                <tbody id="ticketsBody"></tbody>
             </table>
-
         </section>
 
-        <!-- MODAL NUEVO TICKET -->
+        <!-- MODAL CREAR -->
         <div class="modal hidden" id="modalTicket">
-
             <div class="modal-content">
-
-                <h2>Nuevo Ticket de Soporte</h2>
+                <h2>Nuevo Ticket</h2>
 
                 <form id="ticketForm">
-
                     <div class="input-group">
                         <label>Equipo</label>
                         <input type="text" id="equipo" required>
                     </div>
 
                     <div class="input-group">
-                        <label>Descripción del problema</label>
+                        <label>Descripción</label>
                         <textarea id="descripcion" rows="4" required></textarea>
                     </div>
 
@@ -111,24 +91,42 @@
                     </div>
 
                     <div class="modal-actions">
-                        <button type="submit" class="btn-primary">Crear</button>
-                        <button type="button" class="btn-secondary" id="cerrarModal">
-                            Cancelar
-                        </button>
+                        <button class="btn-primary" type="submit">Crear</button>
+                        <button class="btn-secondary" type="button" id="cerrarModal">Cancelar</button>
                     </div>
-
                 </form>
-
             </div>
+        </div>
 
+        <!-- MODAL GESTIÓN -->
+        <div class="modal hidden" id="modalGestion">
+            <div class="modal-content">
+                <h2>Gestión de Ticket</h2>
+
+                <div class="input-group">
+                    <label>Asignar Técnico</label>
+                    <select id="selectTecnico"></select>
+                </div>
+
+                <div class="input-group">
+                    <label>Estado</label>
+                    <select id="selectEstado">
+                        <option value="abierto">Abierto</option>
+                        <option value="en_proceso">En proceso</option>
+                        <option value="cerrado">Cerrado</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn-primary" id="guardarGestion">Guardar</button>
+                    <button class="btn-secondary" id="cerrarGestion">Cancelar</button>
+                </div>
+            </div>
         </div>
 
     </main>
-
 </div>
 
-<!-- JS -->
 <script src="js/tickets.js"></script>
-
 </body>
 </html>
