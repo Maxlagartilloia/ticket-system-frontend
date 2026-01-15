@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CopierMaster | Technicians</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+<div class="app-container">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" />
+    </div>
+    <div class="sidebar-title">Supervisor Panel</div>
+
+    <ul class="sidebar-menu">
+      <li onclick="location.href='dashboard.html'">Dashboard</li>
+      <li onclick="location.href='institutions.html'">Institutions</li>
+      <li class="active">Technicians</li>
+      <li onclick="location.href='tickets.html'">Tickets</li>
+    </ul>
+  </aside>
+
+  <main class="main-content">
+    <header class="dashboard-header">
+      <h1>Technicians</h1>
+    </header>
+
+    <section class="card">
+      <h2>Create Technician</h2>
+      <form id="techForm" class="form-grid">
+        <input id="techName" placeholder="Name" required />
+        <input id="techEmail" placeholder="Email" required />
+        <button>Create</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>Technicians List</h2>
+      <ul id="techList"></ul>
+    </section>
+  </main>
+</div>
+
+<script src="js/technicians.js"></script>
+</body>
+</html>
