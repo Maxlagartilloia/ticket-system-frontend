@@ -13,9 +13,12 @@ document.querySelector(".logout-btn").onclick = () => {
 };
 
 const institucionSelect = document.getElementById("institucionSelect");
-let chart;
+let estadoChart;
+let tendenciaChart;
 
-// Cargar instituciones
+// =========================
+// CARGAR INSTITUCIONES
+// =========================
 async function cargarInstituciones() {
     const res = await fetch(`${API_BASE_URL}/instituciones`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -27,7 +30,9 @@ async function cargarInstituciones() {
     });
 }
 
-// Generar reporte + gráfico
+// =========================
+// GENERAR REPORTE
+// =========================
 document.getElementById("btnGenerar").onclick = async () => {
     const institucion = institucionSelect.value;
     const inicio = document.getElementById("fechaInicio").value;
@@ -44,15 +49,18 @@ document.getElementById("btnGenerar").onclick = async () => {
     document.getElementById("proceso").textContent = data.en_proceso;
     document.getElementById("cerrados").textContent = data.cerrados;
 
-    renderChart(data.abiertos, data.en_proceso, data.cerrados);
+    renderEstadoChart(data.abiertos, data.en_proceso, data.cerrados);
+    renderTendenciaChart(data.tendencia_fechas, data.tendencia_totales);
 };
 
-// Gráfico donut
-function renderChart(abiertos, proceso, cerrados) {
+// =========================
+// GRÁFICO ESTADOS
+// =========================
+function renderEstadoChart(abiertos, proceso, cerrados) {
     const ctx = document.getElementById("estadoChart").getContext("2d");
-    if (chart) chart.destroy();
+    if (estadoChart) estadoChart.destroy();
 
-    chart = new Chart(ctx, {
+    estadoChart = new Chart(ctx, {
         type: "doughnut",
         data: {
             labels: ["Abiertos", "En Proceso", "Cerrados"],
@@ -63,14 +71,44 @@ function renderChart(abiertos, proceso, cerrados) {
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { position: "bottom" }
+            plugins: { legend: { position: "bottom" } }
+        }
+    });
+}
+
+// =========================
+// GRÁFICO TENDENCIA
+// =========================
+function renderTendenciaChart(fechas, totales) {
+    const ctx = document.getElementById("tendenciaChart").getContext("2d");
+    if (tendenciaChart) tendenciaChart.destroy();
+
+    tendenciaChart = new Chart(ctx, {
+        type: "line",
+        data: {
+            labels: fechas,
+            datasets: [{
+                label: "Tickets por día",
+                data: totales,
+                borderColor: "#1f7f4c",
+                backgroundColor: "rgba(31,127,76,0.15)",
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true }
             }
         }
     });
 }
 
-// Descargas
+// =========================
+// DESCARGAS
+// =========================
 document.getElementById("btnCSV").onclick = () => {
     const i = institucionSelect.value;
     const fi = fechaInicio.value;
