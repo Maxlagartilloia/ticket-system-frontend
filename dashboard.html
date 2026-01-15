@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>CopierMaster | Panel de Control</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="app-container">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="sidebar-logo">
+            <img src="assets/copiermaster-logo.png" alt="CopierMaster">
+        </div>
+
+        <div class="sidebar-title">
+            Panel Supervisor
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="active">📊 Dashboard</li>
+            <li>🎫 Tickets</li>
+            <li>🏢 Instituciones</li>
+            <li>👨‍🔧 Técnicos</li>
+            <li>📈 Reportes</li>
+            <li>⚙️ Configuración</li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <small>CopierMaster C&G<br>Soporte Técnico</small>
+        </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content dashboard">
+
+        <!-- HEADER -->
+        <header class="dashboard-header">
+            <h1>Panel General de Soporte</h1>
+            <div class="user-info">
+                <span class="user-role">Supervisor</span>
+                <button class="logout-btn">Cerrar sesión</button>
+            </div>
+        </header>
+
+        <!-- METRICS -->
+        <section class="metrics-grid">
+
+            <div class="metric-card">
+                <h3>Tickets Abiertos</h3>
+                <span class="metric-number">18</span>
+            </div>
+
+            <div class="metric-card">
+                <h3>En Proceso</h3>
+                <span class="metric-number">7</span>
+            </div>
+
+            <div class="metric-card">
+                <h3>Resueltos Hoy</h3>
+                <span class="metric-number">5</span>
+            </div>
+
+            <div class="metric-card">
+                <h3>Instituciones</h3>
+                <span class="metric-number">20</span>
+            </div>
+
+        </section>
+
+        <!-- TICKETS TABLE -->
+        <section class="tickets-section">
+
+            <h2>Últimos Tickets</h2>
+
+            <table class="tickets-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Institución</th>
+                        <th>Equipo</th>
+                        <th>Estado</th>
+                        <th>Prioridad</th>
+                        <th>Técnico</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr>
+                        <td>1021</td>
+                        <td>Municipio Central</td>
+                        <td>Ricoh IM 7000</td>
+                        <td class="status open">Abierto</td>
+                        <td>Alta</td>
+                        <td>—</td>
+                        <td><button class="btn-action">Ver</button></td>
+                    </tr>
+
+                    <tr>
+                        <td>1020</td>
+                        <td>Hospital Regional</td>
+                        <td>Ricoh MP 5054</td>
+                        <td class="status progress">En proceso</td>
+                        <td>Media</td>
+                        <td>J. Torres</td>
+                        <td><button class="btn-action">Ver</button></td>
+                    </tr>
+
+                    <tr>
+                        <td>1019</td>
+                        <td>Universidad Técnica</td>
+                        <td>Ricoh IM 9000</td>
+                        <td class="status closed">Cerrado</td>
+                        <td>Baja</td>
+                        <td>M. Salazar</td>
+                        <td><button class="btn-action">Ver</button></td>
+                    </tr>
+
+                </tbody>
+            </table>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>
