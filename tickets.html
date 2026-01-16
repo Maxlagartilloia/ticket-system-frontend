@@ -19,7 +19,8 @@
       <img src="assets/logo.png" alt="CopierMaster">
     </div>
 
-    <div class="sidebar-title">Supervisor Panel</div>
+    <!-- TÍTULO DINÁMICO SEGÚN ROL -->
+    <div class="sidebar-title" id="panelTitle">Tickets</div>
 
     <ul class="sidebar-menu">
       <li onclick="goTo('dashboard.html')">Dashboard</li>
@@ -39,12 +40,14 @@
   <main class="main-content">
 
     <header class="dashboard-header">
-      <h1>Create Ticket</h1>
+      <h1>Tickets</h1>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </header>
 
-    <!-- CREATE TICKET -->
-    <section class="card">
+    <!-- CREATE TICKET (VISIBLE SOLO PARA CLIENTE DESDE JS) -->
+    <section class="card" id="createTicketSection">
+      <h2>Create Ticket</h2>
+
       <form id="ticketForm">
 
         <div class="form-row">
@@ -97,6 +100,8 @@
             <th>Status</th>
             <th>Priority</th>
             <th>Institution</th>
+            <!-- ACCIONES SEGÚN ROL (JS) -->
+            <th id="actionsHeader">Actions</th>
           </tr>
         </thead>
         <tbody id="ticketsTable"></tbody>
@@ -107,6 +112,7 @@
 
 </div>
 
+<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
 <script src="js/tickets.js"></script>
 </body>
 </html>
