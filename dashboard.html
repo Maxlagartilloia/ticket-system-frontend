@@ -5,10 +5,10 @@
   <title>CopierMaster | Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- GLOBAL STYLES -->
-  <link rel="stylesheet" href="./css/styles.css" />
+  <!-- Global Styles -->
+  <link rel="stylesheet" href="css/styles.css" />
 
-  <!-- GOOGLE FONT -->
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
@@ -19,58 +19,64 @@
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <img src="./assets/logo.png" alt="CopierMaster Logo">
+      <img src="assets/logo.png" alt="CopierMaster">
     </div>
 
-    <h3 class="sidebar-title">Supervisor Panel</h3>
+    <div class="sidebar-title">
+      Supervisor Panel
+    </div>
 
     <ul class="sidebar-menu">
-      <li class="active">Dashboard</li>
-      <li onclick="location.href='tickets.html'">Tickets</li>
-      <li onclick="location.href='reportes.html'">Reports</li>
+      <li class="active" onclick="goTo('dashboard.html')">Dashboard</li>
+      <li onclick="goTo('tickets.html')">Tickets</li>
+      <li onclick="goTo('institutions.html')">Institutions</li>
+      <li onclick="goTo('technicians.html')">Technicians</li>
+      <li onclick="goTo('reportes.html')">Reports</li>
     </ul>
 
     <div class="sidebar-footer">
-      CopierMaster C&G<br>
-      Technical Support
+      <small>CopierMaster C&amp;G<br/>Technical Support</small>
     </div>
   </aside>
 
-  <!-- MAIN -->
+  <!-- MAIN CONTENT -->
   <main class="main-content">
 
+    <!-- HEADER -->
     <header class="dashboard-header">
       <h1>Support Overview</h1>
-      <button class="logout-btn" id="logoutBtn">Logout</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </header>
 
     <!-- METRICS -->
     <section class="metrics-grid">
+
       <div class="metric-card">
-        <h4>Open Tickets</h4>
-        <span>18</span>
+        <h3>Open Tickets</h3>
+        <span class="metric-number" id="openTickets">0</span>
       </div>
 
       <div class="metric-card">
-        <h4>In Progress</h4>
-        <span>7</span>
+        <h3>In Progress</h3>
+        <span class="metric-number" id="inProgressTickets">0</span>
       </div>
 
       <div class="metric-card">
-        <h4>Resolved Today</h4>
-        <span>5</span>
+        <h3>Resolved Today</h3>
+        <span class="metric-number" id="resolvedToday">0</span>
       </div>
 
       <div class="metric-card">
-        <h4>Institutions</h4>
-        <span>20</span>
+        <h3>Institutions</h3>
+        <span class="metric-number" id="institutionsCount">0</span>
       </div>
+
     </section>
 
   </main>
 
 </div>
 
-<script src="./js/dashboard.js"></script>
+<script src="js/dashboard.js"></script>
 </body>
 </html>
