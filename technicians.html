@@ -2,49 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CopierMaster | Technicians</title>
+  <title>Technicians | CopierMaster</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
+
 <div class="app-container">
 
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <img src="assets/logo.png" />
+      <img src="assets/logo.png" alt="CopierMaster">
     </div>
-    <div class="sidebar-title">Supervisor Panel</div>
+
+    <!-- TÍTULO DINÁMICO -->
+    <div class="sidebar-title" id="panelTitle">Technicians</div>
 
     <ul class="sidebar-menu">
-      <li onclick="location.href='dashboard.html'">Dashboard</li>
-      <li onclick="location.href='institutions.html'">Institutions</li>
+      <li onclick="goTo('dashboard.html')">Dashboard</li>
+      <li onclick="goTo('institutions.html')">Institutions</li>
+      <li onclick="goTo('departments.html')">Departments</li>
+      <li onclick="goTo('tickets.html')">Tickets</li>
       <li class="active">Technicians</li>
-      <li onclick="location.href='tickets.html'">Tickets</li>
+      <li onclick="goTo('reportes.html')">Reports</li>
     </ul>
+
+    <div class="sidebar-footer">
+      <small>CopierMaster C&amp;G<br>Technical Support</small>
+    </div>
   </aside>
 
+  <!-- MAIN -->
   <main class="main-content">
+
     <header class="dashboard-header">
       <h1>Technicians</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </header>
 
-    <section class="card">
+    <!-- CREATE TECHNICIAN (VISIBLE SOLO PARA ADMIN / SUPERVISOR DESDE JS) -->
+    <section class="card" id="createTechnicianSection">
       <h2>Create Technician</h2>
-      <form id="techForm" class="form-grid">
-        <input id="techName" placeholder="Name" required />
-        <input id="techEmail" placeholder="Email" required />
-        <button>Create</button>
+
+      <form id="technicianForm">
+        <div class="form-row">
+          <label>Full Name</label>
+          <input type="text" id="fullName" required />
+        </div>
+
+        <div class="form-row">
+          <label>Email</label>
+          <input type="email" id="email" required />
+        </div>
+
+        <div class="form-row">
+          <label>Password</label>
+          <input type="password" id="password" required />
+        </div>
+
+        <button type="submit">Create Technician</button>
       </form>
     </section>
 
+    <!-- LIST TECHNICIANS -->
     <section class="card">
-      <h2>Technicians List</h2>
-      <ul id="techList"></ul>
+      <h2>All Technicians</h2>
+
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <!-- ACCIONES FUTURAS -->
+            <th id="actionsHeader">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="techniciansTable"></tbody>
+      </table>
     </section>
+
   </main>
+
 </div>
 
+<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
 <script src="js/technicians.js"></script>
 </body>
 </html>
