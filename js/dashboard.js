@@ -17,63 +17,65 @@ function goTo(page) {
   window.location.href = page;
 }
 
-// ================================
-// LOGOUT
-// ================================
-
 function logout() {
   localStorage.clear();
   window.location.href = "index.html";
 }
 
 // ================================
-// FETCH DASHBOARD DATA
+// LOAD DASHBOARD STATS
 // ================================
 
-async function loadDashboard() {
-  try {
-    const ticketsRes = await fetch(`${API_BASE_URL}/tickets`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    const institutionsRes = await fetch(`${API_BASE_URL}/instituciones`, {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    if (!ticketsRes.ok || !institutionsRes.ok) {
-      throw new Error("Unauthorized");
+async function loadStats() {
+  const res = await fetch(`${API_BASE_URL}/reportes/dashboard`, {
+    headers: {
+      Authorization: `Bearer ${token}`
     }
+  });
 
-    const tickets = await ticketsRes.json();
-    const institutions = await institutionsRes.json();
+  const data = await res.json();
 
-    // Metrics
-    const open = tickets.filter(t => t.status === "open").length;
-    const progress = tickets.filter(t => t.status === "in_progress").length;
+  document.getElementById("openTickets").textContent = data.open_tickets;
+  document.getElementById("inProgress").textContent = data.in_progress;
+  document.getElementById("resolvedToday").textContent = data.resolved_today;
+  document.getElementById("institutions").textContent = data.institutions;
+}
 
-    const today = new Date().toISOString().split("T")[0];
-    const resolvedToday = tickets.filter(
-      t => t.status === "closed" && t.created_at?.startsWith(today)
-    ).length;
+// ================================
+// LOAD RECENT TICKETS
+// ================================
 
-    // Update UI
-    document.getElementById("openTickets").textContent = open;
-    document.getElementById("inProgressTickets").textContent = progress;
-    document.getElementById("resolvedToday").textContent = resolvedToday;
-    document.getElementById("institutionsCount").textContent = institutions.length;
+async function loadRecentTickets() {
+  const res = await fetch(`${API_BASE_URL}/tickets`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
 
-  } catch (error) {
-    console.error(error);
-    logout();
-  }
+  const tickets = await res.json();
+  const tbody = document.getElementById("recentTickets");
+  tbody.innerHTML = "";
+
+  tickets.slice(0, 5).forEach(ticket => {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${ticket.id}</td>
+      <td>${ticket.institution_id}</td>
+      <td>${ticket.status}</td>
+      <td>${ticket.priority}</td>
+      <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
+    `;
+
+    tbody.appendChild(row);
+  });
 }
 
 // ================================
 // INIT
 // ================================
 
-document.addEventListener("DOMContentLoaded", loadDashboard);
+document.addEventListener("DOMContentLoaded", async () => {
+  await loadStats();
+  await loadRecentTickets();
+});
