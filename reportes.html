@@ -1,107 +1,77 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>CopierMaster | Reportes</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Reports | CopierMaster</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <link rel="stylesheet" href="css/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
 <div class="app-container">
 
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <img src="assets/copiermaster-logo.png" alt="CopierMaster">
-        </div>
-        <div class="sidebar-title">Reportes</div>
-        <ul class="sidebar-menu">
-            <li onclick="location.href='dashboard.html'">📊 Dashboard</li>
-            <li onclick="location.href='tickets.html'">🎫 Tickets</li>
-            <li class="active">📈 Reportes</li>
-        </ul>
-        <div class="sidebar-footer">
-            <small>CopierMaster C&G<br>Gestión Ejecutiva</small>
-        </div>
-    </aside>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" alt="CopierMaster">
+    </div>
 
-    <main class="main-content">
+    <!-- TÍTULO DINÁMICO -->
+    <div class="sidebar-title" id="panelTitle">Reports</div>
 
-        <header class="dashboard-header">
-            <h1>Reportes de Soporte Técnico</h1>
-            <div class="user-info">
-                <span class="user-role" id="userRole"></span>
-                <button class="logout-btn">Cerrar sesión</button>
-            </div>
-        </header>
+    <ul class="sidebar-menu">
+      <li onclick="goTo('dashboard.html')">Dashboard</li>
+      <li onclick="goTo('tickets.html')">Tickets</li>
+      <li onclick="goTo('institutions.html')">Institutions</li>
+      <li onclick="goTo('departments.html')">Departments</li>
+      <li onclick="goTo('technicians.html')">Technicians</li>
+      <li class="active">Reports</li>
+    </ul>
 
-        <!-- FILTROS -->
-        <section class="filters-section">
-            <div class="input-group">
-                <label>Institución</label>
-                <select id="institucionSelect"></select>
-            </div>
-            <div class="input-group">
-                <label>Desde</label>
-                <input type="date" id="fechaInicio">
-            </div>
-            <div class="input-group">
-                <label>Hasta</label>
-                <input type="date" id="fechaFin">
-            </div>
-            <button class="btn-primary" id="btnGenerar">Generar Reporte</button>
-        </section>
+    <div class="sidebar-footer">
+      <small>CopierMaster C&amp;G<br>Technical Support</small>
+    </div>
+  </aside>
 
-        <!-- MÉTRICAS -->
-        <section class="metrics-grid">
-            <div class="metric-card">
-                <h3>Total Tickets</h3>
-                <span class="metric-number" id="totalTickets">0</span>
-            </div>
-            <div class="metric-card">
-                <h3>Abiertos</h3>
-                <span class="metric-number" id="abiertos">0</span>
-            </div>
-            <div class="metric-card">
-                <h3>En Proceso</h3>
-                <span class="metric-number" id="proceso">0</span>
-            </div>
-            <div class="metric-card">
-                <h3>Cerrados</h3>
-                <span class="metric-number" id="cerrados">0</span>
-            </div>
-        </section>
+  <!-- MAIN -->
+  <main class="main-content">
 
-        <!-- GRÁFICOS -->
-        <section class="charts-grid">
+    <header class="dashboard-header">
+      <h1>System Reports</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </header>
 
-            <div class="chart-card">
-                <h2>Distribución de Estados</h2>
-                <canvas id="estadoChart"></canvas>
-            </div>
+    <!-- METRICS -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <h3>Open Tickets</h3>
+        <span id="openTickets">0</span>
+      </div>
 
-            <div class="chart-card">
-                <h2>Tendencia de Tickets</h2>
-                <canvas id="tendenciaChart"></canvas>
-            </div>
+      <div class="metric-card">
+        <h3>In Progress</h3>
+        <span id="inProgress">0</span>
+      </div>
 
-        </section>
+      <div class="metric-card">
+        <h3>Resolved Today</h3>
+        <span id="resolvedToday">0</span>
+      </div>
 
-        <!-- ACCIONES -->
-        <section class="report-actions">
-            <button class="btn-secondary" id="btnCSV">Descargar CSV</button>
-            <button class="btn-secondary" id="btnPDF">Descargar PDF</button>
-        </section>
+      <div class="metric-card">
+        <h3>Institutions</h3>
+        <span id="institutions">0</span>
+      </div>
+    </section>
 
-    </main>
+  </main>
+
 </div>
 
+<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
 <script src="js/reportes.js"></script>
 </body>
 </html>
