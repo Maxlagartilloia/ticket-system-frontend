@@ -1,39 +1,24 @@
-// ==========================================
-// LOGIN LOGIC - COPIERMASTER LEAD ENGINEER
-// ==========================================
-
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
-
-// 🔐 Guardia de Seguridad
-document.addEventListener("DOMContentLoaded", () => {
-    const token = localStorage.getItem("copiermaster_token");
-    if (token) {
-        window.location.href = "dashboard.html";
-    }
-});
 
 const loginForm = document.getElementById("loginForm");
 const errorDiv = document.getElementById("error");
 
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    errorDiv.textContent = "Connecting..."; 
+    errorDiv.textContent = "Conectando..."; 
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    // 🚀 CAMBIO CRÍTICO: Usamos URLSearchParams para enviar como FORM-DATA
-    const formData = new URLSearchParams();
-    formData.append("username", email); // OAuth2 requiere que el campo se llame 'username'
+    // 🚀 IMPORTANTE: Usamos FormData para enviar como formulario real
+    const formData = new FormData();
+    formData.append("username", email); // FastAPI espera 'username'
     formData.append("password", password);
 
     try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded" // El formato que espera el Backend
-            },
-            body: formData
+            body: new URLSearchParams(formData) // Esto lo convierte al formato correcto
         });
 
         const data = await response.json();
@@ -42,14 +27,12 @@ loginForm.addEventListener("submit", async (e) => {
             localStorage.setItem("copiermaster_token", data.access_token);
             localStorage.setItem("copiermaster_role", data.role);
             localStorage.setItem("copiermaster_user", email);
-
             window.location.href = "dashboard.html";
         } else {
-            errorDiv.textContent = data.detail || "Authentication failed";
-            console.error("Auth status:", response.status);
+            errorDiv.textContent = data.detail || "Error de autenticación";
         }
     } catch (err) {
-        console.error("Network error:", err);
-        errorDiv.textContent = "Cannot reach server. Please check your connection.";
+        console.error("Error:", err);
+        errorDiv.textContent = "Error al conectar con el servidor.";
     }
 });
