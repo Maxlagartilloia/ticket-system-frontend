@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Equipment | CopierMaster</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="app-container">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" alt="CopierMaster">
+    </div>
+
+    <div class="sidebar-title">Supervisor Panel</div>
+
+    <ul class="sidebar-menu">
+      <li onclick="goTo('dashboard.html')">Dashboard</li>
+      <li onclick="goTo('institutions.html')">Institutions</li>
+      <li onclick="goTo('departments.html')">Departments</li>
+      <li class="active">Equipment</li>
+      <li onclick="goTo('tickets.html')">Tickets</li>
+      <li onclick="goTo('technicians.html')">Technicians</li>
+      <li onclick="goTo('reportes.html')">Reports</li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <small>CopierMaster C&amp;G<br>Technical Support</small>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+
+    <header class="dashboard-header">
+      <h1>Equipment</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </header>
+
+    <!-- CREATE EQUIPMENT -->
+    <section class="card">
+      <h2>Create Equipment</h2>
+
+      <form id="equipmentForm">
+
+        <div class="form-row">
+          <label>Institution</label>
+          <select id="institutionSelect" required></select>
+        </div>
+
+        <div class="form-row">
+          <label>Department</label>
+          <select id="departmentSelect" required></select>
+        </div>
+
+        <div class="form-row">
+          <label>Equipment Name</label>
+          <input type="text" id="name" required />
+        </div>
+
+        <div class="form-row">
+          <label>Model</label>
+          <input type="text" id="model" />
+        </div>
+
+        <div class="form-row">
+          <label>Serial Number</label>
+          <input type="text" id="serial_number" />
+        </div>
+
+        <button type="submit">Create Equipment</button>
+      </form>
+    </section>
+
+    <!-- LIST EQUIPMENT -->
+    <section class="card">
+      <h2>Equipment List</h2>
+
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Model</th>
+            <th>Serial</th>
+            <th>Department</th>
+          </tr>
+        </thead>
+        <tbody id="equipmentTable"></tbody>
+      </table>
+    </section>
+
+  </main>
+
+</div>
+
+<script src="js/equipment.js"></script>
+</body>
+</html>
