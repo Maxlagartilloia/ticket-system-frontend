@@ -1,36 +1,42 @@
-const API_URL = "https://ticket-system-backend-4h25.onrender.com";
+const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
+const loginForm = document.getElementById("loginForm");
 
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-    try {
-        const res = await fetch(`${API_URL}/auth/login`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ email, password })
-        });
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
 
-        if (!res.ok) {
-            alert("Credenciales incorrectas");
-            return;
-        }
+  try {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email,
+        password
+      })
+    });
 
-        const data = await res.json();
-
-        // 🔐 GUARDAR TOKEN (ESTO ES LO QUE FALTABA)
-        localStorage.setItem("access_token", data.access_token);
-        localStorage.setItem("user_role", data.role);
-
-        // 👉 REDIRIGIR
-        window.location.href = "dashboard.html";
-
-    } catch (err) {
-        console.error(err);
-        alert("Error de conexión con el servidor");
+    if (!res.ok) {
+      const error = await res.json();
+      alert(error.detail || "Credenciales inválidas");
+      return;
     }
+
+    const data = await res.json();
+
+    // 🔐 GUARDADO CORRECTO
+    localStorage.setItem("access_token", data.access_token);
+    localStorage.setItem("user_role", data.role);
+
+    // 🚀 REDIRECCIÓN
+    window.location.href = "dashboard.html";
+
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Error conectando con el servidor");
+  }
 });
