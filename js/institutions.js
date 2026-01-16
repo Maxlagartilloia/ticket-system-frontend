@@ -1,6 +1,6 @@
-// ================================
-// INSTITUTIONS - COPIERMASTER
-// ================================
+// ==========================================
+// INSTITUTIONS LOGIC - COPIERMASTER LEAD ENGINEER
+// ==========================================
 
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 
@@ -9,145 +9,144 @@ const token = localStorage.getItem("copiermaster_token");
 const role = localStorage.getItem("copiermaster_role");
 
 // ================================
-// AUTH GUARD
+// AUTH GUARD - PROTECCIÓN DE RUTA
 // ================================
-if (!token) {
-  window.location.href = "index.html";
-}
-
-if (!role || !["admin", "supervisor"].includes(role)) {
-  localStorage.clear();
-  window.location.href = "index.html";
+if (!token || !["admin", "supervisor"].includes(role)) {
+    localStorage.clear();
+    window.location.href = "index.html";
 }
 
 // ================================
-// NAVIGATION
+// UI ELEMENTS
 // ================================
-function goTo(page) {
-  window.location.href = page;
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "index.html";
-}
-
-// ================================
-// UI BY ROLE
-// ================================
+const institutionsTable = document.getElementById("institutionsTable");
+const institutionForm = document.getElementById("institutionForm");
 const panelTitle = document.getElementById("panelTitle");
-const createInstitutionSection = document.getElementById("createInstitutionSection");
-const actionsHeader = document.getElementById("actionsHeader");
 
 if (panelTitle) {
-  panelTitle.textContent = role === "admin" ? "Admin Institutions" : "Supervisor Institutions";
-}
-
-if (!["admin", "supervisor"].includes(role)) {
-  if (createInstitutionSection) createInstitutionSection.style.display = "none";
-}
-
-if (!["admin", "supervisor"].includes(role)) {
-  if (actionsHeader) actionsHeader.style.display = "none";
+    panelTitle.textContent = role === "admin" ? "Admin: Client Management" : "Supervisor: Client Management";
 }
 
 // ================================
-// LOAD INSTITUTIONS
+// LOAD INSTITUTIONS (REFACTORIZADO)
 // ================================
 async function loadInstitutions() {
-  const res = await fetch(`${API_BASE_URL}/instituciones`, {
-    headers: {
-      Authorization: `Bearer ${token}`
+    try {
+        // ✅ RUTA CORREGIDA: /institutions (Alineado con el Backend)
+        const res = await fetch(`${API_BASE_URL}/institutions`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (res.status === 401 || res.status === 403) return handleLogout();
+        
+        const data = await res.json();
+        if (!institutionsTable) return;
+
+        institutionsTable.innerHTML = "";
+        data.forEach(inst => {
+            const row = document.createElement("tr");
+
+            // Acciones profesionales: Edit y Soft Delete
+            const actions = `
+                <div class="table-actions">
+                    <button class="btn-edit" onclick="editInstitution(${inst.id})">Edit</button>
+                    <button class="btn-delete" onclick="deleteInstitution(${inst.id})">Delete</button>
+                </div>
+            `;
+
+            row.innerHTML = `
+                <td>${inst.id}</td>
+                <td><strong>${inst.name}</strong></td>
+                <td>${inst.address || "-"}</td>
+                <td>${inst.phone || "-"}</td>
+                <td>${actions}</td>
+            `;
+
+            institutionsTable.appendChild(row);
+        });
+    } catch (err) {
+        console.error("Institution Service Error:", err);
     }
-  });
-
-  if (res.status === 401 || res.status === 403) {
-    logout();
-    return;
-  }
-
-  const data = await res.json();
-  const tbody = document.getElementById("institutionsTable");
-  tbody.innerHTML = "";
-
-  data.forEach(inst => {
-    const row = document.createElement("tr");
-
-    const actions = `
-      <button onclick="editInstitution(${inst.id})">Edit</button>
-      <button onclick="deleteInstitution(${inst.id})">Delete</button>
-    `;
-
-    row.innerHTML = `
-      <td>${inst.id}</td>
-      <td>${inst.name}</td>
-      <td>${inst.address || "-"}</td>
-      <td>${actions}</td>
-    `;
-
-    tbody.appendChild(row);
-  });
 }
 
 // ================================
 // CREATE INSTITUTION
 // ================================
-const institutionForm = document.getElementById("institutionForm");
-
 if (institutionForm) {
-  institutionForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+    institutionForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    const payload = {
-      name: document.getElementById("name").value,
-      address: document.getElementById("address").value
-    };
+        const payload = {
+            name: document.getElementById("name").value,
+            address: document.getElementById("address").value,
+            phone: document.getElementById("phone") ? document.getElementById("phone").value : ""
+        };
 
-    const res = await fetch(`${API_BASE_URL}/instituciones`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
+        try {
+            const res = await fetch(`${API_BASE_URL}/institutions`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("Institution registered successfully!");
+                institutionForm.reset();
+                loadInstitutions();
+            } else {
+                const error = await res.json();
+                alert(`Error: ${error.detail || "Could not create institution"}`);
+            }
+        } catch (err) {
+            alert("Network error. Check server status.");
+        }
     });
-
-    if (!res.ok) {
-      alert("Error creating institution");
-      return;
-    }
-
-    institutionForm.reset();
-    await loadInstitutions();
-  });
 }
 
 // ================================
-// PLACEHOLDER ACTIONS (NEXT STEP)
+// DELETE (SOFT DELETE)
+// ================================
+async function deleteInstitution(id) {
+    if (!confirm("Are you sure you want to deactivate this institution?")) return;
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/institutions/${id}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        if (res.ok) {
+            loadInstitutions();
+        } else {
+            alert("Failed to delete. Ensure no active tickets are linked.");
+        }
+    } catch (err) {
+        console.error("Delete error:", err);
+    }
+}
+
+// ================================
+// UTILS
 // ================================
 function editInstitution(id) {
-  alert(`Edit institution ${id} - flow will be implemented next.`);
+    alert("Edit mode: Fetching institution data... (Implementation in progress)");
 }
 
-async function deleteInstitution(id) {
-  if (!confirm("Are you sure you want to delete this institution?")) return;
-
-  const res = await fetch(`${API_BASE_URL}/instituciones/${id}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-
-  if (!res.ok) {
-    alert("Error deleting institution");
-    return;
-  }
-
-  await loadInstitutions();
+function handleLogout() {
+    localStorage.clear();
+    window.location.href = "index.html";
 }
 
-// ================================
+function goTo(page) {
+    window.location.href = page;
+}
+
 // INIT
-// ================================
 document.addEventListener("DOMContentLoaded", loadInstitutions);
