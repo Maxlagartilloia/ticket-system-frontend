@@ -4,10 +4,20 @@
 
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 
-// 🔐 TOKEN UNIFICADO
-const token = localStorage.getItem("access_token");
+// 🔐 TOKEN UNIFICADO (REGLA ABSOLUTA)
+const token = localStorage.getItem("copiermaster_token");
+const role = localStorage.getItem("copiermaster_role");
 
+// ================================
+// AUTH GUARD
+// ================================
 if (!token) {
+  window.location.href = "index.html";
+}
+
+if (!role || !["admin", "supervisor"].includes(role)) {
+  alert("Access denied");
+  localStorage.clear();
   window.location.href = "index.html";
 }
 
@@ -27,6 +37,14 @@ function goTo(page) {
 }
 
 // ================================
+// PANEL TITLE
+// ================================
+const panelTitle = document.getElementById("panelTitle");
+if (panelTitle) {
+  panelTitle.textContent = role === "admin" ? "Admin Panel" : "Supervisor Panel";
+}
+
+// ================================
 // LOAD DASHBOARD STATS
 // ================================
 async function loadDashboardStats() {
@@ -37,7 +55,7 @@ async function loadDashboardStats() {
       }
     });
 
-    if (res.status === 401) {
+    if (res.status === 401 || res.status === 403) {
       localStorage.clear();
       window.location.href = "index.html";
       return;
