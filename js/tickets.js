@@ -45,15 +45,7 @@ async function loadTickets() {
       <td>${ticket.institution_id}</td>
       <td>${ticket.status}</td>
       <td>${ticket.priority}</td>
-      <td>${ticket.technician_id ?? "-"}</td>
-      <td>
-        <select onchange="updateStatus(${ticket.id}, this.value)">
-          <option value="">Change</option>
-          <option value="open">Open</option>
-          <option value="in_progress">In Progress</option>
-          <option value="closed">Closed</option>
-        </select>
-      </td>
+      <td>${new Date(ticket.created_at).toLocaleString()}</td>
     `;
 
     tbody.appendChild(row);
@@ -74,7 +66,7 @@ document.getElementById("ticketForm").addEventListener("submit", async (e) => {
     priority: document.getElementById("priority").value
   };
 
-  await fetch(`${API_BASE_URL}/tickets`, {
+  const res = await fetch(`${API_BASE_URL}/tickets`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -83,32 +75,17 @@ document.getElementById("ticketForm").addEventListener("submit", async (e) => {
     body: JSON.stringify(payload)
   });
 
-  e.target.reset();
-  loadTickets();
+  if (!res.ok) {
+    alert("Error creating ticket");
+    return;
+  }
+
+  document.getElementById("ticketForm").reset();
+  await loadTickets();
 });
-
-// ================================
-// UPDATE STATUS
-// ================================
-
-async function updateStatus(id, status) {
-  if (!status) return;
-
-  await fetch(`${API_BASE_URL}/tickets/${id}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ status })
-  });
-
-  loadTickets();
-}
 
 // ================================
 // INIT
 // ================================
 
 document.addEventListener("DOMContentLoaded", loadTickets);
-
