@@ -5,12 +5,11 @@ const errorDiv = document.getElementById("error");
 
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    errorDiv.textContent = "Validando acceso..."; 
+    errorDiv.textContent = "Conectando..."; 
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    // Enviamos como Form Data para OAuth2
     const params = new URLSearchParams();
     params.append('username', email);
     params.append('password', password);
@@ -18,7 +17,6 @@ loginForm.addEventListener("submit", async (e) => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
             body: params
         });
 
@@ -30,9 +28,9 @@ loginForm.addEventListener("submit", async (e) => {
             localStorage.setItem("copiermaster_user", data.full_name);
             window.location.href = "dashboard.html";
         } else {
-            errorDiv.textContent = data.detail || "Error al ingresar";
+            errorDiv.textContent = data.detail || "Fallo en la conexión";
         }
     } catch (err) {
-        errorDiv.textContent = "Servidor no disponible en este momento.";
+        errorDiv.textContent = "Error de red o bloqueo de seguridad.";
     }
 });
