@@ -19,7 +19,8 @@
       <img src="assets/logo.png" alt="CopierMaster">
     </div>
 
-    <div class="sidebar-title">Supervisor Panel</div>
+    <!-- TÍTULO DINÁMICO SEGÚN ROL -->
+    <div class="sidebar-title" id="panelTitle">Institutions</div>
 
     <ul class="sidebar-menu">
       <li onclick="goTo('dashboard.html')">Dashboard</li>
@@ -42,8 +43,8 @@
       <button class="logout-btn" onclick="logout()">Logout</button>
     </header>
 
-    <!-- CREATE INSTITUTION -->
-    <section class="card">
+    <!-- CREATE INSTITUTION (VISIBLE SOLO PARA ADMIN / SUPERVISOR DESDE JS) -->
+    <section class="card" id="createInstitutionSection">
       <h2>Create Institution</h2>
 
       <form id="institutionForm">
@@ -71,6 +72,8 @@
             <th>ID</th>
             <th>Name</th>
             <th>Address</th>
+            <!-- ACCIONES (EDIT / DELETE DESDE JS) -->
+            <th id="actionsHeader">Actions</th>
           </tr>
         </thead>
         <tbody id="institutionsTable"></tbody>
@@ -81,7 +84,7 @@
 
 </div>
 
+<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
 <script src="js/institutions.js"></script>
 </body>
 </html>
-
