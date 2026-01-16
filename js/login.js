@@ -1,36 +1,36 @@
+const API_URL = "https://ticket-system-backend-4h25.onrender.com";
+
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const correo = document.getElementById("correo").value.trim();
-  const password = document.getElementById("password").value.trim();
-  const errorDiv = document.getElementById("error");
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
-  errorDiv.textContent = "";
+    try {
+        const res = await fetch(`${API_URL}/auth/login`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ email, password })
+        });
 
-  try {
-    const response = await fetch(
-      "https://ticket-system-backend-4h25.onrender.com/login",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ correo, password })
-      }
-    );
+        if (!res.ok) {
+            alert("Credenciales incorrectas");
+            return;
+        }
 
-    const data = await response.json();
+        const data = await res.json();
 
-    if (!response.ok) {
-      errorDiv.textContent = data.detail || "Invalid credentials";
-      return;
+        // 🔐 GUARDAR TOKEN (ESTO ES LO QUE FALTABA)
+        localStorage.setItem("access_token", data.access_token);
+        localStorage.setItem("user_role", data.role);
+
+        // 👉 REDIRIGIR
+        window.location.href = "dashboard.html";
+
+    } catch (err) {
+        console.error(err);
+        alert("Error de conexión con el servidor");
     }
-
-    // ✅ Save token
-    localStorage.setItem("token", data.access_token);
-
-    // ✅ CORRECT REDIRECT
-    window.location.href = "dashboard.html";
-
-  } catch (err) {
-    errorDiv.textContent = "Server connection error";
-  }
 });
