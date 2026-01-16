@@ -4,10 +4,13 @@
   <meta charset="UTF-8" />
   <title>CopierMaster | Institutions</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
+
 <div class="app-container">
 
   <!-- SIDEBAR -->
@@ -19,43 +22,55 @@
     <div class="sidebar-title">Supervisor Panel</div>
 
     <ul class="sidebar-menu">
-      <li onclick="location.href='dashboard.html'">Dashboard</li>
+      <li onclick="goTo('dashboard.html')">Dashboard</li>
+      <li onclick="goTo('tickets.html')">Tickets</li>
       <li class="active">Institutions</li>
-      <li onclick="location.href='technicians.html'">Technicians</li>
-      <li onclick="location.href='tickets.html'">Tickets</li>
+      <li onclick="goTo('technicians.html')">Technicians</li>
+      <li onclick="goTo('reportes.html')">Reports</li>
     </ul>
 
     <div class="sidebar-footer">
-      CopierMaster C&G<br/>Technical Support
+      <small>CopierMaster C&amp;G<br>Technical Support</small>
     </div>
   </aside>
 
   <!-- MAIN -->
   <main class="main-content">
+
     <header class="dashboard-header">
-      <h1>Institutions Management</h1>
-      <button class="logout-btn" id="logoutBtn">Logout</button>
+      <h1>Institutions</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </header>
 
-    <!-- CREATE -->
+    <!-- CREATE INSTITUTION -->
     <section class="card">
       <h2>Create Institution</h2>
-      <form id="institutionForm" class="form-grid">
-        <input type="text" id="name" placeholder="Institution Name" required />
-        <input type="text" id="location" placeholder="Location" required />
-        <button type="submit">Create</button>
+
+      <form id="institutionForm">
+        <div class="form-row">
+          <label>Name</label>
+          <input type="text" id="name" required />
+        </div>
+
+        <div class="form-row">
+          <label>Address</label>
+          <input type="text" id="address" />
+        </div>
+
+        <button type="submit">Create Institution</button>
       </form>
     </section>
 
-    <!-- LIST -->
+    <!-- LIST INSTITUTIONS -->
     <section class="card">
-      <h2>Institutions List</h2>
-      <table class="data-table">
+      <h2>All Institutions</h2>
+
+      <table class="tickets-table">
         <thead>
           <tr>
-            <th>#</th>
+            <th>ID</th>
             <th>Name</th>
-            <th>Location</th>
+            <th>Address</th>
           </tr>
         </thead>
         <tbody id="institutionsTable"></tbody>
@@ -63,14 +78,10 @@
     </section>
 
   </main>
+
 </div>
 
 <script src="js/institutions.js"></script>
-<script>
-  document.getElementById("logoutBtn").onclick = () => {
-    localStorage.removeItem("token");
-    location.href = "index.html";
-  };
-</script>
 </body>
 </html>
+
