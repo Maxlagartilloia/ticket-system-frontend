@@ -2,10 +2,9 @@
 // LOGIN LOGIC - COPIERMASTER LEAD ENGINEER
 // ==========================================
 
-// ✅ URL DE TU BACKEND EN RENDER (Ajustada según tu configuración)
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 
-// 🔐 Guardia de Seguridad: Si ya hay sesión, saltar login
+// 🔐 Guardia de Seguridad
 document.addEventListener("DOMContentLoaded", () => {
     const token = localStorage.getItem("copiermaster_token");
     if (token) {
@@ -23,28 +22,29 @@ loginForm.addEventListener("submit", async (e) => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
+    // 🚀 CAMBIO CRÍTICO: Usamos URLSearchParams para enviar como FORM-DATA
+    const formData = new URLSearchParams();
+    formData.append("username", email); // OAuth2 requiere que el campo se llame 'username'
+    formData.append("password", password);
+
     try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/x-www-form-urlencoded" // El formato que espera el Backend
             },
-            body: JSON.stringify({ email, password })
+            body: formData
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            // 💾 ALMACENAMIENTO UNIFICADO PARA EL SISTEMA
             localStorage.setItem("copiermaster_token", data.access_token);
             localStorage.setItem("copiermaster_role", data.role);
             localStorage.setItem("copiermaster_user", email);
 
-            // 🚀 REDIRECCIÓN AUTOMÁTICA
-            // Nota: En CopierMaster el dashboard es unificado pero muestra datos por rol
             window.location.href = "dashboard.html";
         } else {
-            // Manejo de errores del Backend (401, 403, 422)
             errorDiv.textContent = data.detail || "Authentication failed";
             console.error("Auth status:", response.status);
         }
