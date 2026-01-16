@@ -1,52 +1,93 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Departments | CopierMaster</title>
-    <link rel="stylesheet" href="css/styles.css">
+  <meta charset="UTF-8" />
+  <title>Departments | CopierMaster</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
+
 <body>
 
-<div class="layout">
-    <aside class="sidebar">
-        <h2>Supervisor Panel</h2>
-        <nav>
-            <a href="dashboard.html">Dashboard</a>
-            <a href="institutions.html">Institutions</a>
-            <a href="departments.html" class="active">Departments</a>
-            <a href="tickets.html">Tickets</a>
-            <a href="technicians.html">Technicians</a>
-        </nav>
-    </aside>
+<div class="app-container">
 
-    <main class="content">
-        <h1>Departments</h1>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <img src="assets/logo.png" alt="CopierMaster">
+    </div>
 
-        <form id="department-form">
-            <select id="institution_id" required>
-                <option value="">Select Institution</option>
-            </select>
+    <!-- TÍTULO DINÁMICO SEGÚN ROL -->
+    <div class="sidebar-title" id="panelTitle">Departments</div>
 
-            <input type="text" id="name" placeholder="Department name" required>
+    <ul class="sidebar-menu">
+      <li onclick="goTo('dashboard.html')">Dashboard</li>
+      <li onclick="goTo('institutions.html')">Institutions</li>
+      <li class="active">Departments</li>
+      <li onclick="goTo('tickets.html')">Tickets</li>
+      <li onclick="goTo('technicians.html')">Technicians</li>
+      <li onclick="goTo('reportes.html')">Reports</li>
+    </ul>
 
-            <button type="submit">Create Department</button>
-        </form>
+    <div class="sidebar-footer">
+      <small>CopierMaster C&amp;G<br>Technical Support</small>
+    </div>
+  </aside>
 
-        <hr>
+  <!-- MAIN -->
+  <main class="main-content">
 
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Department</th>
-                    <th>Institution</th>
-                </tr>
-            </thead>
-            <tbody id="departments-table"></tbody>
-        </table>
-    </main>
+    <header class="dashboard-header">
+      <h1>Departments</h1>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </header>
+
+    <!-- CREATE DEPARTMENT (VISIBLE SOLO PARA ADMIN / SUPERVISOR DESDE JS) -->
+    <section class="card" id="createDepartmentSection">
+      <h2>Create Department</h2>
+
+      <form id="departmentForm">
+        <div class="form-row">
+          <label>Institution</label>
+          <select id="institutionSelect" required>
+            <option value="">Select Institution</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label>Department Name</label>
+          <input type="text" id="name" required />
+        </div>
+
+        <button type="submit">Create Department</button>
+      </form>
+    </section>
+
+    <!-- LIST DEPARTMENTS -->
+    <section class="card">
+      <h2>All Departments</h2>
+
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Department</th>
+            <th>Institution</th>
+            <!-- ACCIONES (DELETE DESDE JS) -->
+            <th id="actionsHeader">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="departmentsTable"></tbody>
+      </table>
+    </section>
+
+  </main>
+
 </div>
 
+<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
 <script src="js/departments.js"></script>
 </body>
 </html>
