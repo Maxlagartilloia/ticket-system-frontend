@@ -4,12 +4,19 @@
 
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 
+// 🔐 Si ya hay sesión activa, redirigir automáticamente
+const existingToken = localStorage.getItem("copiermaster_token");
+if (existingToken) {
+  window.location.href = "dashboard.html";
+}
+
 const loginForm = document.getElementById("loginForm");
 
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const email = document.getElementById("correo").value; // ✅ ID CORRECTO
+  // ✅ ID ALINEADO CON index.html
+  const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
 
   try {
@@ -30,11 +37,11 @@ loginForm.addEventListener("submit", async (e) => {
 
     const data = await res.json();
 
-    // 🔐 TOKEN UNIFICADO (CLAVE ÚNICA)
+    // 🔐 TOKEN UNIFICADO (REGLA ABSOLUTA)
     localStorage.setItem("copiermaster_token", data.access_token);
     localStorage.setItem("copiermaster_role", data.role);
 
-    // 🚀 REDIRECCIÓN
+    // 🚀 REDIRECCIÓN POST-LOGIN
     window.location.href = "dashboard.html";
 
   } catch (err) {
