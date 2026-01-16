@@ -5,10 +5,7 @@
   <title>CopierMaster | Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Global Styles -->
   <link rel="stylesheet" href="css/styles.css" />
-
-  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
@@ -22,12 +19,10 @@
       <img src="assets/logo.png" alt="CopierMaster">
     </div>
 
-    <div class="sidebar-title">
-      Supervisor Panel
-    </div>
+    <div class="sidebar-title">Supervisor Panel</div>
 
     <ul class="sidebar-menu">
-      <li class="active" onclick="goTo('dashboard.html')">Dashboard</li>
+      <li class="active">Dashboard</li>
       <li onclick="goTo('tickets.html')">Tickets</li>
       <li onclick="goTo('institutions.html')">Institutions</li>
       <li onclick="goTo('technicians.html')">Technicians</li>
@@ -35,14 +30,13 @@
     </ul>
 
     <div class="sidebar-footer">
-      <small>CopierMaster C&amp;G<br/>Technical Support</small>
+      <small>CopierMaster C&amp;G<br>Technical Support</small>
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
-  <main class="main-content">
+  <!-- MAIN -->
+  <main class="main-content dashboard">
 
-    <!-- HEADER -->
     <header class="dashboard-header">
       <h1>Support Overview</h1>
       <button class="logout-btn" onclick="logout()">Logout</button>
@@ -50,27 +44,43 @@
 
     <!-- METRICS -->
     <section class="metrics-grid">
-
       <div class="metric-card">
         <h3>Open Tickets</h3>
-        <span class="metric-number" id="openTickets">0</span>
+        <span class="metric-number" id="openTickets">—</span>
       </div>
 
       <div class="metric-card">
         <h3>In Progress</h3>
-        <span class="metric-number" id="inProgressTickets">0</span>
+        <span class="metric-number" id="inProgress">—</span>
       </div>
 
       <div class="metric-card">
         <h3>Resolved Today</h3>
-        <span class="metric-number" id="resolvedToday">0</span>
+        <span class="metric-number" id="resolvedToday">—</span>
       </div>
 
       <div class="metric-card">
         <h3>Institutions</h3>
-        <span class="metric-number" id="institutionsCount">0</span>
+        <span class="metric-number" id="institutions">—</span>
       </div>
+    </section>
 
+    <!-- RECENT TICKETS -->
+    <section class="card">
+      <h2>Recent Tickets</h2>
+
+      <table class="tickets-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Institution</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="recentTickets"></tbody>
+      </table>
     </section>
 
   </main>
