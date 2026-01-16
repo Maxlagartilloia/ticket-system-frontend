@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CopierMaster | Dashboard</title>
+  <title>Dashboard | CopierMaster</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <link rel="stylesheet" href="css/styles.css" />
@@ -13,7 +13,6 @@
 
 <div class="app-container">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="assets/logo.png" alt="CopierMaster">
@@ -25,6 +24,8 @@
       <li class="active">Dashboard</li>
       <li onclick="goTo('tickets.html')">Tickets</li>
       <li onclick="goTo('institutions.html')">Institutions</li>
+      <li onclick="goTo('departments.html')">Departments</li>
+      <li onclick="goTo('equipment.html')">Equipment</li>
       <li onclick="goTo('technicians.html')">Technicians</li>
       <li onclick="goTo('reportes.html')">Reports</li>
     </ul>
@@ -34,53 +35,33 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
-  <main class="main-content dashboard">
+  <main class="main-content">
 
     <header class="dashboard-header">
-      <h1>Support Overview</h1>
+      <h1>Dashboard</h1>
       <button class="logout-btn" onclick="logout()">Logout</button>
     </header>
 
-    <!-- METRICS -->
     <section class="metrics-grid">
       <div class="metric-card">
         <h3>Open Tickets</h3>
-        <span class="metric-number" id="openTickets">—</span>
+        <span id="openTickets">0</span>
       </div>
 
       <div class="metric-card">
         <h3>In Progress</h3>
-        <span class="metric-number" id="inProgress">—</span>
+        <span id="inProgress">0</span>
       </div>
 
       <div class="metric-card">
         <h3>Resolved Today</h3>
-        <span class="metric-number" id="resolvedToday">—</span>
+        <span id="resolvedToday">0</span>
       </div>
 
       <div class="metric-card">
         <h3>Institutions</h3>
-        <span class="metric-number" id="institutions">—</span>
+        <span id="institutions">0</span>
       </div>
-    </section>
-
-    <!-- RECENT TICKETS -->
-    <section class="card">
-      <h2>Recent Tickets</h2>
-
-      <table class="tickets-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Institution</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Created</th>
-          </tr>
-        </thead>
-        <tbody id="recentTickets"></tbody>
-      </table>
     </section>
 
   </main>
