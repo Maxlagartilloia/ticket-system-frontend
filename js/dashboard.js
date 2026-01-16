@@ -1,5 +1,5 @@
 // ================================
-// DASHBOARD - COPIERMASTER
+// DASHBOARD STATS - COPIERMASTER
 // ================================
 
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
@@ -9,29 +9,24 @@ if (!token) {
   window.location.href = "index.html";
 }
 
-// ================================
-// NAVIGATION
-// ================================
-
-function goTo(page) {
-  window.location.href = page;
-}
-
 function logout() {
   localStorage.clear();
   window.location.href = "index.html";
 }
 
-// ================================
-// LOAD DASHBOARD STATS
-// ================================
+function goTo(page) {
+  window.location.href = page;
+}
 
-async function loadStats() {
+async function loadDashboardStats() {
   const res = await fetch(`${API_BASE_URL}/reportes/dashboard`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { Authorization: `Bearer ${token}` }
   });
+
+  if (!res.ok) {
+    console.error("Failed to load dashboard stats");
+    return;
+  }
 
   const data = await res.json();
 
@@ -41,41 +36,4 @@ async function loadStats() {
   document.getElementById("institutions").textContent = data.institutions;
 }
 
-// ================================
-// LOAD RECENT TICKETS
-// ================================
-
-async function loadRecentTickets() {
-  const res = await fetch(`${API_BASE_URL}/tickets`, {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  });
-
-  const tickets = await res.json();
-  const tbody = document.getElementById("recentTickets");
-  tbody.innerHTML = "";
-
-  tickets.slice(0, 5).forEach(ticket => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${ticket.id}</td>
-      <td>${ticket.institution_id}</td>
-      <td>${ticket.status}</td>
-      <td>${ticket.priority}</td>
-      <td>${new Date(ticket.created_at).toLocaleDateString()}</td>
-    `;
-
-    tbody.appendChild(row);
-  });
-}
-
-// ================================
-// INIT
-// ================================
-
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadStats();
-  await loadRecentTickets();
-});
+document.addEventListener("DOMContentLoaded", loadDashboardStats);
