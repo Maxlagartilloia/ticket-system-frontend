@@ -1,6 +1,6 @@
-// ================================
-// TICKETS FLOW - COPIERMASTER
-// ================================
+// ==========================================
+// TICKETS LOGIC - COPIERMASTER LEAD ENGINEER
+// ==========================================
 
 const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
 
@@ -9,240 +9,167 @@ const token = localStorage.getItem("copiermaster_token");
 const role = localStorage.getItem("copiermaster_role");
 
 // ================================
-// AUTH GUARD
+// AUTH GUARD & INITIALIZATION
 // ================================
-if (!token) {
-  window.location.href = "index.html";
-}
-
-if (!role || !["admin", "supervisor", "technician", "client"].includes(role)) {
-  localStorage.clear();
-  window.location.href = "index.html";
+if (!token || !role) {
+    window.location.href = "index.html";
 }
 
 // ================================
-// NAV
-// ================================
-function goTo(page) {
-  window.location.href = page;
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "index.html";
-}
-
-// ================================
-// ELEMENTS
+// UI ELEMENTS
 // ================================
 const institutionSelect = document.getElementById("institutionSelect");
 const departmentSelect = document.getElementById("departmentSelect");
 const equipmentSelect = document.getElementById("equipmentSelect");
 const ticketsTable = document.getElementById("ticketsTable");
-const form = document.getElementById("ticketForm");
-const createTicketSection = document.getElementById("createTicketSection");
-const panelTitle = document.getElementById("panelTitle");
-const actionsHeader = document.getElementById("actionsHeader");
+const ticketForm = document.getElementById("ticketForm");
 
 // ================================
-// UI BY ROLE
-// ================================
-if (panelTitle) {
-  if (role === "admin") panelTitle.textContent = "Admin Tickets";
-  else if (role === "supervisor") panelTitle.textContent = "Supervisor Tickets";
-  else if (role === "technician") panelTitle.textContent = "Technician Tickets";
-  else panelTitle.textContent = "My Tickets";
-}
-
-// Solo CLIENT puede crear tickets
-if (role !== "client") {
-  if (createTicketSection) createTicketSection.style.display = "none";
-}
-
-// Acciones solo para supervisor / technician
-if (!["supervisor", "technician"].includes(role)) {
-  if (actionsHeader) actionsHeader.style.display = "none";
-}
-
-// ================================
-// LOAD INSTITUTIONS (CLIENT ONLY)
+// LOAD INSTITUTIONS (REFACTORIZADO)
 // ================================
 async function loadInstitutions() {
-  if (role !== "client") return;
+    if (role !== "client") return;
 
-  const res = await fetch(`${API_BASE_URL}/instituciones`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+    try {
+        // ✅ RUTA CORREGIDA: /institutions (No /instituciones)
+        const res = await fetch(`${API_BASE_URL}/institutions`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
 
-  if (res.status === 401 || res.status === 403) {
-    logout();
-    return;
-  }
+        if (res.status === 401) return handleLogout();
+        
+        const data = await res.json();
+        if (!institutionSelect) return;
 
-  const data = await res.json();
-
-  institutionSelect.innerHTML = "";
-  data.forEach(inst => {
-    const opt = document.createElement("option");
-    opt.value = inst.id;
-    opt.textContent = inst.name;
-    institutionSelect.appendChild(opt);
-  });
-
-  if (data.length) {
-    loadDepartments(data[0].id);
-  }
-}
-
-// ================================
-// LOAD DEPARTMENTS
-// ================================
-async function loadDepartments(institutionId) {
-  const res = await fetch(`${API_BASE_URL}/departments/institution/${institutionId}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  if (!res.ok) return;
-
-  const data = await res.json();
-
-  departmentSelect.innerHTML = "";
-  equipmentSelect.innerHTML = "";
-
-  data.forEach(dep => {
-    const opt = document.createElement("option");
-    opt.value = dep.id;
-    opt.textContent = dep.name;
-    departmentSelect.appendChild(opt);
-  });
-
-  if (data.length) {
-    loadEquipment(data[0].id);
-  }
-}
-
-// ================================
-// LOAD EQUIPMENT
-// ================================
-async function loadEquipment(departmentId) {
-  const res = await fetch(`${API_BASE_URL}/equipment/department/${departmentId}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
-
-  if (!res.ok) return;
-
-  const data = await res.json();
-
-  equipmentSelect.innerHTML = "";
-  data.forEach(eq => {
-    const opt = document.createElement("option");
-    opt.value = eq.id;
-    opt.textContent = eq.name;
-    equipmentSelect.appendChild(opt);
-  });
-}
-
-// ================================
-// EVENTS (CLIENT ONLY)
-// ================================
-if (role === "client") {
-  institutionSelect.addEventListener("change", e => {
-    loadDepartments(e.target.value);
-  });
-
-  departmentSelect.addEventListener("change", e => {
-    loadEquipment(e.target.value);
-  });
-
-  // ================================
-  // CREATE TICKET
-  // ================================
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
-
-    const payload = {
-      title: document.getElementById("title").value,
-      description: document.getElementById("description").value,
-      priority: document.getElementById("priority").value,
-      institution_id: institutionSelect.value,
-      equipment_id: equipmentSelect.value || null
-    };
-
-    const res = await fetch(`${API_BASE_URL}/tickets`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      alert("Error creating ticket");
-      return;
+        institutionSelect.innerHTML = '<option value="">Select Institution</option>';
+        data.forEach(inst => {
+            const opt = document.createElement("option");
+            opt.value = inst.id;
+            opt.textContent = inst.name;
+            institutionSelect.appendChild(opt);
+        });
+    } catch (err) {
+        console.error("Error loading institutions:", err);
     }
-
-    form.reset();
-    await loadTickets();
-  });
 }
 
 // ================================
-// LOAD TICKETS (ALL ROLES)
+// LOAD DEPARTMENTS & EQUIPMENT
+// ================================
+async function loadDepartments(instId) {
+    if (!instId) return;
+    const res = await fetch(`${API_BASE_URL}/departments/institution/${instId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    departmentSelect.innerHTML = '<option value="">Select Department</option>';
+    data.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d.id;
+        opt.textContent = d.name;
+        departmentSelect.appendChild(opt);
+    });
+}
+
+async function loadEquipment(deptId) {
+    if (!deptId) return;
+    const res = await fetch(`${API_BASE_URL}/equipment/department/${deptId}`, {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const data = await res.json();
+    equipmentSelect.innerHTML = '<option value="">Select Equipment</option>';
+    data.forEach(e => {
+        const opt = document.createElement("option");
+        opt.value = e.id;
+        opt.textContent = `${e.name} (${e.model})`;
+        equipmentSelect.appendChild(opt);
+    });
+}
+
+// ================================
+// TICKETS MANAGEMENT
 // ================================
 async function loadTickets() {
-  const res = await fetch(`${API_BASE_URL}/tickets`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+    try {
+        const res = await fetch(`${API_BASE_URL}/tickets`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const tickets = await res.json();
+        
+        if (!ticketsTable) return;
+        ticketsTable.innerHTML = "";
 
-  if (res.status === 401 || res.status === 403) {
-    logout();
-    return;
-  }
+        tickets.forEach(t => {
+            const row = document.createElement("tr");
+            
+            // Lógica de acciones dinámicas por rol
+            let actionBtn = "";
+            if (role === "supervisor" && t.status === "open") {
+                actionBtn = `<button class="btn-action" onclick="assignFlow(${t.id})">Assign</button>`;
+            } else if (role === "technician" && t.status === "in_progress") {
+                actionBtn = `<button class="btn-action" onclick="statusFlow(${t.id}, 'closed')">Close</button>`;
+            }
 
-  const data = await res.json();
-
-  ticketsTable.innerHTML = "";
-
-  data.forEach(t => {
-    const row = document.createElement("tr");
-
-    let actions = "";
-    if (role === "technician") {
-      actions = `<button onclick="changeStatus(${t.id})">Change Status</button>`;
+            row.innerHTML = `
+                <td>#${t.id}</td>
+                <td>${t.title}</td>
+                <td><span class="status-${t.status}">${t.status.toUpperCase()}</span></td>
+                <td>${t.priority}</td>
+                <td>${actionBtn}</td>
+            `;
+            ticketsTable.appendChild(row);
+        });
+    } catch (err) {
+        console.error("Error loading tickets:", err);
     }
-    if (role === "supervisor") {
-      actions = `<button onclick="assignTechnician(${t.id})">Assign</button>`;
-    }
-
-    row.innerHTML = `
-      <td>${t.id}</td>
-      <td>${t.title}</td>
-      <td>${t.status}</td>
-      <td>${t.priority}</td>
-      <td>${t.institution_id}</td>
-      ${["supervisor", "technician"].includes(role) ? `<td>${actions}</td>` : ""}
-    `;
-
-    ticketsTable.appendChild(row);
-  });
 }
 
 // ================================
-// PLACEHOLDER ACTIONS (NEXT STEP)
+// CREATE TICKET (POST)
 // ================================
-function assignTechnician(ticketId) {
-  alert("Assign technician flow will be implemented next.");
+if (ticketForm) {
+    ticketForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            title: document.getElementById("title").value,
+            description: document.getElementById("description").value,
+            priority: document.getElementById("priority").value,
+            institution_id: parseInt(institutionSelect.value),
+            equipment_id: equipmentSelect.value ? parseInt(equipmentSelect.value) : null
+        };
+
+        const res = await fetch(`${API_BASE_URL}/tickets`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert("Ticket created successfully!");
+            ticketForm.reset();
+            loadTickets();
+        } else {
+            alert("Failed to create ticket");
+        }
+    });
 }
 
-function changeStatus(ticketId) {
-  alert("Change status flow will be implemented next.");
+// ================================
+// UTILS
+// ================================
+function handleLogout() {
+    localStorage.clear();
+    window.location.href = "index.html";
 }
 
-// ================================
-// INIT
-// ================================
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadInstitutions();
-  await loadTickets();
+// Listeners para selectores jerárquicos
+if (institutionSelect) institutionSelect.addEventListener("change", (e) => loadDepartments(e.target.value));
+if (departmentSelect) departmentSelect.addEventListener("change", (e) => loadEquipment(e.target.value));
+
+document.addEventListener("DOMContentLoaded", () => {
+    loadInstitutions();
+    loadTickets();
 });
