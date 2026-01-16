@@ -1,107 +1,54 @@
-// ================================
-// DEPARTMENTS - COPIERMASTER
-// ================================
+const API = "https://TU_BACKEND_URL"; // misma que usas en tickets.js
 
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
-const token = localStorage.getItem("copiermaster_token");
-
-if (!token) {
-  window.location.href = "index.html";
-}
-
-// ================================
-// NAV
-// ================================
-
-function goTo(page) {
-  window.location.href = page;
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "index.html";
-}
-
-// ================================
-// LOAD INSTITUTIONS
-// ================================
+const institutionSelect = document.getElementById("institution_id");
+const table = document.getElementById("departments-table");
+const form = document.getElementById("department-form");
 
 async function loadInstitutions() {
-  const res = await fetch(`${API_BASE_URL}/instituciones`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+    const res = await fetch(`${API}/instituciones`);
+    const data = await res.json();
 
-  const institutions = await res.json();
-  const select = document.getElementById("institutionSelect");
-  select.innerHTML = "";
-
-  institutions.forEach(inst => {
-    const option = document.createElement("option");
-    option.value = inst.id;
-    option.textContent = inst.name;
-    select.appendChild(option);
-  });
+    data.forEach(inst => {
+        const option = document.createElement("option");
+        option.value = inst.id;
+        option.textContent = inst.name;
+        institutionSelect.appendChild(option);
+    });
 }
-
-// ================================
-// LOAD DEPARTMENTS
-// ================================
 
 async function loadDepartments() {
-  const res = await fetch(`${API_BASE_URL}/departments`, {
-    headers: { Authorization: `Bearer ${token}` }
-  });
+    table.innerHTML = "";
+    const res = await fetch(`${API}/departments`);
+    const data = await res.json();
 
-  const data = await res.json();
-  const tbody = document.getElementById("departmentsTable");
-  tbody.innerHTML = "";
-
-  data.forEach(dep => {
-    const row = document.createElement("tr");
-    row.innerHTML = `
-      <td>${dep.id}</td>
-      <td>${dep.name}</td>
-      <td>${dep.institution_name}</td>
-    `;
-    tbody.appendChild(row);
-  });
+    data.forEach(dep => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${dep.id}</td>
+            <td>${dep.name}</td>
+            <td>${dep.institution.name}</td>
+        `;
+        table.appendChild(tr);
+    });
 }
 
-// ================================
-// CREATE DEPARTMENT
-// ================================
+form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-document.getElementById("departmentForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
+    const payload = {
+        name: document.getElementById("name").value,
+        institution_id: institutionSelect.value
+    };
 
-  const payload = {
-    name: document.getElementById("departmentName").value,
-    institution_id: document.getElementById("institutionSelect").value
-  };
+    await fetch(`${API}/departments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
 
-  const res = await fetch(`${API_BASE_URL}/departments`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    alert("Error creating department");
-    return;
-  }
-
-  document.getElementById("departmentForm").reset();
-  await loadDepartments();
+    form.reset();
+    loadDepartments();
 });
 
-// ================================
-// INIT
-// ================================
-
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadInstitutions();
-  await loadDepartments();
-});
+loadInstitutions();
+loadDepartments();
