@@ -47,29 +47,37 @@
       <h2>Create Ticket</h2>
 
       <form id="ticketForm">
-        <div class="form-grid">
+        <div class="form-row">
+          <label>Institution ID</label>
+          <input type="number" id="institution_id" required />
+        </div>
 
-          <input type="number" id="institution_id" placeholder="Institution ID" required />
-          <input type="text" id="equipment" placeholder="Equipment (optional)" />
+        <div class="form-row">
+          <label>Equipment</label>
+          <input type="text" id="equipment" required />
+        </div>
 
-          <select id="priority" required>
-            <option value="">Priority</option>
+        <div class="form-row">
+          <label>Description</label>
+          <textarea id="description" required></textarea>
+        </div>
+
+        <div class="form-row">
+          <label>Priority</label>
+          <select id="priority">
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
-
-          <textarea id="description" placeholder="Problem description" required></textarea>
-
         </div>
 
-        <button type="submit" class="btn-primary">Create Ticket</button>
+        <button type="submit">Create Ticket</button>
       </form>
     </section>
 
-    <!-- LIST -->
+    <!-- LIST TICKETS -->
     <section class="card">
-      <h2>Tickets</h2>
+      <h2>All Tickets</h2>
 
       <table class="tickets-table">
         <thead>
@@ -78,8 +86,7 @@
             <th>Institution</th>
             <th>Status</th>
             <th>Priority</th>
-            <th>Technician</th>
-            <th>Action</th>
+            <th>Created</th>
           </tr>
         </thead>
         <tbody id="ticketsTable"></tbody>
