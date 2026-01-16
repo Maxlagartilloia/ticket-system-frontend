@@ -4,10 +4,13 @@
   <meta charset="UTF-8" />
   <title>CopierMaster | Tickets</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
+
 <div class="app-container">
 
   <!-- SIDEBAR -->
@@ -19,14 +22,15 @@
     <div class="sidebar-title">Supervisor Panel</div>
 
     <ul class="sidebar-menu">
-      <li onclick="location.href='dashboard.html'">Dashboard</li>
-      <li onclick="location.href='institutions.html'">Institutions</li>
-      <li onclick="location.href='technicians.html'">Technicians</li>
+      <li onclick="goTo('dashboard.html')">Dashboard</li>
       <li class="active">Tickets</li>
+      <li onclick="goTo('institutions.html')">Institutions</li>
+      <li onclick="goTo('technicians.html')">Technicians</li>
+      <li onclick="goTo('reportes.html')">Reports</li>
     </ul>
 
     <div class="sidebar-footer">
-      CopierMaster C&G<br/>Technical Support
+      <small>CopierMaster C&amp;G<br>Technical Support</small>
     </div>
   </aside>
 
@@ -35,58 +39,47 @@
 
     <header class="dashboard-header">
       <h1>Ticket Management</h1>
-      <button class="logout-btn" id="logoutBtn">Logout</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
     </header>
 
     <!-- CREATE TICKET -->
     <section class="card">
       <h2>Create Ticket</h2>
 
-      <form id="ticketForm" class="form-grid">
+      <form id="ticketForm">
+        <div class="form-grid">
 
-        <select id="institution" required>
-          <option value="">Select Institution</option>
-          <option>Municipality</option>
-          <option>Hospital</option>
-          <option>University</option>
-        </select>
+          <input type="number" id="institution_id" placeholder="Institution ID" required />
+          <input type="text" id="equipment" placeholder="Equipment (optional)" />
 
-        <input type="text" id="department" placeholder="Department" required />
+          <select id="priority" required>
+            <option value="">Priority</option>
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
 
-        <input type="text" id="equipment" placeholder="Equipment (e.g. Ricoh IM 7000)" required />
+          <textarea id="description" placeholder="Problem description" required></textarea>
 
-        <textarea id="description" placeholder="Problem description" required></textarea>
+        </div>
 
-        <select id="priority" required>
-          <option value="">Priority</option>
-          <option>Low</option>
-          <option>Medium</option>
-          <option>High</option>
-        </select>
-
-        <select id="technician" required>
-          <option value="">Assign Technician</option>
-          <option>Juan Torres</option>
-          <option>Maria Salazar</option>
-        </select>
-
-        <button type="submit">Create Ticket</button>
+        <button type="submit" class="btn-primary">Create Ticket</button>
       </form>
     </section>
 
-    <!-- TICKETS LIST -->
+    <!-- LIST -->
     <section class="card">
-      <h2>Tickets List</h2>
+      <h2>Tickets</h2>
 
-      <table class="data-table">
+      <table class="tickets-table">
         <thead>
           <tr>
-            <th>#</th>
+            <th>ID</th>
             <th>Institution</th>
-            <th>Equipment</th>
-            <th>Priority</th>
             <th>Status</th>
+            <th>Priority</th>
             <th>Technician</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="ticketsTable"></tbody>
@@ -94,14 +87,9 @@
     </section>
 
   </main>
+
 </div>
 
 <script src="js/tickets.js"></script>
-<script>
-  document.getElementById("logoutBtn").onclick = () => {
-    localStorage.removeItem("token");
-    location.href = "index.html";
-  };
-</script>
 </body>
 </html>
