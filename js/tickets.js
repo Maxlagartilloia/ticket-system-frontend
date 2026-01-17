@@ -1,175 +1,127 @@
-// ==========================================
-// TICKETS LOGIC - COPIERMASTER LEAD ENGINEER
-// ==========================================
+const SUPABASE_URL = 'https://esxojlfcjwtahkcrqxkd.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y'; 
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
+// Cache local para nombres (Evita muchas consultas)
+let institutionsMap = {};
+let profilesMap = {};
 
-// 🔐 AUTH DATA (REGLA ABSOLUTA)
-const token = localStorage.getItem("copiermaster_token");
-const role = localStorage.getItem("copiermaster_role");
+async function init() {
+    // 1. Verificar Sesión
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return window.location.href = "index.html";
 
-// ================================
-// AUTH GUARD & INITIALIZATION
-// ================================
-if (!token || !role) {
-    window.location.href = "index.html";
+    // 2. Cargar Datos Auxiliares (Dropdowns)
+    await loadDropdowns();
+
+    // 3. Cargar Tickets
+    await loadTickets();
 }
 
-// ================================
-// UI ELEMENTS
-// ================================
-const institutionSelect = document.getElementById("institutionSelect");
-const departmentSelect = document.getElementById("departmentSelect");
-const equipmentSelect = document.getElementById("equipmentSelect");
-const ticketsTable = document.getElementById("ticketsTable");
-const ticketForm = document.getElementById("ticketForm");
-
-// ================================
-// LOAD INSTITUTIONS (REFACTORIZADO)
-// ================================
-async function loadInstitutions() {
-    if (role !== "client") return;
-
-    try {
-        // ✅ RUTA CORREGIDA: /institutions (No /instituciones)
-        const res = await fetch(`${API_BASE_URL}/institutions`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (res.status === 401) return handleLogout();
-        
-        const data = await res.json();
-        if (!institutionSelect) return;
-
-        institutionSelect.innerHTML = '<option value="">Select Institution</option>';
-        data.forEach(inst => {
-            const opt = document.createElement("option");
-            opt.value = inst.id;
-            opt.textContent = inst.name;
-            institutionSelect.appendChild(opt);
-        });
-    } catch (err) {
-        console.error("Error loading institutions:", err);
-    }
-}
-
-// ================================
-// LOAD DEPARTMENTS & EQUIPMENT
-// ================================
-async function loadDepartments(instId) {
-    if (!instId) return;
-    const res = await fetch(`${API_BASE_URL}/departments/institution/${instId}`, {
-        headers: { "Authorization": `Bearer ${token}` }
+async function loadDropdowns() {
+    // Cargar Instituciones
+    const { data: insts } = await supabase.from('institutions').select('id, name');
+    const instSelect = document.getElementById('institutionSelect');
+    instSelect.innerHTML = '<option value="">Seleccione Cliente...</option>';
+    
+    insts?.forEach(i => {
+        institutionsMap[i.id] = i.name; // Guardar en mapa
+        instSelect.innerHTML += `<option value="${i.id}">${i.name}</option>`;
     });
-    const data = await res.json();
-    departmentSelect.innerHTML = '<option value="">Select Department</option>';
-    data.forEach(d => {
-        const opt = document.createElement("option");
-        opt.value = d.id;
-        opt.textContent = d.name;
-        departmentSelect.appendChild(opt);
+
+    // Cargar Técnicos (Perfiles)
+    const { data: techs } = await supabase.from('profiles').select('id, full_name, email');
+    const techSelect = document.getElementById('technicianSelect');
+    techSelect.innerHTML = '<option value="">-- Sin Asignar --</option>';
+
+    techs?.forEach(t => {
+        profilesMap[t.id] = t.full_name || t.email; // Guardar en mapa
+        techSelect.innerHTML += `<option value="${t.id}">${t.full_name || t.email}</option>`;
     });
 }
 
-async function loadEquipment(deptId) {
-    if (!deptId) return;
-    const res = await fetch(`${API_BASE_URL}/equipment/department/${deptId}`, {
-        headers: { "Authorization": `Bearer ${token}` }
-    });
-    const data = await res.json();
-    equipmentSelect.innerHTML = '<option value="">Select Equipment</option>';
-    data.forEach(e => {
-        const opt = document.createElement("option");
-        opt.value = e.id;
-        opt.textContent = `${e.name} (${e.model})`;
-        equipmentSelect.appendChild(opt);
-    });
-}
-
-// ================================
-// TICKETS MANAGEMENT
-// ================================
 async function loadTickets() {
-    try {
-        const res = await fetch(`${API_BASE_URL}/tickets`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        const tickets = await res.json();
-        
-        if (!ticketsTable) return;
-        ticketsTable.innerHTML = "";
+    const { data: tickets, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-        tickets.forEach(t => {
-            const row = document.createElement("tr");
-            
-            // Lógica de acciones dinámicas por rol
-            let actionBtn = "";
-            if (role === "supervisor" && t.status === "open") {
-                actionBtn = `<button class="btn-action" onclick="assignFlow(${t.id})">Assign</button>`;
-            } else if (role === "technician" && t.status === "in_progress") {
-                actionBtn = `<button class="btn-action" onclick="statusFlow(${t.id}, 'closed')">Close</button>`;
-            }
+    const tbody = document.getElementById('ticketsTable');
+    tbody.innerHTML = '';
 
-            row.innerHTML = `
-                <td>#${t.id}</td>
-                <td>${t.title}</td>
-                <td><span class="status-${t.status}">${t.status.toUpperCase()}</span></td>
-                <td>${t.priority}</td>
-                <td>${actionBtn}</td>
-            `;
-            ticketsTable.appendChild(row);
-        });
-    } catch (err) {
-        console.error("Error loading tickets:", err);
+    if (!tickets || tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hay tickets registrados.</td></tr>';
+        return;
     }
-}
 
-// ================================
-// CREATE TICKET (POST)
-// ================================
-if (ticketForm) {
-    ticketForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const payload = {
-            title: document.getElementById("title").value,
-            description: document.getElementById("description").value,
-            priority: document.getElementById("priority").value,
-            institution_id: parseInt(institutionSelect.value),
-            equipment_id: equipmentSelect.value ? parseInt(equipmentSelect.value) : null
-        };
+    tickets.forEach(t => {
+        // Traducir IDs a Nombres usando los mapas
+        const clientName = institutionsMap[t.institution_id] || 'Desconocido';
+        const techName = profilesMap[t.assigned_to] || '<span style="color:#999">Pendiente</span>';
+        
+        // Estilo de Estado
+        const statusBadge = t.status === 'open' 
+            ? `<span style="background:#e8f5e9; color:#2e7d32; padding:5px 10px; border-radius:12px; font-weight:bold; font-size:12px;">ABIERTO</span>`
+            : `<span style="background:#eee; color:#666; padding:5px 10px; border-radius:12px; font-size:12px;">CERRADO</span>`;
 
-        const res = await fetch(`${API_BASE_URL}/tickets`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-        });
+        // Botón de Acción
+        const actionBtn = t.status === 'open'
+            ? `<button class="btn btn-primary btn-sm" onclick="closeTicket(${t.id})">Cerrar</button>`
+            : `<span style="color:#aaa;">-</span>`;
 
-        if (res.ok) {
-            alert("Ticket created successfully!");
-            ticketForm.reset();
-            loadTickets();
-        } else {
-            alert("Failed to create ticket");
-        }
+        tbody.innerHTML += `
+            <tr>
+                <td>#${t.id}</td>
+                <td><strong>${t.title}</strong><br><small style="color:#777">${t.priority.toUpperCase()}</small></td>
+                <td>${clientName}</td>
+                <td>${statusBadge}</td>
+                <td>${techName}</td>
+                <td>${actionBtn}</td>
+            </tr>
+        `;
     });
 }
 
-// ================================
-// UTILS
-// ================================
-function handleLogout() {
-    localStorage.clear();
-    window.location.href = "index.html";
+// CREAR TICKET
+document.getElementById('ticketForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const title = document.getElementById('title').value;
+    const priority = document.getElementById('priority').value;
+    const institution_id = document.getElementById('institutionSelect').value;
+    const assigned_to = document.getElementById('technicianSelect').value || null; // Null si está vacío
+    const description = document.getElementById('description').value;
+
+    const { error } = await supabase.from('tickets').insert([{
+        title, priority, institution_id, assigned_to, description, status: 'open'
+    }]);
+
+    if (error) {
+        alert("Error al crear ticket: " + error.message);
+    } else {
+        alert("Ticket creado exitosamente");
+        document.getElementById('ticketForm').reset();
+        loadTickets(); // Recargar tabla
+    }
+});
+
+// CERRAR TICKET
+window.closeTicket = async (id) => {
+    if(!confirm("¿Marcar este ticket como resuelto?")) return;
+
+    const { error } = await supabase
+        .from('tickets')
+        .update({ status: 'closed' })
+        .eq('id', id);
+
+    if (!error) loadTickets();
 }
 
-// Listeners para selectores jerárquicos
-if (institutionSelect) institutionSelect.addEventListener("change", (e) => loadDepartments(e.target.value));
-if (departmentSelect) departmentSelect.addEventListener("change", (e) => loadEquipment(e.target.value));
-
-document.addEventListener("DOMContentLoaded", () => {
-    loadInstitutions();
-    loadTickets();
+// LOGOUT
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.href = "index.html";
 });
+
+// INICIAR
+document.addEventListener("DOMContentLoaded", init);
