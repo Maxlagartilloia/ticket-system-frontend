@@ -1,15 +1,15 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"><title>Clientes | CopierMaster</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilo para la lista de departamentos dentro del modal */
         .dept-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
         .dept-item { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
         .dept-item:last-child { border-bottom: none; }
-        .dept-item:nth-child(even) { background: #f8fafc; }
         .btn-mini-del { color: #ef4444; cursor: pointer; border: none; background: none; font-size: 14px; }
     </style>
 </head>
@@ -33,15 +33,14 @@
         </header>
 
         <div class="scroll-area">
-            
             <div class="card">
                 <h3 style="margin-top:0; color:var(--text-main);"><i class="fas fa-plus-circle"></i> Nuevo Cliente</h3>
                 <form id="instForm">
                     <div class="actions-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
-                        <input id="name" type="text" placeholder="Nombre Comercial (Ej: GAD MUNICIPAL QUININDE)" required style="margin-bottom:0;">
+                        <input id="name" type="text" placeholder="Nombre Comercial" required style="margin-bottom:0;">
                         <input id="phone" type="text" placeholder="Teléfono" style="margin-bottom:0;">
                         <input id="address" type="text" placeholder="Dirección" style="margin-bottom:0;">
-                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height: 100%;">Guardar</button>
+                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:100%;">Guardar</button>
                     </div>
                 </form>
             </div>
@@ -53,7 +52,6 @@
                         <i class="fas fa-key"></i> Crear Accesos
                     </button>
                 </div>
-
                 <div style="overflow-x:auto;">
                     <table style="width:100%;">
                         <thead>
@@ -61,7 +59,8 @@
                                 <th style="width:50px;">ID</th>
                                 <th>Empresa</th>
                                 <th>Contacto</th>
-                                <th>Estructura Organizacional</th> <th style="text-align:center;">Acciones</th>
+                                <th>Estructura Organizacional</th>
+                                <th style="text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="instTable">
@@ -75,22 +74,14 @@
 
     <div id="deptModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 class="modal-title" style="border-bottom:none; margin-bottom:10px;">
-                Estructura: <span id="modalInstName" style="color:var(--sidebar-active);">...</span>
-            </h3>
-            <p style="color:#64748b; font-size:13px; margin-top:0;">Agrega las áreas de este cliente (Ej: Financiero, Jurídico).</p>
-
+            <h3 class="modal-title">Estructura: <span id="modalInstName">...</span></h3>
             <div style="display:flex; gap:10px; margin-bottom:20px; background:#f1f5f9; padding:15px; border-radius:8px;">
-                <input id="newDeptName" type="text" placeholder="Nombre del Área (Ej: RRHH)" style="margin:0; background:white;">
+                <input id="newDeptName" type="text" placeholder="Nombre del Área" style="margin:0; background:white;">
                 <button onclick="addDepartment()" class="btn" style="width:auto; background:#0f172a; color:white;"><i class="fas fa-plus"></i></button>
             </div>
-
-            <label style="font-size:12px; text-transform:uppercase; font-weight:bold; color:#94a3b8;">Áreas Existentes:</label>
-            <ul id="deptList" class="dept-list">
-                </ul>
-
+            <ul id="deptList" class="dept-list"></ul>
             <div style="margin-top:20px; text-align:right;">
-                <button class="btn-cancel" onclick="closeDeptModal()" style="width:auto; padding:10px 20px;">Cerrar</button>
+                <button class="btn-cancel" onclick="closeDeptModal()">Cerrar</button>
             </div>
         </div>
     </div>
@@ -104,134 +95,72 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/security.js"></script>
     <script>
         const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
-        let currentInstId = null; // ID del cliente que estamos editando
+        let currentInstId = null;
 
-        // 1. CARGAR CLIENTES
         async function loadInstitutions() {
             const { data: insts } = await sb.from('institutions').select('*').order('id', {ascending:false});
-            
-            // Traer conteo de departamentos por cliente (para mostrar en la tabla)
             const { data: depts } = await sb.from('departments').select('institution_id');
             const deptCounts = {};
             depts?.forEach(d => deptCounts[d.institution_id] = (deptCounts[d.institution_id] || 0) + 1);
 
             const tb = document.getElementById('instTable');
             tb.innerHTML = '';
-
-            if(!insts || insts.length === 0) {
-                tb.innerHTML = '<tr><td colspan="5" style="text-align:center;">No hay clientes registrados.</td></tr>';
-                return;
-            }
+            if(!insts || !insts.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;">Sin datos</td></tr>'; return; }
 
             insts.forEach(i => {
-                const count = deptCounts[i.id] || 0;
-                tb.innerHTML += `
-                    <tr>
-                        <td><b>${i.id}</b></td>
-                        <td style="font-weight:600; color:#1e293b;">${i.name}</td>
-                        <td style="font-size:13px; color:#64748b;">${i.phone || '-'}</td>
-                        <td>
-                            <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="width:auto; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-size:12px; padding:6px 12px;">
-                                <i class="fas fa-sitemap"></i> Administrar Áreas (${count})
-                            </button>
-                        </td>
-                        <td style="text-align:center;">
-                            <button onclick="viewUsers(${i.id}, '${i.name}')" title="Ver Usuarios" style="cursor:pointer; border:none; background:none; color:#64748b;"><i class="fas fa-users"></i></button>
-                            <button onclick="delInst(${i.id})" title="Eliminar" style="cursor:pointer; border:none; background:none; color:#ef4444; margin-left:10px;"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>`;
+                tb.innerHTML += `<tr>
+                    <td><b>${i.id}</b></td>
+                    <td style="font-weight:600;">${i.name}</td>
+                    <td>${i.phone || '-'}</td>
+                    <td><button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="width:auto; background:#e0f2fe; color:#0369a1; padding:6px 12px; font-size:12px;">Administrar Áreas (${deptCounts[i.id] || 0})</button></td>
+                    <td style="text-align:center;">
+                        <button onclick="viewUsers(${i.id}, '${i.name}')" style="cursor:pointer; border:none; background:none;"><i class="fas fa-users"></i></button>
+                        <button onclick="delInst(${i.id})" style="cursor:pointer; border:none; background:none; color:red; margin-left:10px;"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
             });
         }
 
-        // 2. CREAR CLIENTE
         document.getElementById('instForm').addEventListener('submit', async(e) => {
             e.preventDefault();
-            const name = document.getElementById('name').value;
-            const phone = document.getElementById('phone').value;
-            const address = document.getElementById('address').value;
-
-            const { error } = await sb.from('institutions').insert([{ name, phone, address }]);
-            if(error) alert("Error: " + error.message);
-            else { e.target.reset(); loadInstitutions(); }
+            await sb.from('institutions').insert([{ name: document.getElementById('name').value, phone: document.getElementById('phone').value, address: document.getElementById('address').value }]);
+            e.target.reset(); loadInstitutions();
         });
 
-        // 3. GESTIÓN DE DEPARTAMENTOS (MODAL)
         window.openDeptModal = async (id, name) => {
-            currentInstId = id;
-            document.getElementById('modalInstName').innerText = name;
-            document.getElementById('deptModal').style.display = 'flex';
-            loadDepartmentsInternal(id);
+            currentInstId = id; document.getElementById('modalInstName').innerText = name;
+            document.getElementById('deptModal').style.display = 'flex'; loadDepartmentsInternal(id);
         }
-
-        window.closeDeptModal = () => {
-            document.getElementById('deptModal').style.display = 'none';
-            loadInstitutions(); // Recargar tabla principal para actualizar contador
-        }
+        window.closeDeptModal = () => { document.getElementById('deptModal').style.display = 'none'; loadInstitutions(); }
 
         async function loadDepartmentsInternal(instId) {
-            const list = document.getElementById('deptList');
-            list.innerHTML = '<li style="padding:10px; color:#94a3b8;">Cargando áreas...</li>';
-
+            const list = document.getElementById('deptList'); list.innerHTML = '<li>Cargando...</li>';
             const { data } = await sb.from('departments').select('*').eq('institution_id', instId).order('name');
             list.innerHTML = '';
-
-            if(!data || data.length === 0) {
-                list.innerHTML = '<li style="padding:15px; text-align:center; color:#cbd5e1; font-style:italic;">No hay departamentos creados aún.</li>';
-                return;
-            }
-
-            data.forEach(d => {
-                list.innerHTML += `
-                    <li class="dept-item">
-                        <span style="font-weight:500; color:#334155;">${d.name}</span>
-                        <button onclick="deleteDept(${d.id})" class="btn-mini-del" title="Eliminar Área"><i class="fas fa-times"></i></button>
-                    </li>`;
-            });
+            if(!data.length) list.innerHTML = '<li style="padding:15px; text-align:center; color:#ccc;">Sin áreas</li>';
+            data.forEach(d => { list.innerHTML += `<li class="dept-item"><span>${d.name}</span> <button onclick="deleteDept(${d.id})" class="btn-mini-del"><i class="fas fa-times"></i></button></li>`; });
         }
 
         window.addDepartment = async () => {
-            const input = document.getElementById('newDeptName');
-            const name = input.value.trim();
-            if(!name) return;
-
-            const { error } = await sb.from('departments').insert([{ 
-                name: name, 
-                institution_id: currentInstId 
-            }]);
-
-            if(error) alert("Error: " + error.message);
-            else {
-                input.value = '';
-                loadDepartmentsInternal(currentInstId); // Recargar solo la lista del modal
-            }
+            const val = document.getElementById('newDeptName').value.trim();
+            if(!val) return;
+            await sb.from('departments').insert([{ name: val, institution_id: currentInstId }]);
+            document.getElementById('newDeptName').value = ''; loadDepartmentsInternal(currentInstId);
         }
 
-        window.deleteDept = async (deptId) => {
-            if(!confirm("¿Borrar esta área? (Cuidado si tiene equipos asignados)")) return;
-            await sb.from('departments').delete().eq('id', deptId);
-            loadDepartmentsInternal(currentInstId);
+        window.deleteDept = async (id) => { if(confirm('¿Borrar?')) { await sb.from('departments').delete().eq('id', id); loadDepartmentsInternal(currentInstId); } }
+        
+        window.viewUsers = async (id, name) => {
+            document.getElementById('modalUserInstName').innerText = name; document.getElementById('usersModal').style.display = 'flex';
+            const list = document.getElementById('usersList'); list.innerHTML = '...';
+            const { data } = await sb.from('profiles').select('email').eq('institution_id', id);
+            list.innerHTML = data.length ? data.map(u => `<div>👤 ${u.email}</div>`).join('') : 'Sin usuarios';
         }
 
-        // 4. OTROS (Usuarios y Borrar Cliente)
-        window.viewUsers = async (instId, instName) => {
-            document.getElementById('modalUserInstName').innerText = instName;
-            document.getElementById('usersModal').style.display = 'flex';
-            const list = document.getElementById('usersList');
-            list.innerHTML = 'Buscando...';
-            
-            const { data } = await sb.from('profiles').select('email').eq('institution_id', instId);
-            list.innerHTML = data.length ? data.map(u => `<div style="padding:5px; border-bottom:1px solid #eee;">👤 ${u.email}</div>`).join('') : 'Sin usuarios.';
-        }
-
-        window.delInst = async(id) => { 
-            if(confirm('¿Eliminar empresa por completo?')) { 
-                await sb.from('institutions').delete().eq('id',id); 
-                loadInstitutions(); 
-            }
-        };
-
+        window.delInst = async(id) => { if(confirm('¿Eliminar?')) { await sb.from('institutions').delete().eq('id',id); loadInstitutions(); } };
         document.addEventListener("DOMContentLoaded", loadInstitutions);
     </script>
 </body>
