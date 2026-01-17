@@ -1,3 +1,7 @@
+[build]
+  command = "pip install -r requirements.txt"
+  publish = "."
+
 [[redirects]]
   from = "/auth/*"
   to = "/.netlify/functions/api/auth/:splat"
