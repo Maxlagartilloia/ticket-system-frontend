@@ -86,3 +86,9 @@ document.addEventListener("DOMContentLoaded", () => {
     checkAuth();
     loadDashboardStats();
 });
+// ================================
+// NAVEGACIÓN (Faltaba esto)
+// ================================
+window.goTo = function(page) {
+    window.location.href = page;
+}
