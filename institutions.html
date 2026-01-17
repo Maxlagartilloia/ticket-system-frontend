@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"><title>Clientes | CopierMaster</title>
+    <meta charset="UTF-8">
+    <title>Clientes | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -22,26 +23,44 @@
     <main class="main-content">
         <header class="top-bar">
             <div class="page-title">Cartera de Clientes</div>
-            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
+            <button class="btn-logout" onclick="location.href='index.html'"><i class="fas fa-power-off"></i> Salir</button>
         </header>
 
         <div class="scroll-area">
             <div class="card" style="margin-bottom:30px;">
-                <h3><i class="fas fa-plus-circle"></i> Nueva Institución</h3>
+                <h3 style="margin-top:0; color:var(--text-main); margin-bottom:20px;">
+                    <i class="fas fa-plus-circle" style="color:var(--primary);"></i> Registrar Institución
+                </h3>
                 <form id="instForm">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <input id="name" type="text" placeholder="Nombre Comercial" required>
-                        <input id="phone" type="text" placeholder="Teléfono">
+                        <div>
+                            <label>Nombre de la Empresa</label>
+                            <input id="name" type="text" placeholder="Ej: Hospital San Francisco" required>
+                        </div>
+                        <div>
+                            <label>Teléfono / Contacto</label>
+                            <input id="phone" type="text" placeholder="Ej: 0991234567">
+                        </div>
                     </div>
-                    <input id="address" type="text" placeholder="Dirección">
-                    <button type="submit" class="btn btn-primary" style="background:#16a34a; color:white;">Guardar Cliente</button>
+                    <div>
+                        <label>Dirección</label>
+                        <input id="address" type="text" placeholder="Ubicación exacta">
+                    </div>
+                    <div style="text-align: right;">
+                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white;">Guardar Cliente</button>
+                    </div>
                 </form>
             </div>
 
             <div class="card">
                 <table style="width:100%;">
                     <thead>
-                        <tr><th style="padding:10px;">Nombre</th><th style="padding:10px;">Dirección</th><th style="padding:10px;">Acción</th></tr>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th>Dirección</th>
+                            <th style="text-align:center;">Acción</th>
+                        </tr>
                     </thead>
                     <tbody id="instTable"></tbody>
                 </table>
