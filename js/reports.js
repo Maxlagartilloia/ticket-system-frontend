@@ -1,91 +1,19 @@
-// ================================
-// REPORTS (DASHBOARD METRICS) - COPIERMASTER
-// ================================
+const SUPABASE_URL = 'https://esxojlfcjwtahkcrqxkd.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y'; 
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
+async function loadReports() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return window.location.href = "index.html";
 
-// 🔐 AUTH DATA (REGLA ABSOLUTA)
-const token = localStorage.getItem("copiermaster_token");
-const role = localStorage.getItem("copiermaster_role");
+    const { count: t } = await sb.from('tickets').select('*', { count: 'exact', head: true });
+    const { count: c } = await sb.from('institutions').select('*', { count: 'exact', head: true });
+    const { count: e } = await sb.from('equipment').select('*', { count: 'exact', head: true });
 
-// ================================
-// AUTH GUARD
-// ================================
-if (!token) {
-  window.location.href = "index.html";
+    document.getElementById('totalT').textContent = t || 0;
+    document.getElementById('totalC').textContent = c || 0;
+    document.getElementById('totalE').textContent = e || 0;
 }
 
-if (!role || !["admin", "supervisor"].includes(role)) {
-  localStorage.clear();
-  window.location.href = "index.html";
-}
-
-// ================================
-// NAVIGATION
-// ================================
-function goTo(page) {
-  window.location.href = page;
-}
-
-function logout() {
-  localStorage.clear();
-  window.location.href = "index.html";
-}
-
-// ================================
-// UI BY ROLE
-// ================================
-const panelTitle = document.getElementById("panelTitle");
-if (panelTitle) {
-  panelTitle.textContent = role === "admin" ? "Admin Reports" : "Supervisor Reports";
-}
-
-// ================================
-// HELPERS
-// ================================
-function safeSetText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = String(value ?? 0);
-}
-
-// ================================
-// LOAD REPORT METRICS
-// ================================
-async function loadReportMetrics() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/reportes/dashboard`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    // 🔒 Session invalid or forbidden
-    if (res.status === 401 || res.status === 403) {
-      logout();
-      return;
-    }
-
-    if (!res.ok) {
-      throw new Error(`Failed to load reports metrics (${res.status})`);
-    }
-
-    const data = await res.json();
-
-    // Backend returns:
-    // open_tickets, in_progress, resolved_today, institutions
-    safeSetText("openTickets", data.open_tickets);
-    safeSetText("inProgress", data.in_progress);
-    safeSetText("resolvedToday", data.resolved_today);
-    safeSetText("institutions", data.institutions);
-
-  } catch (err) {
-    console.error("Reports error:", err);
-    // No UI extra required; keep metrics as-is.
-  }
-}
-
-// ================================
-// INIT
-// ================================
-document.addEventListener("DOMContentLoaded", loadReportMetrics);
+document.getElementById('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); window.location.href = "index.html"; });
+document.addEventListener("DOMContentLoaded", loadReports);
