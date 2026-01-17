@@ -1,6 +1,6 @@
 [[redirects]]
   from = "/auth/*"
-  to = "/.netlify/functions/main/auth/:splat"
+  to = "/.netlify/functions/auth/:splat"
   status = 200
 
 [[redirects]]
