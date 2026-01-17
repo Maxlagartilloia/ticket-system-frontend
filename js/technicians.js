@@ -1,112 +1,32 @@
-// ==========================================
-// TECHNICIANS LOGIC - COPIERMASTER LEAD ENGINEER
-// ==========================================
+const SUPABASE_URL = 'https://esxojlfcjwtahkcrqxkd.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y'; 
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
-
-// 🔐 AUTH DATA (REGLA ABSOLUTA)
-const token = localStorage.getItem("copiermaster_token");
-const role = localStorage.getItem("copiermaster_role");
-
-// ================================
-// AUTH GUARD
-// ================================
-if (!token || !["admin", "supervisor"].includes(role)) {
-    localStorage.clear();
-    window.location.href = "index.html";
-}
-
-const technicianForm = document.getElementById("technicianForm");
-const techniciansTable = document.getElementById("techniciansTable");
-
-// ================================
-// LOAD TECHNICIANS (REFACTORIZADO)
-// ================================
-async function loadTechnicians() {
-    try {
-        // ✅ RUTA CORREGIDA: /users (Alineado con el Backend)
-        const res = await fetch(`${API_BASE_URL}/users`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (res.status === 401 || res.status === 403) return logout();
-
-        const data = await res.json();
-        if (!techniciansTable) return;
-
-        techniciansTable.innerHTML = "";
-
-        // Filtramos solo los que tienen rol 'technician' para esta vista
-        data.filter(user => user.role === "technician").forEach(tech => {
-            const row = document.createElement("tr");
-            
-            row.innerHTML = `
-                <td>${tech.id}</td>
-                <td><strong>${tech.full_name}</strong></td>
+async function loadTechs() {
+    // Buscamos perfiles que sean técnicos o admins
+    const { data } = await supabase.from('profiles').select('*');
+    const tbody = document.getElementById('techTable');
+    tbody.innerHTML = '';
+    data?.forEach(tech => {
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${tech.full_name || 'Sin Nombre'}</strong></td>
                 <td>${tech.email}</td>
-                <td><span class="status-${tech.is_active ? 'active' : 'inactive'}">
-                    ${tech.is_active ? "Active" : "Inactive"}
-                </span></td>
-                <td>
-                    <button class="btn-delete" onclick="deactivateTechnician(${tech.id})">Deactivate</button>
-                </td>
-            `;
-            techniciansTable.appendChild(row);
-        });
-    } catch (err) {
-        console.error("Technician Service Error:", err);
-    }
-}
-
-// ================================
-// CREATE TECHNICIAN
-// ================================
-if (technicianForm) {
-    technicianForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        // ✅ PAYLOAD ALINEADO CON SCHEMAS.PY
-        const payload = {
-            full_name: document.getElementById("fullName").value,
-            email: document.getElementById("email").value,
-            password: document.getElementById("password").value,
-            role: "technician",
-            institution_id: 1 // Por defecto a la sede principal para evitar error
-        };
-
-        const res = await fetch(`${API_BASE_URL}/users/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-            alert("Technician created successfully!");
-            technicianForm.reset();
-            loadTechnicians();
-        } else {
-            const error = await res.json();
-            alert(`Error: ${error.detail || "Check data or duplicate email"}`);
-        }
+                <td><span style="background:#e8f5e9; color:#2e7d32; padding:4px 8px; border-radius:4px; font-size:12px;">${tech.role}</span></td>
+                <td><button class="btn btn-danger btn-sm">Baja</button></td>
+            </tr>`;
     });
 }
 
-// ================================
-// UTILS
-// ================================
-function logout() {
-    localStorage.clear();
-    window.location.href = "index.html";
-}
+// Nota: Crear usuarios reales requiere Backend function, 
+// por ahora simulamos creación de perfil para la demo.
+document.getElementById('techForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    alert("Para crear un usuario real con login, usa el panel de Auth de Supabase por ahora. Esta función estará lista en la v2.1");
+});
 
-function goTo(page) { window.location.href = page; }
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await supabase.auth.signOut(); window.location.href = "index.html";
+});
 
-async function deactivateTechnician(id) {
-    alert("Functionality: Deactivation request sent to backend (Soft Delete).");
-    // Aquí puedes llamar al endpoint de borrado lógico si lo habilitamos en users.py
-}
-
-document.addEventListener("DOMContentLoaded", loadTechnicians);
+loadTechs();
