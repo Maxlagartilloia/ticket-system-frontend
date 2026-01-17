@@ -2,11 +2,13 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Centro de Comando | CopierMaster Enterprise</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Centro de Comando | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+
     <aside class="sidebar">
         <div class="sidebar-brand">
             <img src="assets/logo.png" alt="CM Logo">
@@ -37,66 +39,69 @@
                 <i class="fas fa-file-invoice-dollar"></i> Reportes
             </li>
         </ul>
+        <div class="sidebar-footer">
+            System v2.5 Enterprise
+        </div>
     </aside>
 
     <main class="main-content">
         <header class="top-bar">
             <div class="page-title">Visión General</div>
-            <div>
-                <span id="userDisplay" style="margin-right: 15px; color: #64748b; font-size: 14px;">Cargando usuario...</span>
-                <button class="btn btn-logout" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Salir</button>
+            <div class="user-info">
+                <span class="user-badge" id="userEmail">Cargando usuario...</span>
+                <button class="btn btn-logout" id="logoutBtn"><i class="fas fa-power-off"></i> Salir</button>
             </div>
         </header>
 
         <div class="scroll-area">
+            
             <div class="kpi-grid">
                 <div class="card">
-                    <i class="fas fa-ticket-alt kpi-icon"></i>
                     <div class="kpi-title">Tickets Abiertos</div>
                     <div class="kpi-value" id="openTickets">--</div>
+                    <i class="fas fa-ticket-alt kpi-icon"></i>
                 </div>
                 <div class="card">
-                    <i class="fas fa-tools kpi-icon"></i>
-                    <div class="kpi-title">En Proceso (Técnicos)</div>
+                    <div class="kpi-title">En Atención (Técnicos)</div>
                     <div class="kpi-value" id="inProgress" style="color: #f59e0b;">--</div>
+                    <i class="fas fa-tools kpi-icon"></i>
                 </div>
                 <div class="card">
-                    <i class="fas fa-building kpi-icon"></i>
-                    <div class="kpi-title">Clientes Activos</div>
+                    <div class="kpi-title">Cartera de Clientes</div>
                     <div class="kpi-value" id="institutions">--</div>
+                    <i class="fas fa-building kpi-icon"></i>
                 </div>
                 <div class="card">
-                    <i class="fas fa-print kpi-icon"></i>
-                    <div class="kpi-title">Flota Monitoreada</div>
+                    <div class="kpi-title">Flota Activa</div>
                     <div class="kpi-value" id="equipment">--</div>
+                    <i class="fas fa-server kpi-icon"></i>
                 </div>
             </div>
 
-            <h3 style="margin-top: 40px; color: #334155;">⚡ Gestión Rápida</h3>
-            <p style="color: #64748b; margin-bottom: 20px;">Accesos directos para registrar información en el sistema.</p>
-            
-            <div class="quick-actions">
+            <h3 style="color: var(--text-main); margin-top: 40px; margin-bottom: 20px;">⚡ Gestión Rápida</h3>
+            <div class="actions-grid">
                 <div class="action-btn" onclick="location.href='institutions.html'">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle" style="color: #16a34a;"></i>
                     <span>Registrar Nuevo Cliente</span>
                 </div>
                 <div class="action-btn" onclick="location.href='equipment.html'">
-                    <i class="fas fa-qrcode"></i>
+                    <i class="fas fa-qrcode" style="color: #2563eb;"></i>
                     <span>Alta de Equipo</span>
                 </div>
                 <div class="action-btn" onclick="location.href='technicians.html'">
-                    <i class="fas fa-user-plus"></i>
+                    <i class="fas fa-user-shield" style="color: #9333ea;"></i>
                     <span>Registrar Técnico</span>
                 </div>
                 <div class="action-btn" onclick="location.href='tickets.html'">
-                    <i class="fas fa-file-medical"></i>
+                    <i class="fas fa-file-medical" style="color: #ea580c;"></i>
                     <span>Crear Ticket Manual</span>
                 </div>
             </div>
+
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/dashboard.js"></script>
 </body>
-</html>
+</html>        
