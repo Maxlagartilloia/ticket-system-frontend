@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>Clientes | CopierMaster</title>
+    <meta charset="UTF-8"><title>Clientes | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -23,51 +22,128 @@
     <main class="main-content">
         <header class="top-bar">
             <div class="page-title">Cartera de Clientes</div>
-            <button class="btn-logout" onclick="location.href='index.html'"><i class="fas fa-power-off"></i> Salir</button>
+            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
         </header>
 
         <div class="scroll-area">
-            <div class="card" style="margin-bottom:30px;">
-                <h3 style="margin-top:0; color:var(--text-main); margin-bottom:20px;">
-                    <i class="fas fa-plus-circle" style="color:var(--primary);"></i> Registrar Institución
-                </h3>
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--text-main);"><i class="fas fa-building"></i> Nueva Institución</h3>
                 <form id="instForm">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div>
-                            <label>Nombre de la Empresa</label>
-                            <input id="name" type="text" placeholder="Ej: Hospital San Francisco" required>
-                        </div>
-                        <div>
-                            <label>Teléfono / Contacto</label>
-                            <input id="phone" type="text" placeholder="Ej: 0991234567">
-                        </div>
-                    </div>
-                    <div>
-                        <label>Dirección</label>
-                        <input id="address" type="text" placeholder="Ubicación exacta">
-                    </div>
-                    <div style="text-align: right;">
-                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white;">Guardar Cliente</button>
+                    <div class="actions-grid">
+                        <input id="name" type="text" placeholder="Nombre Comercial (Ej: Hospital del Día)" required>
+                        <input id="phone" type="text" placeholder="Teléfono de Contacto">
+                        <input id="address" type="text" placeholder="Dirección / Ciudad">
+                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height: 42px; margin-top: 1px;">Guardar Empresa</button>
                     </div>
                 </form>
             </div>
 
             <div class="card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
+                    <h3 style="margin:0;">Listado de Empresas</h3>
+                    <button onclick="window.open('register.html', '_blank')" class="btn" style="width:auto; background:#16a34a; color:white;">
+                        <i class="fas fa-user-plus"></i> Crear Usuario para Cliente
+                    </button>
+                </div>
+
                 <table style="width:100%;">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Nombre</th>
-                            <th>Dirección</th>
-                            <th style="text-align:center;">Acción</th>
+                            <th style="width:10%;">ID</th> <th>Empresa</th>
+                            <th>Contacto</th>
+                            <th>Usuarios</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="instTable"></tbody>
+                    <tbody id="instTable">
+                        <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
     </main>
+
+    <div id="usersModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="modal-title">Usuarios de <span id="modalInstName">...</span></h3>
+            <div id="usersList" style="margin-bottom:20px;">Cargando...</div>
+            <button class="btn-cancel" onclick="document.getElementById('usersModal').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/institutions.js"></script>
+    <script src="js/security.js"></script>
+    <style>
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 400px; }
+        .user-row { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .tag { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+    </style>
+    
+    <script>
+        // LÓGICA EMBEBIDA (O puedes ponerla en js/institutions.js)
+        const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
+        
+        async function load() {
+            // Cargar instituciones
+            const { data: insts } = await sb.from('institutions').select('*').order('id', {ascending:false});
+            
+            // Cargar conteo de usuarios por institución (Truco Pro)
+            const { data: profiles } = await sb.from('profiles').select('institution_id');
+            const counts = {};
+            profiles?.forEach(p => { if(p.institution_id) counts[p.institution_id] = (counts[p.institution_id] || 0) + 1; });
+
+            const tb = document.getElementById('instTable');
+            tb.innerHTML = '';
+            
+            if(!insts.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;">Sin registros</td></tr>'; return; }
+
+            insts.forEach(i => {
+                const userCount = counts[i.id] || 0;
+                tb.innerHTML += `
+                    <tr>
+                        <td><span class="tag">ID: ${i.id}</span></td>
+                        <td style="font-weight:bold;">${i.name}</td>
+                        <td>${i.phone || '-'}</td>
+                        <td>
+                            <button onclick="viewUsers(${i.id}, '${i.name}')" style="cursor:pointer; border:1px solid #ccc; background:white; padding:5px 10px; border-radius:6px; font-size:12px;">
+                                <i class="fas fa-users"></i> ${userCount} Acceso(s)
+                            </button>
+                        </td>
+                        <td><button onclick="del(${i.id})" style="color:red; border:none; background:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>
+                    </tr>`;
+            });
+        }
+
+        document.getElementById('instForm').addEventListener('submit', async(e) => {
+            e.preventDefault();
+            await sb.from('institutions').insert([{
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value
+            }]);
+            e.target.reset(); load();
+        });
+
+        window.viewUsers = async (instId, instName) => {
+            document.getElementById('modalInstName').innerText = instName;
+            document.getElementById('usersModal').style.display = 'flex';
+            const list = document.getElementById('usersList');
+            list.innerHTML = 'Buscando...';
+            
+            const { data } = await sb.from('profiles').select('email, full_name').eq('institution_id', instId);
+            
+            if(!data.length) list.innerHTML = '<div style="color:#999;">No hay usuarios creados para esta empresa.</div>';
+            else {
+                list.innerHTML = '';
+                data.forEach(u => {
+                    list.innerHTML += `<div class="user-row"><div>${u.email}</div> <i class="fas fa-check-circle" style="color:#16a34a;"></i></div>`;
+                });
+            }
+        }
+
+        window.del = async(id) => { if(confirm('¿Eliminar empresa?')) { await sb.from('institutions').delete().eq('id',id); load(); }};
+        document.addEventListener("DOMContentLoaded", load);
+    </script>
 </body>
 </html>
