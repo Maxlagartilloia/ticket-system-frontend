@@ -1,152 +1,131 @@
 // ==========================================
-// INSTITUTIONS LOGIC - COPIERMASTER LEAD ENGINEER
+// INSTITUTIONS LOGIC (SUPABASE)
 // ==========================================
 
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
+// 1. CONFIGURACIÓN
+const SUPABASE_URL = 'https://esxojlfcjwtahkcrqxkd.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y'; 
 
-// 🔐 AUTH DATA (REGLA ABSOLUTA)
-const token = localStorage.getItem("copiermaster_token");
-const role = localStorage.getItem("copiermaster_role");
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ================================
-// AUTH GUARD - PROTECCIÓN DE RUTA
+// 1. AUTH GUARD
 // ================================
-if (!token || !["admin", "supervisor"].includes(role)) {
-    localStorage.clear();
-    window.location.href = "index.html";
+async function checkAuth() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+        window.location.href = "index.html";
+    }
+    // Opcional: Podrías verificar si es admin/supervisor aquí leyendo la tabla profiles
 }
 
 // ================================
-// UI ELEMENTS
-// ================================
-const institutionsTable = document.getElementById("institutionsTable");
-const institutionForm = document.getElementById("institutionForm");
-const panelTitle = document.getElementById("panelTitle");
-
-if (panelTitle) {
-    panelTitle.textContent = role === "admin" ? "Admin: Client Management" : "Supervisor: Client Management";
-}
-
-// ================================
-// LOAD INSTITUTIONS (REFACTORIZADO)
+// 2. CARGAR INSTITUCIONES (READ)
 // ================================
 async function loadInstitutions() {
     try {
-        // ✅ RUTA CORREGIDA: /institutions (Alineado con el Backend)
-        const res = await fetch(`${API_BASE_URL}/institutions`, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+        const tableBody = document.getElementById("institutionsTable");
+        if (!tableBody) return;
 
-        if (res.status === 401 || res.status === 403) return handleLogout();
-        
-        const data = await res.json();
-        if (!institutionsTable) return;
+        // Consulta a Supabase
+        const { data, error } = await supabase
+            .from('institutions')
+            .select('*')
+            .order('id', { ascending: true }); // Ordenar por ID
 
-        institutionsTable.innerHTML = "";
+        if (error) throw error;
+
+        // Limpiar tabla
+        tableBody.innerHTML = "";
+
+        // Generar filas
         data.forEach(inst => {
             const row = document.createElement("tr");
-
-            // Acciones profesionales: Edit y Soft Delete
-            const actions = `
-                <div class="table-actions">
-                    <button class="btn-edit" onclick="editInstitution(${inst.id})">Edit</button>
-                    <button class="btn-delete" onclick="deleteInstitution(${inst.id})">Delete</button>
-                </div>
-            `;
+            
+            // Botón de borrar con ID real
+            const deleteBtn = `<button class="btn-delete" style="background:#d32f2f; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;" onclick="deleteInstitution(${inst.id})">Delete</button>`;
 
             row.innerHTML = `
                 <td>${inst.id}</td>
                 <td><strong>${inst.name}</strong></td>
                 <td>${inst.address || "-"}</td>
                 <td>${inst.phone || "-"}</td>
-                <td>${actions}</td>
+                <td>${deleteBtn}</td>
             `;
-
-            institutionsTable.appendChild(row);
+            tableBody.appendChild(row);
         });
+
     } catch (err) {
-        console.error("Institution Service Error:", err);
+        console.error("Error cargando instituciones:", err.message);
     }
 }
 
 // ================================
-// CREATE INSTITUTION
+// 3. CREAR INSTITUCIÓN (CREATE)
 // ================================
-if (institutionForm) {
-    institutionForm.addEventListener("submit", async (e) => {
+const form = document.getElementById("institutionForm");
+if (form) {
+    form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const payload = {
-            name: document.getElementById("name").value,
-            address: document.getElementById("address").value,
-            phone: document.getElementById("phone") ? document.getElementById("phone").value : ""
-        };
+        const name = document.getElementById("name").value;
+        const address = document.getElementById("address").value;
+        const phone = document.getElementById("phone").value;
 
         try {
-            const res = await fetch(`${API_BASE_URL}/institutions`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
+            const { error } = await supabase
+                .from('institutions')
+                .insert([{ name, address, phone }]); // Insertamos objeto
 
-            if (res.ok) {
-                alert("Institution registered successfully!");
-                institutionForm.reset();
-                loadInstitutions();
-            } else {
-                const error = await res.json();
-                alert(`Error: ${error.detail || "Could not create institution"}`);
-            }
+            if (error) throw error;
+
+            alert("Institución creada exitosamente.");
+            form.reset();
+            loadInstitutions(); // Recargamos la tabla
+
         } catch (err) {
-            alert("Network error. Check server status.");
+            alert("Error al crear: " + err.message);
         }
     });
 }
 
 // ================================
-// DELETE (SOFT DELETE)
+// 4. BORRAR INSTITUCIÓN (DELETE)
 // ================================
-async function deleteInstitution(id) {
-    if (!confirm("Are you sure you want to deactivate this institution?")) return;
+// Hacemos la función global para que el HTML pueda llamarla onclick="..."
+window.deleteInstitution = async function(id) {
+    if (!confirm("¿Estás seguro de eliminar esta institución?")) return;
 
     try {
-        const res = await fetch(`${API_BASE_URL}/institutions/${id}`, {
-            method: "DELETE",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+        const { error } = await supabase
+            .from('institutions')
+            .delete()
+            .eq('id', id);
 
-        if (res.ok) {
-            loadInstitutions();
-        } else {
-            alert("Failed to delete. Ensure no active tickets are linked.");
-        }
+        if (error) throw error;
+
+        loadInstitutions(); // Recargamos la tabla
+
     } catch (err) {
-        console.error("Delete error:", err);
+        alert("No se pudo eliminar: " + err.message);
     }
-}
+};
 
 // ================================
-// UTILS
+// UTILIDADES DE NAVEGACIÓN
 // ================================
-function editInstitution(id) {
-    alert("Edit mode: Fetching institution data... (Implementation in progress)");
-}
-
-function handleLogout() {
-    localStorage.clear();
-    window.location.href = "index.html";
-}
-
-function goTo(page) {
+window.goTo = function(page) {
     window.location.href = page;
 }
 
-// INIT
-document.addEventListener("DOMContentLoaded", loadInstitutions);
+document.getElementById("logoutBtn")?.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    localStorage.clear();
+    window.location.href = "index.html";
+});
+
+// INICIALIZACIÓN
+document.addEventListener("DOMContentLoaded", () => {
+    checkAuth();
+    loadInstitutions();
+});
