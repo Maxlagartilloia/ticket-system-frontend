@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"><title>Detalle Ticket | CopierMaster</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle Ticket | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -21,23 +23,23 @@
 
     <main class="main-content">
         <header class="top-bar">
-            <div class="page-title"><a href="tickets.html" style="color:#64748b; text-decoration:none;"><i class="fas fa-arrow-left"></i> Volver</a> / Detalle del Ticket</div>
+            <div class="page-title"><a href="tickets.html" style="color:#64748b; text-decoration:none;"><i class="fas fa-arrow-left"></i> Atrás</a> / Detalle</div>
             <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
         </header>
 
         <div class="scroll-area">
             <div class="card" style="border-left: 5px solid var(--sidebar-active);">
-                <div style="display:flex; justify-content:space-between; align-items:start;">
+                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;">
                     <div>
-                        <h2 style="margin:0; color:var(--text-main);" id="tTitle">Cargando...</h2>
-                        <p style="color:var(--text-muted); margin-top:5px;">Ticket #<span id="tId">...</span></p>
+                        <h2 style="margin:0; font-size:18px; color:var(--text-main);" id="tTitle">Cargando...</h2>
+                        <p style="color:var(--text-muted); margin-top:5px; font-size:14px;">Ticket #<span id="tId">...</span></p>
                     </div>
-                    <div id="tStatus" style="padding:5px 15px; border-radius:20px; font-weight:bold; background:#eee;">...</div>
+                    <div id="tStatus" style="padding:5px 15px; border-radius:20px; font-weight:bold; background:#eee; font-size:12px;">...</div>
                 </div>
 
                 <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:30px;">
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:20px;">
                     <div>
                         <label>Reportado Por:</label>
                         <div id="tClient" style="font-weight:600; margin-bottom:15px;">...</div>
@@ -47,36 +49,35 @@
                     </div>
                     <div>
                         <label>Descripción del Problema:</label>
-                        <div id="tDesc" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; min-height:80px;">...</div>
+                        <div id="tDesc" style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; font-size:14px;">...</div>
                     </div>
                 </div>
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0;">👨‍🔧 Asignación Técnica</h3>
-                <div style="display:flex; gap:15px; align-items:end;">
-                    <div style="flex:1;">
-                        <label>Asignar a Técnico:</label>
-                        <select id="techSelect" style="margin-bottom:0;">
-                            <option value="">-- Seleccionar Técnico --</option>
-                        </select>
-                    </div>
-                    <button onclick="assignTech()" class="btn" style="width:auto; background:var(--sidebar-active); color:white; height:42px;">
+                <h3 style="margin-top:0; font-size:16px;">👨‍🔧 Asignación Técnica</h3>
+                <div style="display:flex; flex-direction:column; gap:10px;">
+                    <label>Seleccionar Técnico:</label>
+                    <select id="techSelect">
+                        <option value="">-- Cargar Técnicos --</option>
+                    </select>
+                    <button onclick="assignTech()" class="btn" style="background:var(--sidebar-active); color:white;">
                         <i class="fas fa-check"></i> Guardar Asignación
                     </button>
                 </div>
             </div>
 
-            <div class="card" id="auditCard" style="display:none; background:#f0fdf4; border-color:#bbf7d0;">
-                <h3 style="margin-top:0; color:#166534;"><i class="fas fa-clipboard-check"></i> Reporte de Cierre</h3>
-                <p><strong>Diagnóstico:</strong> <span id="resDiag"></span></p>
-                <p><strong>Acción:</strong> <span id="resAction"></span></p>
-                <p><strong>Contador Final:</strong> <span id="resMeter" style="font-weight:bold;"></span></p>
+            <div class="card" id="auditCard" style="display:none; background:#f0fdf4; border:1px solid #bbf7d0;">
+                <h3 style="margin-top:0; color:#166534; font-size:16px;"><i class="fas fa-clipboard-check"></i> Reporte de Cierre</h3>
+                <p style="font-size:14px;"><strong>Diagnóstico:</strong> <span id="resDiag"></span></p>
+                <p style="font-size:14px;"><strong>Acción:</strong> <span id="resAction"></span></p>
+                <p style="font-size:14px;"><strong>Contador Final:</strong> <span id="resMeter" style="font-weight:bold;"></span></p>
             </div>
-
         </div>
     </main>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/security.js"></script>
     <script src="js/ticket_details.js"></script>
 </body>
 </html>
