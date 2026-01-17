@@ -2,11 +2,14 @@ const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb
 let currentUser = null;
 let activeTicketId = null;
 
+document.addEventListener("DOMContentLoaded", init);
+
 async function init() {
+    // Verificar sesión
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return window.location.href = 'index.html';
     
-    // Obtener nombre
+    // Cargar nombre del técnico
     const { data: profile } = await sb.from('profiles').select('full_name').eq('id', session.user.id).single();
     document.getElementById('techName').textContent = profile?.full_name || 'Técnico';
     currentUser = session.user;
@@ -15,7 +18,7 @@ async function init() {
 }
 
 async function loadTickets() {
-    // 1. Buscar ticket ACTIVO (Status = in_progress) asignado a mí
+    // 1. Buscar si ya tengo un ticket "EN PROCESO" (Solo puedo tener uno a la vez)
     const { data: active } = await sb.from('tickets')
         .select('*, institutions(name), equipment(model, serial_number)')
         .eq('assigned_to', currentUser.id)
@@ -26,108 +29,147 @@ async function loadTickets() {
 
     if (active) {
         activeTicketId = active.id;
-        // RENDERIZAR TARJETA DE TRABAJO ACTIVO
+        // RENDERIZAR TARJETA GIGANTE
         activeZone.innerHTML = `
             <div class="active-job-card">
                 <div class="job-header">
-                    <span class="job-id">#${active.id} - ${active.title}</span>
-                    <span class="job-status">EN PROCESO ⏳</span>
+                    <span class="job-id">Ticket #${active.id}</span>
+                    <div class="job-title">${active.title}</div>
                 </div>
-                <div class="job-detail-row"><i class="fas fa-building"></i> ${active.institutions?.name}</div>
-                <div class="job-detail-row"><i class="fas fa-print"></i> ${active.equipment?.model} (${active.equipment?.serial_number})</div>
-                <div class="job-detail-row"><i class="fas fa-clock"></i> Llegada: ${new Date(active.tech_arrival_at).toLocaleTimeString()}</div>
                 
-                <div class="action-grid">
-                    <button class="big-btn" style="background:#ef4444; grid-column: span 2;" onclick="openReportModal()">
-                        <i class="fas fa-flag-checkered" style="font-size:20px;"></i> TERMINAR Y CERRAR
-                    </button>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-building"></i></div>
+                    <div class="info-text">${active.institutions?.name}</div>
                 </div>
-            </div>`;
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-map-marker-alt"></i></div>
+                    <div class="info-text">En Sitio</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-print"></i></div>
+                    <div class="info-text">${active.equipment?.model} <span style="color:#64748b;">(S/N: ${active.equipment?.serial_number})</span></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-icon"><i class="fas fa-clock"></i></div>
+                    <div class="info-text">Inicio: ${new Date(active.tech_arrival_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                </div>
+
+                <button class="btn-big btn-finish" onclick="openAuditModal()">
+                    <i class="fas fa-flag-checkered"></i> FINALIZAR TRABAJO
+                </button>
+            </div>
+        `;
     } else {
-        // Si no hay activo, mostrar mensaje vacío
         activeTicketId = null;
         activeZone.innerHTML = `
-            <div style="text-align: center; padding: 40px; color: #94a3b8; background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">
-                <i class="fas fa-mug-hot" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i><br>
-                No tienes trabajo activo. Selecciona uno pendiente.
+            <div style="text-align: center; padding: 40px 20px; background: white; border-radius: 12px; border: 2px dashed #cbd5e1; color: #94a3b8;">
+                <i class="fas fa-coffee" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i><br>
+                No tienes órdenes activas.<br>Dale "Iniciar" a una de abajo.
             </div>`;
     }
 
-    // 2. Cargar Pendientes (Status = assigned u open)
+    // 2. Cargar Lista de Pendientes
     const { data: pending } = await sb.from('tickets')
         .select('*, institutions(name)')
         .eq('assigned_to', currentUser.id)
-        .in('status', ['open', 'assigned'])
-        .order('priority', { ascending: false }); // Urgentes primero
+        .in('status', ['open', 'assigned']) // Abiertos o asignados
+        .order('priority', { ascending: false });
 
     document.getElementById('pendingCount').textContent = pending?.length || 0;
     const pContainer = document.getElementById('pendingContainer');
     pContainer.innerHTML = '';
 
-    pending?.forEach(t => {
-        const isHigh = t.priority === 'high' || t.priority === 'critical';
-        const iconColor = isHigh ? '#ef4444' : '#2563eb';
+    if (!pending || pending.length === 0) {
+        pContainer.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">Todo limpio por hoy ✅</div>';
+        return;
+    }
+
+    pending.forEach(t => {
+        let priorityBadge = t.priority === 'high' ? '<span style="color:#ef4444; font-weight:bold;">🔥 URGENTE</span>' : '';
         
         pContainer.innerHTML += `
-            <div class="pending-item">
-                <div>
-                    <div style="font-weight:700; color:#334155;">#${t.id} - ${t.title}</div>
+            <div class="pending-card">
+                <div class="pending-info">
+                    <div style="font-weight:700; color:#334155; font-size:15px;">#${t.id} - ${t.title}</div>
                     <div style="font-size:13px; color:#64748b;">${t.institutions?.name}</div>
+                    <div style="font-size:11px; margin-top:5px;">${priorityBadge}</div>
                 </div>
-                <button onclick="startJob(${t.id})" style="background:${iconColor}; color:white; border:none; padding:8px 15px; border-radius:6px; font-weight:600; cursor:pointer;">
-                    ${isHigh ? 'URGENTE 🔥' : 'Iniciar ▶'}
-                </button>
-            </div>`;
+                <button class="pending-btn" onclick="startJob(${t.id})">INICIAR ▶</button>
+            </div>
+        `;
     });
 }
 
-// INICIAR TRABAJO (Check-In)
+// --- ACCIONES ---
+
+// 1. INICIAR (Marcar llegada)
 window.startJob = async (id) => {
     if (activeTicketId) {
-        alert("Ya tienes un trabajo en curso. Termínalo antes de iniciar otro.");
+        alert("⚠️ Termina tu orden actual antes de iniciar otra.");
         return;
     }
-    if (!confirm("¿Confirmar que has llegado al sitio y vas a iniciar la reparación?")) return;
+    if (!confirm("¿Confirmas que ya estás en el sitio y vas a empezar a trabajar?")) return;
 
-    const { error } = await sb.from('tickets').update({
+    // Actualizamos estado y hora de llegada
+    await sb.from('tickets').update({
         status: 'in_progress',
         tech_arrival_at: new Date().toISOString()
     }).eq('id', id);
 
-    if (error) alert("Error: " + error.message);
-    else loadTickets();
+    loadTickets();
 }
 
-// FINALIZAR TRABAJO (Check-Out)
-window.openReportModal = () => {
-    document.getElementById('reportModal').style.display = 'flex';
+// 2. ABRIR MODAL AUDITORÍA
+window.openAuditModal = () => {
+    document.getElementById('auditModal').style.display = 'flex';
 }
 
-window.confirmCheckout = async () => {
-    const notes = document.getElementById('closeNote').value;
-    const parts = document.getElementById('closeParts').value;
-    
-    if (!notes) { alert("Debes ingresar el diagnóstico."); return; }
+window.closeAuditModal = () => {
+    document.getElementById('auditModal').style.display = 'none';
+}
 
+// 3. GUARDAR AUDITORÍA Y CERRAR TICKET
+document.getElementById('auditForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const diagnosis = document.getElementById('auditDiagnosis').value;
+    const action = document.getElementById('auditAction').value;
+    const parts = document.getElementById('auditParts').value;
+    const counter = document.getElementById('auditCounter').value;
+
+    if (!counter || counter <= 0) {
+        alert("El contador es obligatorio para cerrar la orden.");
+        return;
+    }
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "Guardando..."; btn.disabled = true;
+
+    // ACTUALIZACIÓN MAESTRA EN BASE DE DATOS
     const { error } = await sb.from('tickets').update({
-        status: 'resolved',
-        tech_departure_at: new Date().toISOString(),
-        resolution_notes: notes,
-        spare_parts_used: parts // Guarda texto simple o JSON según configures
+        status: 'resolved', // Resuelto
+        tech_departure_at: new Date().toISOString(), // Hora de salida
+        technical_diagnosis: diagnosis,
+        action_taken: action,
+        spare_parts_used: parts,
+        final_meter_reading: parseInt(counter), // Guardar contador como número
+        resolution_notes: `DIAGNÓSTICO: ${diagnosis} | ACCIÓN: ${action}` // Resumen para vista rápida
     }).eq('id', activeTicketId);
 
     if (error) {
-        alert("Error al cerrar: " + error.message);
+        alert("Error al guardar: " + error.message);
+        btn.innerHTML = originalText; btn.disabled = false;
     } else {
-        alert("✅ Orden cerrada correctamente.");
-        document.getElementById('reportModal').style.display = 'none';
-        loadTickets();
+        alert("✅ Orden Cerrada y Auditada Correctamente.");
+        closeAuditModal();
+        e.target.reset();
+        loadTickets(); // Refrescar pantalla
     }
-}
+});
 
+// Logout
 window.logout = async () => {
     await sb.auth.signOut();
     window.location.href = 'index.html';
 }
-
-document.addEventListener("DOMContentLoaded", init);
