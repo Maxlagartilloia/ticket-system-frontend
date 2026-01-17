@@ -1,39 +1,60 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"><title>Reportes | CopierMaster</title>
+    <meta charset="UTF-8"><title>Reportes Gerenciales | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
     <aside class="sidebar">
-       </aside>
+        <div class="sidebar-logo"><img src="assets/logo.png" alt="CM"></div>
+        <ul class="sidebar-menu">
+            <li onclick="window.location.href='dashboard.html'">Dashboard</li>
+            <li onclick="window.location.href='tickets.html'">Tickets</li>
+            <li onclick="window.location.href='institutions.html'">Instituciones</li>
+            <li onclick="window.location.href='departments.html'">Departamentos</li>
+            <li onclick="window.location.href='equipment.html'">Equipos</li>
+            <li onclick="window.location.href='technicians.html'">Técnicos</li>
+            <li class="active" onclick="window.location.href='reports.html'">Reportes</li>
+        </ul>
+    </aside>
 
     <main class="main-content">
         <header class="header-flex">
-            <h1>Reportes y Estadísticas</h1>
-            <button class="btn btn-danger" id="logoutBtn">Salir</button>
+            <h1>Reportes de Rendimiento</h1>
+            <div style="display:flex; gap:10px;">
+                <button class="btn btn-primary" onclick="loadReport('daily')">Hoy</button>
+                <button class="btn btn-primary" onclick="loadReport('weekly')">Semana</button>
+                <button class="btn btn-primary" onclick="loadReport('monthly')">Mes</button>
+            </div>
         </header>
 
         <div class="metrics-grid">
             <div class="card-3d">
-                <span class="metric-label">Total Tickets Históricos</span>
-                <span class="metric-value" id="totalT">0</span>
+                <span class="metric-label">Total Tickets (Periodo)</span>
+                <span class="metric-value" id="repTotal">0</span>
             </div>
             <div class="card-3d">
-                <span class="metric-label">Clientes Activos</span>
-                <span class="metric-value" id="totalC">0</span>
+                <span class="metric-label">Tiempo Promedio Respuesta</span>
+                <span class="metric-value" id="repAvgTime">0h</span>
             </div>
             <div class="card-3d">
-                <span class="metric-label">Equipos Registrados</span>
-                <span class="metric-value" id="totalE">0</span>
+                <span class="metric-label">SLA Incumplidos</span>
+                <span class="metric-value" style="color:red" id="repSlaFail">0</span>
             </div>
         </div>
-        
-        <div class="card-3d" style="margin-top:30px; text-align:center; padding:50px;">
-            <h3 style="color:#aaa">Gráficos de rendimiento en desarrollo...</h3>
-            <p>Próximamente en v2.1</p>
+
+        <div class="card-3d">
+            <h3>Detalle de Actividades</h3>
+            <div class="table-container">
+                <table class="custom-table">
+                    <thead><tr><th>Fecha</th><th>Técnico</th><th>Cliente</th><th>Inicio</th><th>Fin</th><th>Repuestos</th><th>Estado SLA</th></tr></thead>
+                    <tbody id="reportTable"></tbody>
+                </table>
+            </div>
         </div>
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/reports.js"></script>
 </body>
