@@ -1,77 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Reports | CopierMaster</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="css/styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8"><title>Reportes | CopierMaster</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
-
 <body>
+    <aside class="sidebar">
+       </aside>
 
-<div class="app-container">
+    <main class="main-content">
+        <header class="header-flex">
+            <h1>Reportes y Estadísticas</h1>
+            <button class="btn btn-danger" id="logoutBtn">Salir</button>
+        </header>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <img src="assets/logo.png" alt="CopierMaster">
-    </div>
-
-    <!-- TÍTULO DINÁMICO -->
-    <div class="sidebar-title" id="panelTitle">Reports</div>
-
-    <ul class="sidebar-menu">
-      <li onclick="goTo('dashboard.html')">Dashboard</li>
-      <li onclick="goTo('tickets.html')">Tickets</li>
-      <li onclick="goTo('institutions.html')">Institutions</li>
-      <li onclick="goTo('departments.html')">Departments</li>
-      <li onclick="goTo('technicians.html')">Technicians</li>
-      <li class="active">Reports</li>
-    </ul>
-
-    <div class="sidebar-footer">
-      <small>CopierMaster C&amp;G<br>Technical Support</small>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main-content">
-
-    <header class="dashboard-header">
-      <h1>System Reports</h1>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </header>
-
-    <!-- METRICS -->
-    <section class="metrics-grid">
-      <div class="metric-card">
-        <h3>Open Tickets</h3>
-        <span id="openTickets">0</span>
-      </div>
-
-      <div class="metric-card">
-        <h3>In Progress</h3>
-        <span id="inProgress">0</span>
-      </div>
-
-      <div class="metric-card">
-        <h3>Resolved Today</h3>
-        <span id="resolvedToday">0</span>
-      </div>
-
-      <div class="metric-card">
-        <h3>Institutions</h3>
-        <span id="institutions">0</span>
-      </div>
-    </section>
-
-  </main>
-
-</div>
-
-<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
-<script src="js/reportes.js"></script>
+        <div class="metrics-grid">
+            <div class="card-3d">
+                <span class="metric-label">Total Tickets Históricos</span>
+                <span class="metric-value" id="totalT">0</span>
+            </div>
+            <div class="card-3d">
+                <span class="metric-label">Clientes Activos</span>
+                <span class="metric-value" id="totalC">0</span>
+            </div>
+            <div class="card-3d">
+                <span class="metric-label">Equipos Registrados</span>
+                <span class="metric-value" id="totalE">0</span>
+            </div>
+        </div>
+        
+        <div class="card-3d" style="margin-top:30px; text-align:center; padding:50px;">
+            <h3 style="color:#aaa">Gráficos de rendimiento en desarrollo...</h3>
+            <p>Próximamente en v2.1</p>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/reports.js"></script>
 </body>
 </html>
