@@ -1,43 +1,54 @@
-const SUPABASE_URL = 'https://esxojlfcjwtahkcrqxkd.supabase.co'; 
-const SUPABASE_ANON_KEY = 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y'; 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
+let deptMap = {};
 
-async function loadEquip() {
-    const { data: { session } } = await sb.auth.getSession();
-    if (!session) return window.location.href = "index.html";
+async function init() {
+    // Cargar Instituciones
+    const { data: insts } = await sb.from('institutions').select('id, name');
+    const s = document.getElementById('instSelect');
+    s.innerHTML = '<option value="">Seleccione Cliente...</option>';
+    insts?.forEach(i => s.innerHTML += `<option value="${i.id}">${i.name}</option>`);
 
-    const { data } = await sb.from('equipment').select('*');
-    const tbody = document.getElementById('equipTable');
-    tbody.innerHTML = '';
+    // Mapa de Depts para la tabla
+    const { data: depts } = await sb.from('departments').select('id, name');
+    depts?.forEach(d => deptMap[d.id] = d.name);
+
+    loadTable();
+}
+
+window.loadDepts = async(id) => {
+    const s = document.getElementById('deptSelect');
+    s.disabled = true; s.innerHTML = '<option>Cargando...</option>';
+    const { data } = await sb.from('departments').select('*').eq('institution_id', id);
+    s.innerHTML = '<option value="">Seleccione Departamento...</option>';
+    data?.forEach(d => s.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    s.disabled = false;
+}
+
+async function loadTable() {
+    const { data } = await sb.from('equipment').select('*').order('id', {ascending:false});
+    const t = document.getElementById('equipTable');
+    t.innerHTML = '';
     data?.forEach(e => {
-        tbody.innerHTML += `
-            <tr>
-                <td><strong>${e.model}</strong></td>
-                <td>${e.serial_number}</td>
-                <td>${e.name}</td>
-                <td><button class="btn btn-danger btn-sm" onclick="deleteEq(${e.id})">Borrar</button></td>
+        t.innerHTML += `
+            <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:15px;"><strong>${e.model}</strong></td>
+                <td style="padding:15px;">${deptMap[e.department_id] || 'N/A'}</td>
+                <td style="padding:15px;"><span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-size:12px;">${e.serial_number}</span></td>
+                <td style="padding:15px; text-align:center;"><button onclick="del(${e.id})" style="color:red; background:none; border:none; cursor:pointer;"><i class="fas fa-trash"></i></button></td>
             </tr>`;
     });
 }
 
-document.getElementById('equipForm').addEventListener('submit', async (e) => {
+document.getElementById('equipForm').addEventListener('submit', async(e)=>{
     e.preventDefault();
-    const model = document.getElementById('model').value;
-    const serial_number = document.getElementById('serial').value;
-    const name = document.getElementById('name').value;
-    
-    // Ojo: Requiere department_id en la base de datos, 
-    // pero para no complicar el form ahora lo mandamos null o creamos un dummy si falla.
-    await sb.from('equipment').insert([{ model, serial_number, name }]);
-    e.target.reset();
-    loadEquip();
+    await sb.from('equipment').insert([{
+        institution_id: document.getElementById('instSelect').value,
+        department_id: document.getElementById('deptSelect').value,
+        model: document.getElementById('model').value,
+        serial_number: document.getElementById('serial').value
+    }]);
+    e.target.reset(); loadTable();
 });
 
-window.deleteEq = async (id) => {
-    if(confirm('¿Eliminar equipo?')) {
-        await sb.from('equipment').delete().eq('id', id);
-        loadEquip();
-    }
-}
-document.getElementById('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); window.location.href = "index.html"; });
-document.addEventListener("DOMContentLoaded", loadEquip);
+window.del = async(id) => { if(confirm('¿Borrar?')) { await sb.from('equipment').delete().eq('id',id); loadTable(); }};
+document.addEventListener("DOMContentLoaded", init);
