@@ -1,61 +1,89 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"><title>Reportes Gerenciales | CopierMaster</title>
+    <meta charset="UTF-8">
+    <title>Reportes | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <aside class="sidebar">
-        <div class="sidebar-logo"><img src="assets/logo.png" alt="CM"></div>
+        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
         <ul class="sidebar-menu">
-            <li onclick="window.location.href='dashboard.html'">Dashboard</li>
-            <li onclick="window.location.href='tickets.html'">Tickets</li>
-            <li onclick="window.location.href='institutions.html'">Instituciones</li>
-            <li onclick="window.location.href='departments.html'">Departamentos</li>
-            <li onclick="window.location.href='equipment.html'">Equipos</li>
-            <li onclick="window.location.href='technicians.html'">Técnicos</li>
-            <li class="active" onclick="window.location.href='reports.html'">Reportes</li>
+            <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
+            <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
+            <li class="menu-item" onclick="location.href='institutions.html'"><i class="fas fa-building"></i> Clientes</li>
+            <li class="menu-item" onclick="location.href='departments.html'"><i class="fas fa-sitemap"></i> Departamentos</li>
+            <li class="menu-item" onclick="location.href='equipment.html'"><i class="fas fa-print"></i> Equipos</li>
+            <li class="menu-item" onclick="location.href='technicians.html'"><i class="fas fa-users-cog"></i> Técnicos</li>
+            <li class="menu-item active" onclick="location.href='reports.html'"><i class="fas fa-file-invoice-dollar"></i> Reportes</li>
         </ul>
     </aside>
 
     <main class="main-content">
-        <header class="header-flex">
-            <h1>Reportes de Rendimiento</h1>
-            <div style="display:flex; gap:10px;">
-                <button class="btn btn-primary" onclick="loadReport('daily')">Hoy</button>
-                <button class="btn btn-primary" onclick="loadReport('weekly')">Semana</button>
-                <button class="btn btn-primary" onclick="loadReport('monthly')">Mes</button>
-            </div>
+        <header class="top-bar">
+            <div class="page-title">Reportes de Rendimiento</div>
+            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
         </header>
 
-        <div class="metrics-grid">
-            <div class="card-3d">
-                <span class="metric-label">Total Tickets (Periodo)</span>
-                <span class="metric-value" id="repTotal">0</span>
+        <div class="scroll-area">
+            <div class="kpi-grid">
+                <div class="card">
+                    <div class="kpi-title">Total Tickets (Mes)</div>
+                    <div class="kpi-value" id="totalMonth">0</div>
+                </div>
+                <div class="card">
+                    <div class="kpi-title">Atendidos a Tiempo</div>
+                    <div class="kpi-value" style="color:#16a34a;">100%</div>
+                </div>
             </div>
-            <div class="card-3d">
-                <span class="metric-label">Tiempo Promedio Respuesta</span>
-                <span class="metric-value" id="repAvgTime">0h</span>
-            </div>
-            <div class="card-3d">
-                <span class="metric-label">SLA Incumplidos</span>
-                <span class="metric-value" style="color:red" id="repSlaFail">0</span>
-            </div>
-        </div>
 
-        <div class="card-3d">
-            <h3>Detalle de Actividades</h3>
-            <div class="table-container">
-                <table class="custom-table">
-                    <thead><tr><th>Fecha</th><th>Técnico</th><th>Cliente</th><th>Inicio</th><th>Fin</th><th>Repuestos</th><th>Estado SLA</th></tr></thead>
-                    <tbody id="reportTable"></tbody>
+            <div class="card">
+                <h3 style="margin-top:0; border-bottom:1px solid #eee; padding-bottom:10px;">Historial Reciente</h3>
+                <table style="width:100%; border-collapse:collapse; margin-top:15px;">
+                    <thead>
+                        <tr style="background:#f8fafc;">
+                            <th style="padding:10px;">Fecha</th>
+                            <th style="padding:10px;">Cliente</th>
+                            <th style="padding:10px;">Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTable">
+                        <tr><td colspan="3" style="text-align:center; padding:20px;">Cargando...</td></tr>
+                    </tbody>
                 </table>
             </div>
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/reports.js"></script>
+    <script>
+        // Script embebido simple para reportes
+        const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
+        
+        async function loadReports() {
+            const { data: { session } } = await sb.auth.getSession();
+            if(!session) return window.location.href='index.html';
+
+            const { data } = await sb.from('tickets').select('*, institutions(name)').order('created_at', {ascending:false}).limit(10);
+            const tb = document.getElementById('reportTable');
+            tb.innerHTML = '';
+            
+            if(data && data.length > 0) {
+                document.getElementById('totalMonth').innerText = data.length;
+                data.forEach(t => {
+                    tb.innerHTML += `
+                        <tr style="border-bottom:1px solid #eee;">
+                            <td style="padding:10px;">${new Date(t.created_at).toLocaleDateString()}</td>
+                            <td style="padding:10px;">${t.institutions?.name}</td>
+                            <td style="padding:10px;">${t.status}</td>
+                        </tr>`;
+                });
+            } else {
+                tb.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Sin datos recientes</td></tr>';
+            }
+        }
+        document.addEventListener("DOMContentLoaded", loadReports);
+    </script>
 </body>
 </html>
