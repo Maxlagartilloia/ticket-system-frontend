@@ -1,100 +1,88 @@
 // ==========================================
-// DASHBOARD LOGIC - COPIERMASTER LEAD ENGINEER
+// DASHBOARD LOGIC - COPIERMASTER (SUPABASE VERSION)
 // ==========================================
 
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
+// 1. CONFIGURACIÓN
+const SUPABASE_URL = 'https://esxojlfcjwtahkcrqxkd.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y'; 
 
-// 🔐 RECUPERACIÓN DE SESIÓN (REGLA ABSOLUTA)
-const token = localStorage.getItem("copiermaster_token");
-const role = localStorage.getItem("copiermaster_role");
+// Inicializamos cliente
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ================================
-// AUTH GUARD - PROTECCIÓN DE RUTA
+// 1. AUTH GUARD (Protección)
 // ================================
-function checkAuth() {
-    if (!token) {
+async function checkAuth() {
+    // Verificamos sesión REAL en Supabase
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+        // Si no hay sesión, va para afuera
         window.location.href = "index.html";
         return;
     }
 
-    // Solo admin y supervisor pueden ver las métricas globales
-    const privilegedRoles = ["admin", "supervisor"];
-    if (!privilegedRoles.includes(role)) {
-        alert("Access Denied: Administrative privileges required.");
-        window.location.href = "technician_dashboard.html"; // O tu página por defecto
-    }
-}
-
-// ================================
-// UI UPDATES
-// ================================
-function updateUI() {
-    const panelTitle = document.getElementById("panelTitle");
+    // Mostrar el correo del usuario en la pantalla
     const userRoleDisplay = document.getElementById("userRoleDisplay");
-
-    if (panelTitle) {
-        panelTitle.textContent = role === "admin" ? "Administrator Panel" : "Supervisor Panel";
-    }
     if (userRoleDisplay) {
-        const email = localStorage.getItem("copiermaster_user");
-        userRoleDisplay.textContent = email ? `User: ${email}` : role.toUpperCase();
+        userRoleDisplay.textContent = session.user.email;
     }
 }
 
 // ================================
-// LOAD DASHBOARD STATS (REAL-TIME)
+// 2. CARGAR ESTADÍSTICAS
 // ================================
 async function loadDashboardStats() {
     try {
-        // ✅ RUTA SINCRONIZADA CON EL BACKEND REFACTORIZADO
-        const res = await fetch(`${API_BASE_URL}/reports/stats`, {
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            }
-        });
+        console.log("Consultando base de datos...");
 
-        // Manejo de expiración de token
-        if (res.status === 401 || res.status === 403) {
-            handleLogout();
-            return;
-        }
+        // A. Contar Tickets Abiertos
+        const { count: openCount } = await supabase
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'open');
 
-        if (!res.ok) throw new Error("Dashboard stats fetch failed");
+        // B. Contar Tickets Cerrados
+        const { count: closedCount } = await supabase
+            .from('tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'closed');
 
-        const data = await res.json();
+        // C. Contar Instituciones
+        const { count: instCount } = await supabase
+            .from('institutions')
+            .select('*', { count: 'exact', head: true });
 
-        // Actualización de contadores en el HTML
-        document.getElementById("openTickets").textContent = data.open_tickets || 0;
-        document.getElementById("inProgress").textContent = data.in_progress || 0;
-        // Nota: El backend envía 'total_institutions', lo mapeamos a tu UI
-        document.getElementById("institutions").textContent = data.total_institutions || 0;
-        // Puedes añadir 'total_users' si tu HTML tiene el ID
-        const usersElement = document.getElementById("totalUsers");
-        if (usersElement) usersElement.textContent = data.total_users || 0;
+        // ACTUALIZAR EL HTML (Si es null pone 0)
+        // Asegúrate que estos IDs existan en tu HTML
+        const elOpen = document.getElementById("openTickets");
+        const elClosed = document.getElementById("resolvedToday") || document.getElementById("resolvedTickets");
+        const elInst = document.getElementById("institutions");
+
+        if (elOpen) elOpen.textContent = openCount || 0;
+        if (elClosed) elClosed.textContent = closedCount || 0;
+        if (elInst) elInst.textContent = instCount || 0;
 
     } catch (error) {
-        console.error("Dashboard Service Error:", error);
+        console.error("Error cargando dashboard:", error);
     }
 }
 
 // ================================
-// UTILITIES
+// 3. LOGOUT
 // ================================
-function handleLogout() {
-    localStorage.removeItem("copiermaster_token");
-    localStorage.removeItem("copiermaster_role");
-    localStorage.removeItem("copiermaster_user");
+async function handleLogout() {
+    await supabase.auth.signOut();
+    localStorage.clear();
     window.location.href = "index.html";
 }
 
-function goTo(page) {
-    window.location.href = page;
-}
+// Vincula el botón de logout si existe
+const logoutBtn = document.getElementById("logoutBtn");
+if(logoutBtn) logoutBtn.addEventListener("click", handleLogout);
 
-// Inicialización
+// INICIALIZAR
 document.addEventListener("DOMContentLoaded", () => {
     checkAuth();
-    updateUI();
     loadDashboardStats();
 });
