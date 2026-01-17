@@ -9,7 +9,7 @@
 </head>
 <body>
     <aside class="sidebar">
-        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM Logo"></div>
+        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
         <ul class="sidebar-menu">
             <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
             <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
@@ -29,25 +29,24 @@
         <div class="scroll-area">
             <div style="text-align:right; margin-bottom:20px;">
                 <button onclick="openNewModal()" class="btn" style="width:auto; background:#16a34a; color:white; display:inline-flex;">
-                    <i class="fas fa-plus-circle"></i> Alta de Equipo Nuevo
+                    <i class="fas fa-plus-circle"></i> Alta de Equipo
                 </button>
             </div>
 
             <div class="card">
-                <h3 style="margin-top:0;">Flota Instalada</h3>
                 <div style="overflow-x:auto;">
                     <table style="width:100%;">
                         <thead>
                             <tr>
-                                <th>Cliente / Área</th>
+                                <th>Ubicación</th>
                                 <th>Equipo</th>
                                 <th>Serie / IP</th>
                                 <th>Instalación</th>
-                                <th style="text-align:center;">Gestión</th>
+                                <th style="text-align:center;">Acción</th>
                             </tr>
                         </thead>
                         <tbody id="equipTable">
-                            <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando inventario...</td></tr>
+                            <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -57,78 +56,31 @@
 
     <div id="newModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 class="modal-title">📦 Registrar Equipo Nuevo</h3>
+            <h3 class="modal-title">📦 Nuevo Equipo</h3>
             <form id="equipForm">
-                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #e2e8f0;">
-                    <label style="color:#3b82f6;">📍 Ubicación Inicial</label>
+                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <label>Ubicación</label>
                     <select id="instSelect" onchange="loadDepts(this.value)" required><option value="">Cliente...</option></select>
-                    <select id="deptSelect" required disabled><option value="">-- Seleccione Cliente --</option></select>
+                    <select id="deptSelect" required disabled><option value="">-- Primero Cliente --</option></select>
                 </div>
-
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
                     <div><label>Marca</label><input id="brand" placeholder="Ej: Ricoh" required></div>
                     <div><label>Modelo</label><input id="model" placeholder="Ej: MPC 305" required></div>
                 </div>
-                
-                <label>Número de Serie</label>
-                <input id="serial" placeholder="Ej: E334M..." required>
-
-                <label>Dirección IP (Opcional)</label>
-                <input id="ip" placeholder="Ej: 192.168.1.50">
-
+                <label>Serie</label><input id="serial" required>
+                <label>IP</label><input id="ip">
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                    <div><label>Fecha Instalación</label><input type="date" id="installDate" required></div>
-                    <div><label>Contador Inicial</label><input type="number" id="initMeter" value="0" required></div>
+                    <div><label>Fecha</label><input type="date" id="installDate" required></div>
+                    <div><label>Contador</label><input type="number" id="initMeter" value="0" required></div>
                 </div>
-
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal('newModal')">Cancelar</button>
-                    <button type="submit" class="btn-confirm" style="background:#16a34a;">Guardar</button>
+                    <button type="submit" class="btn-confirm">Guardar</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <div id="swapModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 class="modal-title"><i class="fas fa-sync-alt" style="color:#f59e0b;"></i> Rotación de Equipo</h3>
-            <p style="font-size:13px; color:#64748b;">Estás retirando: <strong id="swapModel">...</strong> del área: <strong id="swapDept">...</strong></p>
-            
-            <form id="swapForm">
-                <input type="hidden" id="swapEquipId">
-                <input type="hidden" id="swapDeptId"> <label>1. Motivo del Cambio</label>
-                <textarea id="swapReason" rows="2" placeholder="Ej: Equipo dañado, requiere cambio de unidad..." required></textarea>
-
-                <label>2. Contador Final (Al Retirar)</label>
-                <input type="number" id="swapMeter" placeholder="Ej: 150000" required>
-
-                <div style="background:#fff7ed; padding:15px; border-radius:8px; border:1px solid #ffedd5; margin-top:10px;">
-                    <label style="color:#c2410c;">3. Destino del equipo retirado</label>
-                    <select id="swapDestination" required>
-                        <option value="workshop">Enviar a Taller (Reparación)</option>
-                        <option value="retired">Dar de Baja (Chatarra)</option>
-                    </select>
-                </div>
-
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeModal('swapModal')">Cancelar</button>
-                    <button type="submit" class="btn-confirm" style="background:#ea580c;">Confirmar Retiro</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="historyModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 class="modal-title">📜 Historial del Equipo</h3>
-            <ul id="historyList" style="list-style:none; padding:0; font-size:13px; color:#334155;">
-                </ul>
-            <div style="text-align:right; margin-top:20px;">
-                <button class="btn-cancel" onclick="closeModal('historyModal')">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/security.js"></script>
     <script src="js/equipment.js"></script>
