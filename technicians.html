@@ -1,52 +1,92 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"><title>Técnicos | CopierMaster</title>
+    <meta charset="UTF-8"><title>Espacio de Trabajo | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .sla-badge { font-weight:bold; padding:4px 8px; border-radius:4px; font-size:12px; }
+        .sla-ok { background:#e8f5e9; color:#2e7d32; } /* Verde */
+        .sla-danger { background:#ffebee; color:#d32f2f; } /* Rojo */
+        
+        /* Modal de Trabajo */
+        .work-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center; }
+        .work-content { background:white; padding:30px; border-radius:12px; width:500px; max-width:90%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+    </style>
 </head>
 <body>
     <aside class="sidebar">
         <div class="sidebar-logo"><img src="assets/logo.png" alt="CM"></div>
         <ul class="sidebar-menu">
-            <li onclick="window.location.href='dashboard.html'">Dashboard</li>
-            <li onclick="window.location.href='tickets.html'">Tickets</li>
-            <li onclick="window.location.href='institutions.html'">Instituciones</li>
-            <li class="active" onclick="window.location.href='technicians.html'">Técnicos</li>
+            <li class="active">Mis Órdenes</li>
+            <li onclick="window.location.href='index.html'" style="margin-top:auto; color:#d32f2f;">Cerrar Sesión</li>
         </ul>
     </aside>
 
     <main class="main-content">
         <header class="header-flex">
-            <h1>Equipo Técnico</h1>
-            <button class="btn btn-danger" id="logoutBtn">Salir</button>
+            <h1>Mis Asignaciones</h1>
+            <div id="techNameDisplay" style="font-weight:bold; color:#2e7d32;">Técnico</div>
         </header>
 
-        <div class="card-3d">
-            <h3>Registrar Nuevo Técnico</h3>
-            <form id="techForm">
-                <div class="form-group">
-                    <label>Nombre Completo</label>
-                    <input type="text" id="fullName" class="input-3d" required>
-                </div>
-                <div class="form-group">
-                    <label>Email (Para Login)</label>
-                    <input type="email" id="email" class="input-3d" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Registrar Técnico</button>
-            </form>
+        <div class="metrics-grid">
+            <div class="card-3d">
+                <span class="metric-label">Pendientes</span>
+                <span class="metric-value" id="countPending">0</span>
+            </div>
+            <div class="card-3d">
+                <span class="metric-label">SLA Cumplido</span>
+                <span class="metric-value" style="color:#2e7d32" id="slaOk">100%</span>
+            </div>
         </div>
 
         <div class="card-3d">
+            <h3>Órdenes de Trabajo Activas</h3>
             <div class="table-container">
                 <table class="custom-table">
-                    <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Acciones</th></tr></thead>
-                    <tbody id="techTable"></tbody>
+                    <thead><tr><th>Ticket</th><th>Cliente / Equipo</th><th>SLA (Límite)</th><th>Acción</th></tr></thead>
+                    <tbody id="myTicketsTable"></tbody>
                 </table>
             </div>
         </div>
     </main>
 
+    <div id="workModal" class="work-modal">
+        <div class="work-content">
+            <h2 id="modalTitle">Atendiendo Ticket #000</h2>
+            <p id="modalClient" style="color:#666; margin-bottom:20px;">Cliente...</p>
+            
+            <form id="executionForm">
+                <input type="hidden" id="currentTicketId">
+                
+                <div id="stepCheckIn">
+                    <p>🕒 Registra tu hora de llegada al sitio.</p>
+                    <button type="button" class="btn btn-primary" onclick="doCheckIn()">📍 CONFIRMAR LLEGADA (CHECK-IN)</button>
+                </div>
+
+                <div id="stepReport" style="display:none;">
+                    <div class="form-group">
+                        <label>Informe Técnico (Trabajo Realizado)</label>
+                        <textarea id="techNotes" class="input-3d" rows="3" placeholder="Limpieza de óptica, cambio de rodillo..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Repuestos Utilizados (Código/Nombre)</label>
+                        <input type="text" id="spareParts" class="input-3d" placeholder="Ej: Kit MK-4105, Toner Negro">
+                    </div>
+                    <div class="form-group" style="background:#f9f9f9; padding:10px; border-radius:8px;">
+                        <label>Hora de Salida (Automática)</label>
+                        <div id="departureTimeDisplay" style="font-weight:bold;">--:--</div>
+                    </div>
+                    
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="button" class="btn btn-danger" onclick="closeModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-primary">✅ FINALIZAR Y CERRAR ORDEN</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/technicians.js"></script>
+    <script src="js/tech_workspace.js"></script>
 </body>
 </html>
