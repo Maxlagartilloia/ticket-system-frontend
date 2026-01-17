@@ -2,62 +2,113 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espacio Técnico | CopierMaster</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Espacio Técnico | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* ESTILOS ESPECÍFICOS PARA MÓVIL/TABLET */
+        .tech-body { background: #f1f5f9; padding-bottom: 80px; } /* Espacio para scroll en móvil */
+        .tech-nav { background: #0f172a; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
         .tech-container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        
+        /* TARJETA DE TRABAJO ACTIVO */
         .active-job-card {
-            background: white; border-left: 5px solid #2563eb; 
-            border-radius: 8px; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.15);
-            padding: 25px; margin-bottom: 30px;
+            background: white; border-left: 6px solid #2563eb; 
+            border-radius: 12px; box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.3);
+            padding: 25px; margin-bottom: 30px; position: relative; overflow: hidden;
         }
-        .job-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .job-id { font-size: 18px; font-weight: 800; color: #1e293b; }
-        .job-status { background: #dbeafe; color: #1e40af; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-        .job-detail-row { display: flex; gap: 10px; margin-bottom: 8px; font-size: 14px; color: #475569; }
-        .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-        .big-btn { padding: 15px; border-radius: 8px; border: none; cursor: pointer; font-weight: 600; color: white; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .pending-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .active-job-card::before { content: "EN CURSO"; position: absolute; top: 10px; right: -30px; background: #2563eb; color: white; padding: 5px 40px; transform: rotate(45deg); font-size: 10px; font-weight: bold; }
+
+        .job-header { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .job-id { font-size: 22px; font-weight: 800; color: #1e293b; display: block; }
+        .job-title { font-size: 16px; color: #64748b; margin-top: 5px; }
+
+        .info-row { display: flex; gap: 12px; margin-bottom: 8px; align-items: flex-start; }
+        .info-icon { width: 24px; color: #94a3b8; text-align: center; margin-top: 2px; }
+        .info-text { font-size: 14px; color: #334155; font-weight: 500; }
+        
+        /* BOTONES GRANDES (DEDO) */
+        .btn-big { width: 100%; padding: 18px; border-radius: 12px; border: none; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 15px; transition: transform 0.1s; }
+        .btn-big:active { transform: scale(0.97); }
+        .btn-start { background: #16a34a; color: white; box-shadow: 0 4px 15px rgba(22, 163, 74, 0.3); }
+        .btn-finish { background: #ef4444; color: white; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3); }
+
+        /* LISTA PENDIENTES */
+        .pending-card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .pending-info { flex: 1; }
+        .pending-btn { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 8px 15px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        /* MODAL DE AUDITORÍA */
+        .audit-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 999; justify-content: center; align-items: center; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .audit-content { background: white; width: 100%; max-width: 500px; border-radius: 16px; padding: 25px; position: relative; max-height: 90vh; overflow-y: auto; }
+        
+        .audit-section { margin-bottom: 20px; }
+        .audit-label { display: block; font-weight: 700; font-size: 13px; color: #475569; margin-bottom: 8px; text-transform: uppercase; }
+        .audit-input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; box-sizing: border-box; background: #f8fafc; }
+        .audit-input:focus { border-color: #2563eb; background: white; outline: none; }
+        
+        .audit-textarea { min-height: 80px; resize: vertical; }
     </style>
 </head>
-<body style="background: #f1f5f9; display: block; overflow-y: auto;">
-    <div style="background: #1e293b; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="font-weight: 700;"><i class="fas fa-tools"></i> Modo Técnico</div>
-        <button onclick="logout()" style="background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Salir</button>
-    </div>
+<body class="tech-body">
+
+    <nav class="tech-nav">
+        <div style="font-weight: 700; font-size: 18px;"><i class="fas fa-tools"></i> Técnico</div>
+        <div style="text-align: right;">
+            <div id="techName" style="font-size: 12px; opacity: 0.8;">Cargando...</div>
+            <button onclick="logout()" style="background: none; border: none; color: #ef4444; font-weight: bold; font-size: 12px; cursor: pointer;">SALIR</button>
+        </div>
+    </nav>
 
     <div class="tech-container">
-        <div style="margin-bottom: 25px;">
-            <h2 style="margin: 0; color: #0f172a;">Hola, <span id="techName">Técnico</span> 👋</h2>
-            <p style="margin: 5px 0 0; color: #64748b;">Tienes <strong id="pendingCount">0</strong> órdenes asignadas.</p>
-        </div>
-
+        
+        <h3 style="color: #64748b; font-size: 14px; text-transform: uppercase; margin-bottom: 15px;">🚀 Orden en Curso</h3>
         <div id="activeZone">
-            <div style="text-align: center; padding: 40px; color: #94a3b8; background: white; border-radius: 8px; border: 1px dashed #cbd5e1;">
-                <i class="fas fa-mug-hot" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i><br>
-                No tienes trabajo activo. Selecciona uno pendiente.
+            <div style="text-align: center; padding: 40px 20px; background: white; border-radius: 12px; border: 2px dashed #cbd5e1; color: #94a3b8;">
+                <i class="fas fa-coffee" style="font-size: 40px; margin-bottom: 15px; opacity: 0.5;"></i><br>
+                No tienes ninguna orden iniciada.<br>Selecciona una de la lista de pendientes.
             </div>
         </div>
 
-        <h3 style="font-size: 14px; text-transform: uppercase; color: #64748b; margin-top: 30px;">Cola de Pendientes</h3>
-        <div id="pendingContainer"></div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+
+        <h3 style="color: #64748b; font-size: 14px; text-transform: uppercase; margin-bottom: 15px;">📋 Pendientes (<span id="pendingCount">0</span>)</h3>
+        <div id="pendingContainer">
+            </div>
     </div>
 
-    <div id="reportModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999; justify-content:center; align-items:center;">
-        <div style="background:white; width:90%; max-width:500px; border-radius:12px; padding:25px;">
-            <h3 style="margin-top:0;">📋 Finalizar Orden</h3>
-            <label style="display:block; font-weight:600; font-size:13px;">Diagnóstico y Solución</label>
-            <textarea id="closeNote" rows="4" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #ccc;" placeholder="Describa el trabajo..."></textarea>
+    <div id="auditModal" class="audit-modal">
+        <div class="audit-content">
+            <h2 style="margin-top: 0; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;">📝 Auditoría de Servicio</h2>
             
-            <label style="display:block; font-weight:600; font-size:13px;">Repuestos Usados</label>
-            <input id="closeParts" style="width:100%; padding:10px; border:1px solid #ccc;" placeholder="Ej: Rodillo carga">
+            <form id="auditForm">
+                
+                <div class="audit-section">
+                    <label class="audit-label">1. Diagnóstico Técnico (Lo que encontraste)</label>
+                    <textarea id="auditDiagnosis" class="audit-input audit-textarea" placeholder="Ej: Engranaje de fusión roto por desgaste..." required></textarea>
+                </div>
 
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button onclick="document.getElementById('reportModal').style.display='none'" style="flex:1; padding:12px; background:#ddd; border:none; border-radius:6px;">Cancelar</button>
-                <button onclick="confirmCheckout()" style="flex:1; padding:12px; background:#ef4444; color:white; border:none; border-radius:6px;">Cerrar Orden</button>
-            </div>
+                <div class="audit-section">
+                    <label class="audit-label">2. Procedimiento (Lo que hiciste)</label>
+                    <textarea id="auditAction" class="audit-input audit-textarea" placeholder="Ej: Se reemplazó unidad de fusión y se actualizó firmware..." required></textarea>
+                </div>
+
+                <div class="audit-section">
+                    <label class="audit-label">3. Repuestos Utilizados</label>
+                    <input id="auditParts" class="audit-input" placeholder="Ej: Kit MK-3170, Rodillo de Carga">
+                    <small style="color: #64748b;">Dejar en blanco si fue solo limpieza/configuración.</small>
+                </div>
+
+                <div class="audit-section" style="background: #eff6ff; padding: 15px; border-radius: 8px; border: 1px solid #bfdbfe;">
+                    <label class="audit-label" style="color: #1e40af;"><i class="fas fa-calculator"></i> 4. Contador Total (Obligatorio)</label>
+                    <input type="number" id="auditCounter" class="audit-input" placeholder="Ej: 145032" style="font-size: 20px; font-weight: bold; letter-spacing: 2px;" required>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 30px;">
+                    <button type="button" onclick="closeAuditModal()" style="flex: 1; padding: 15px; background: #f1f5f9; border: none; border-radius: 8px; color: #64748b; font-weight: 600;">Cancelar</button>
+                    <button type="submit" class="btn-big btn-finish" style="flex: 1; margin: 0; font-size: 14px;">CONFIRMAR Y CERRAR</button>
+                </div>
+            </form>
         </div>
     </div>
 
