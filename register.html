@@ -2,21 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Alta de Usuarios | CopierMaster</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Usuarios | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        body { background: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .register-box { background: white; width: 450px; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
+        /* Ajuste específico para centrar esta caja */
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        .register-container { background: white; width: 100%; max-width: 500px; padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin: 20px; }
     </style>
 </head>
 <body>
 
-    <div class="register-box">
-        <h2 style="margin-top:0; color:#0f172a;">🔐 Generador de Credenciales</h2>
-        <p style="color:#64748b; margin-bottom:20px;">Crea accesos para Clientes o Técnicos.</p>
+    <div class="register-container">
+        <h2 style="margin-top:0; color:#0f172a;">🔐 Crear Credenciales</h2>
+        <p style="color:#64748b; margin-bottom:25px; font-size: 14px;">Genera accesos para clientes o personal técnico.</p>
 
         <form id="regForm">
-            <label>1. ¿Qué rol tendrá?</label>
+            <label>1. Tipo de Usuario</label>
             <select id="roleSelect" onchange="toggleInst(this.value)" required style="background:#f0f9ff; border-color:#bae6fd; font-weight:bold;">
                 <option value="client">Cliente (Requiere Empresa)</option>
                 <option value="technician">Técnico (Staff)</option>
@@ -32,13 +34,13 @@
             <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
 
             <label>Correo Electrónico</label>
-            <input type="email" id="email" placeholder="usuario@dominio.com" required>
+            <input type="email" id="email" placeholder="ej: usuario@cliente.com" required>
 
             <label>Contraseña Temporal</label>
-            <input type="text" id="password" placeholder="Ej: Acceso2026" required>
+            <input type="text" id="password" placeholder="Ej: Clave2026" required>
 
             <label>Nombre Completo</label>
-            <input type="text" id="fullname" placeholder="Ej: Juan Pérez" required>
+            <input type="text" id="fullname" placeholder="Ej: Dra. Ana Lopez" required>
 
             <button type="submit" class="btn" style="background:#0f172a; color:white; margin-top:10px;">Crear Usuario</button>
         </form>
@@ -50,7 +52,6 @@
     <script>
         const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
 
-        // Mostrar/Ocultar selector de empresa según el rol
         window.toggleInst = (role) => {
             const div = document.getElementById('instContainer');
             if (role === 'technician') {
@@ -62,7 +63,6 @@
             }
         }
 
-        // Cargar empresas
         async function loadInst() {
             const { data } = await sb.from('institutions').select('id, name').order('name');
             const sel = document.getElementById('instSelect');
@@ -71,7 +71,6 @@
         }
         loadInst();
 
-        // Crear Usuario
         document.getElementById('regForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
@@ -84,7 +83,7 @@
             const password = document.getElementById('password').value;
             const name = document.getElementById('fullname').value;
 
-            // 1. Auth SignUp
+            // 1. Crear en Auth
             const { data, error } = await sb.auth.signUp({
                 email: email, password: password,
                 options: { data: { full_name: name } }
@@ -96,16 +95,14 @@
                 return;
             }
 
-            // 2. Profile Update (Esperar un poco para que el trigger termine)
+            // 2. Actualizar Perfil (Rol y Empresa)
             if (data.user) {
                 setTimeout(async () => {
-                    const { error: upError } = await sb.from('profiles').update({ 
+                    await sb.from('profiles').update({ 
                         institution_id: instId,
                         full_name: name,
-                        role: role // AQUÍ SE GUARDA SI ES TÉCNICO O CLIENTE
+                        role: role 
                     }).eq('id', data.user.id);
-
-                    if (upError) console.error(upError);
                     
                     msg.innerHTML = `<div style="background:#dcfce7; color:#166534; padding:10px; border-radius:8px;">
                         <strong>¡Usuario Creado!</strong><br>
@@ -116,7 +113,7 @@
                     
                     e.target.reset();
                     btn.innerHTML = "Crear Otro"; btn.disabled = false;
-                    await sb.auth.signOut(); // Limpiar sesión para no quedar logueado
+                    await sb.auth.signOut(); // Salir para no quedar logueado
                 }, 1000);
             }
         });
