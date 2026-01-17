@@ -2,25 +2,21 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard | CopierMaster Enterprise</title>
+    <title>Dashboard | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-
     <aside class="sidebar">
         <div class="sidebar-brand">
-            <img src="assets/logo.png" alt="CM Logo">
+            <img src="assets/logo.png" alt="CM">
         </div>
         <ul class="sidebar-menu">
             <li class="menu-item active" onclick="location.href='dashboard.html'">
                 <i class="fas fa-chart-pie"></i> Dashboard
             </li>
             <li class="menu-item" onclick="location.href='tickets.html'">
-                <i class="fas fa-ticket-alt"></i> Mesa de Ayuda
-            </li>
-            <li class="menu-item" onclick="location.href='monitor.html'">
-                <i class="fas fa-desktop"></i> Monitor MPS
+                <i class="fas fa-ticket-alt"></i> Help Desk
             </li>
             <li class="menu-item" onclick="location.href='institutions.html'">
                 <i class="fas fa-building"></i> Clientes
@@ -42,71 +38,52 @@
 
     <main class="main-content">
         <header class="top-bar">
-            <div class="page-title">
-                <h1>Panel de Control</h1>
-                <p>Resumen operativo en tiempo real</p>
-            </div>
-            
-            <div class="user-profile">
-                <div class="user-avatar" id="userInitial">A</div>
-                <div style="font-size: 13px;">
-                    <strong style="display:block; color:#1e293b;" id="userName">Cargando...</strong>
-                    <button class="btn-logout" id="logoutBtn">Cerrar Sesión</button>
-                </div>
+            <div class="page-title">Visión General</div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span class="user-badge" id="userName">Cargando...</span>
+                <button class="btn-logout" id="logoutBtn"><i class="fas fa-power-off"></i></button>
             </div>
         </header>
 
         <div class="scroll-area">
-            
             <div class="kpi-grid">
                 <div class="card">
-                    <div class="kpi-label">Tickets Abiertos</div>
-                    <div class="kpi-number" id="openTickets">--</div>
-                    <i class="fas fa-ticket-alt kpi-icon"></i>
+                    <div class="kpi-title">Tickets Abiertos</div>
+                    <div class="kpi-value" id="openTickets">--</div>
                 </div>
                 <div class="card">
-                    <div class="kpi-label">En Proceso</div>
-                    <div class="kpi-number" id="inProgress" style="color: #f59e0b;">--</div>
-                    <i class="fas fa-tools kpi-icon"></i>
+                    <div class="kpi-title">En Proceso</div>
+                    <div class="kpi-value" id="inProgress" style="color:#f59e0b;">--</div>
                 </div>
                 <div class="card">
-                    <div class="kpi-label">Clientes Activos</div>
-                    <div class="kpi-number" id="institutions">--</div>
-                    <i class="fas fa-building kpi-icon"></i>
+                    <div class="kpi-title">Clientes</div>
+                    <div class="kpi-value" id="institutions">--</div>
                 </div>
                 <div class="card">
-                    <div class="kpi-label">Flota Instalada</div>
-                    <div class="kpi-number" id="equipment">--</div>
-                    <i class="fas fa-print kpi-icon"></i>
+                    <div class="kpi-title">Equipos</div>
+                    <div class="kpi-value" id="equipment">--</div>
                 </div>
             </div>
 
-            <div class="actions-section">
-                <div class="section-title"><i class="fas fa-bolt" style="color:#eab308;"></i> Accesos Directos</div>
-                <div class="actions-grid">
-                    <div class="action-btn" onclick="location.href='tickets.html'">
-                        <i class="fas fa-plus-circle"></i>
-                        <span>Nuevo Ticket</span>
-                    </div>
-                    <div class="action-btn" onclick="location.href='institutions.html'">
-                        <i class="fas fa-building"></i>
-                        <span>Registrar Cliente</span>
-                    </div>
-                    <div class="action-btn" onclick="location.href='equipment.html'">
-                        <i class="fas fa-qrcode"></i>
-                        <span>Alta de Equipo</span>
-                    </div>
-                    <div class="action-btn" onclick="location.href='technicians.html'">
-                        <i class="fas fa-user-plus"></i>
-                        <span>Nuevo Técnico</span>
-                    </div>
+            <h3 style="color:var(--text-main); margin-top:40px;">⚡ Gestión Rápida</h3>
+            <div class="actions-grid">
+                <div class="action-btn" onclick="location.href='tickets.html'">
+                    <i class="fas fa-file-medical" style="color:#ea580c;"></i>
+                    <span>Crear Ticket</span>
+                </div>
+                <div class="action-btn" onclick="location.href='institutions.html'">
+                    <i class="fas fa-plus-circle" style="color:#16a34a;"></i>
+                    <span>Nuevo Cliente</span>
+                </div>
+                <div class="action-btn" onclick="location.href='technicians.html'">
+                    <i class="fas fa-user-shield" style="color:#9333ea;"></i>
+                    <span>Registrar Técnico</span>
                 </div>
             </div>
-
         </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/dashboard.js"></script>
 </body>
-</html>        
+</html>
