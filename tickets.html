@@ -1,118 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Tickets | CopierMaster</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="css/styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-</head>
-
+    <meta charset="UTF-8"><title>Tickets | CopierMaster</title>
+    <link rel="stylesheet" href="css/styles.css"> </head>
 <body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><img src="assets/logo.png" alt="CM"></div>
+        <ul class="sidebar-menu">
+            <li onclick="window.location.href='dashboard.html'">Dashboard</li>
+            <li class="active" onclick="window.location.href='tickets.html'">Tickets</li>
+            <li onclick="window.location.href='institutions.html'">Instituciones</li>
+            <li onclick="window.location.href='technicians.html'">Técnicos</li>
+        </ul>
+    </aside>
 
-<div class="app-container">
+    <main class="main-content">
+        <header class="header-flex">
+            <h1>Gestión de Tickets</h1>
+            <button class="btn btn-danger" id="logoutBtn">Salir</button>
+        </header>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <img src="assets/logo.png" alt="CopierMaster">
-    </div>
+        <div class="card-3d">
+            <h3>Nuevo Ticket de Soporte</h3>
+            <form id="ticketForm">
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px;">
+                    <div class="form-group">
+                        <label>Título del Problema</label>
+                        <input type="text" id="title" class="input-3d" placeholder="Ej: Falla de impresión en red" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select id="priority" class="input-3d">
+                            <option value="low">Baja</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                </div>
 
-    <!-- TÍTULO DINÁMICO SEGÚN ROL -->
-    <div class="sidebar-title" id="panelTitle">Tickets</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div class="form-group">
+                        <label>Institución (Cliente)</label>
+                        <select id="institutionSelect" class="input-3d" required>
+                            <option value="">Cargando clientes...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Asignar Técnico</label>
+                        <select id="technicianSelect" class="input-3d">
+                            <option value="">Sin asignar (Pendiente)</option>
+                        </select>
+                    </div>
+                </div>
 
-    <ul class="sidebar-menu">
-      <li onclick="goTo('dashboard.html')">Dashboard</li>
-      <li class="active">Tickets</li>
-      <li onclick="goTo('institutions.html')">Institutions</li>
-      <li onclick="goTo('departments.html')">Departments</li>
-      <li onclick="goTo('technicians.html')">Technicians</li>
-      <li onclick="goTo('reportes.html')">Reports</li>
-    </ul>
+                <div class="form-group">
+                    <label>Descripción Detallada</label>
+                    <textarea id="description" class="input-3d" rows="3" placeholder="Detalles del error, códigos, etc."></textarea>
+                </div>
 
-    <div class="sidebar-footer">
-      <small>CopierMaster C&amp;G<br>Technical Support</small>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <main class="main-content">
-
-    <header class="dashboard-header">
-      <h1>Tickets</h1>
-      <button class="logout-btn" onclick="logout()">Logout</button>
-    </header>
-
-    <!-- CREATE TICKET (VISIBLE SOLO PARA CLIENTE DESDE JS) -->
-    <section class="card" id="createTicketSection">
-      <h2>Create Ticket</h2>
-
-      <form id="ticketForm">
-
-        <div class="form-row">
-          <label>Title</label>
-          <input type="text" id="title" required />
+                <button type="submit" class="btn btn-primary">Crear Ticket</button>
+            </form>
         </div>
 
-        <div class="form-row">
-          <label>Institution</label>
-          <select id="institutionSelect" required></select>
+        <div class="card-3d">
+            <div class="table-container">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Título</th>
+                            <th>Cliente</th>
+                            <th>Estado</th>
+                            <th>Técnico</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketsTable">
+                        <tr><td colspan="6" style="text-align:center">Cargando tickets...</td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
+    </main>
 
-        <div class="form-row">
-          <label>Department</label>
-          <select id="departmentSelect" required></select>
-        </div>
-
-        <div class="form-row">
-          <label>Equipment</label>
-          <select id="equipmentSelect"></select>
-        </div>
-
-        <div class="form-row">
-          <label>Priority</label>
-          <select id="priority" required>
-            <option value="low">Low</option>
-            <option value="medium" selected>Medium</option>
-            <option value="high">High</option>
-          </select>
-        </div>
-
-        <div class="form-row">
-          <label>Description</label>
-          <textarea id="description" rows="4" required></textarea>
-        </div>
-
-        <button type="submit">Create Ticket</button>
-      </form>
-    </section>
-
-    <!-- TICKETS LIST -->
-    <section class="card">
-      <h2>Tickets</h2>
-
-      <table class="tickets-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Institution</th>
-            <!-- ACCIONES SEGÚN ROL (JS) -->
-            <th id="actionsHeader">Actions</th>
-          </tr>
-        </thead>
-        <tbody id="ticketsTable"></tbody>
-      </table>
-    </section>
-
-  </main>
-
-</div>
-
-<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
-<script src="js/tickets.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/tickets.js"></script>
 </body>
 </html>
