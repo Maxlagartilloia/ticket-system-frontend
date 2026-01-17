@@ -1,92 +1,59 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8"><title>Espacio de Trabajo | CopierMaster</title>
+    <meta charset="UTF-8"><title>Técnicos | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
-    <style>
-        .sla-badge { font-weight:bold; padding:4px 8px; border-radius:4px; font-size:12px; }
-        .sla-ok { background:#e8f5e9; color:#2e7d32; } /* Verde */
-        .sla-danger { background:#ffebee; color:#d32f2f; } /* Rojo */
-        
-        /* Modal de Trabajo */
-        .work-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:100; justify-content:center; align-items:center; }
-        .work-content { background:white; padding:30px; border-radius:12px; width:500px; max-width:90%; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-    </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <aside class="sidebar">
-        <div class="sidebar-logo"><img src="assets/logo.png" alt="CM"></div>
+        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
         <ul class="sidebar-menu">
-            <li class="active">Mis Órdenes</li>
-            <li onclick="window.location.href='index.html'" style="margin-top:auto; color:#d32f2f;">Cerrar Sesión</li>
+            <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
+            <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-headset"></i> Help Desk</li>
+            <li class="menu-item" onclick="location.href='monitor.html'"><i class="fas fa-desktop"></i> Monitor MPS</li>
+            <li class="menu-item" onclick="location.href='institutions.html'"><i class="fas fa-building"></i> Clientes</li>
+            <li class="menu-item" onclick="location.href='departments.html'"><i class="fas fa-sitemap"></i> Departamentos</li>
+            <li class="menu-item" onclick="location.href='equipment.html'"><i class="fas fa-print"></i> Equipos</li>
+            <li class="menu-item active" onclick="location.href='technicians.html'"><i class="fas fa-users-cog"></i> Técnicos</li>
+            <li class="menu-item" onclick="location.href='reports.html'"><i class="fas fa-file-invoice-dollar"></i> Reportes</li>
         </ul>
     </aside>
 
     <main class="main-content">
-        <header class="header-flex">
-            <h1>Mis Asignaciones</h1>
-            <div id="techNameDisplay" style="font-weight:bold; color:#2e7d32;">Técnico</div>
+        <header class="top-bar">
+            <div class="page-title">Equipo Técnico</div>
+            <button class="btn btn-logout" onclick="location.href='index.html'">Salir</button>
         </header>
 
-        <div class="metrics-grid">
-            <div class="card-3d">
-                <span class="metric-label">Pendientes</span>
-                <span class="metric-value" id="countPending">0</span>
+        <div class="scroll-area">
+            <div class="card" style="margin-bottom:30px;">
+                <h3>Registrar Nuevo Técnico</h3>
+                <p style="color:#64748b; font-size:13px; margin-bottom:20px;">El usuario debe registrarse primero en la App, aquí le asignas el rol.</p>
+                <form id="techForm">
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input id="name" placeholder="Nombre Apellido" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email (Debe coincidir con su login)</label>
+                            <input id="email" type="email" placeholder="tecnico@empresa.com" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" style="background:var(--primary); color:white; margin-top:15px;">Autorizar Acceso</button>
+                </form>
             </div>
-            <div class="card-3d">
-                <span class="metric-label">SLA Cumplido</span>
-                <span class="metric-value" style="color:#2e7d32" id="slaOk">100%</span>
-            </div>
-        </div>
 
-        <div class="card-3d">
-            <h3>Órdenes de Trabajo Activas</h3>
-            <div class="table-container">
-                <table class="custom-table">
-                    <thead><tr><th>Ticket</th><th>Cliente / Equipo</th><th>SLA (Límite)</th><th>Acción</th></tr></thead>
-                    <tbody id="myTicketsTable"></tbody>
+            <div class="card">
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead><tr style="background:#f8fafc;"><th style="padding:15px;">Nombre</th><th style="padding:15px;">Rol</th><th style="padding:15px;">Email</th></tr></thead>
+                    <tbody id="techTable"></tbody>
                 </table>
             </div>
         </div>
     </main>
-
-    <div id="workModal" class="work-modal">
-        <div class="work-content">
-            <h2 id="modalTitle">Atendiendo Ticket #000</h2>
-            <p id="modalClient" style="color:#666; margin-bottom:20px;">Cliente...</p>
-            
-            <form id="executionForm">
-                <input type="hidden" id="currentTicketId">
-                
-                <div id="stepCheckIn">
-                    <p>🕒 Registra tu hora de llegada al sitio.</p>
-                    <button type="button" class="btn btn-primary" onclick="doCheckIn()">📍 CONFIRMAR LLEGADA (CHECK-IN)</button>
-                </div>
-
-                <div id="stepReport" style="display:none;">
-                    <div class="form-group">
-                        <label>Informe Técnico (Trabajo Realizado)</label>
-                        <textarea id="techNotes" class="input-3d" rows="3" placeholder="Limpieza de óptica, cambio de rodillo..." required></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Repuestos Utilizados (Código/Nombre)</label>
-                        <input type="text" id="spareParts" class="input-3d" placeholder="Ej: Kit MK-4105, Toner Negro">
-                    </div>
-                    <div class="form-group" style="background:#f9f9f9; padding:10px; border-radius:8px;">
-                        <label>Hora de Salida (Automática)</label>
-                        <div id="departureTimeDisplay" style="font-weight:bold;">--:--</div>
-                    </div>
-                    
-                    <div style="display:flex; gap:10px; margin-top:20px;">
-                        <button type="button" class="btn btn-danger" onclick="closeModal()">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">✅ FINALIZAR Y CERRAR ORDEN</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/tech_workspace.js"></script>
+    <script src="js/technicians.js"></script>
 </body>
 </html>
