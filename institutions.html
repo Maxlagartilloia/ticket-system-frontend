@@ -1,203 +1,60 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>CopierMaster | Institutions</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="css/styles.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-  <style>
-    /* =========================================
-       ESTILOS DE EMERGENCIA (Para que se vea bonito SÍ o SÍ)
-       ========================================= */
-    body {
-      background-color: #f4f6f8; /* Fondo gris suave */
-      font-family: 'Inter', sans-serif;
-    }
-    
-    /* Diseño de Tarjetas (Cards) */
-    .card {
-      background: white;
-      border-radius: 12px;
-      padding: 30px;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Sombra elegante */
-      border: 1px solid #e0e0e0;
-    }
-
-    h2 {
-      margin-top: 0;
-      color: #2e7d32; /* Verde corporativo */
-      border-bottom: 2px solid #e8f5e9;
-      padding-bottom: 15px;
-      margin-bottom: 20px;
-    }
-
-    /* Formulario Bonito */
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr; /* Dos columnas */
-      gap: 20px;
-    }
-    
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #555;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 14px;
-      box-sizing: border-box; /* Para que el padding no rompa el ancho */
-      transition: border-color 0.3s;
-    }
-
-    .form-group input:focus {
-      border-color: #2e7d32;
-      outline: none;
-    }
-
-    /* Botón verde grande */
-    .btn-submit {
-      background: #2e7d32;
-      color: white;
-      border: none;
-      padding: 12px 25px;
-      border-radius: 6px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 15px;
-      margin-top: 10px;
-      width: 100%;
-    }
-    .btn-submit:hover { background: #1b5e20; }
-
-    /* Tabla Profesional */
-    .table-container {
-      overflow-x: auto;
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th {
-      background: #f9f9f9;
-      color: #444;
-      font-weight: 700;
-      text-align: left;
-      padding: 12px;
-      border-bottom: 2px solid #ddd;
-    }
-
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-      color: #333;
-    }
-
-    tr:hover { background-color: #f1f8e9; } /* Hover verde claro */
-
-  </style>
+    <meta charset="UTF-8"><title>Instituciones | CopierMaster</title>
+    <link rel="stylesheet" href="css/styles.css">
 </head>
-
 <body>
+    <aside class="sidebar">
+        <div class="sidebar-logo"><img src="assets/logo.png" alt="CM"></div>
+        <ul class="sidebar-menu">
+            <li onclick="window.location.href='dashboard.html'">Dashboard</li>
+            <li onclick="window.location.href='tickets.html'">Tickets</li>
+            <li class="active" onclick="window.location.href='institutions.html'">Instituciones</li>
+            <li onclick="window.location.href='technicians.html'">Técnicos</li>
+        </ul>
+    </aside>
 
-<div class="app-container">
+    <main class="main-content">
+        <header class="header-flex">
+            <h1>Gestión de Clientes</h1>
+            <button class="btn btn-danger" id="logoutBtn">Salir</button>
+        </header>
 
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <img src="assets/logo.png" alt="CopierMaster">
-    </div>
-
-    <div class="sidebar-title">Institutions</div>
-
-    <ul class="sidebar-menu">
-      <li onclick="window.location.href='dashboard.html'">Dashboard</li>
-      <li onclick="window.location.href='tickets.html'">Tickets</li>
-      <li class="active" onclick="window.location.href='institutions.html'">Institutions</li>
-      <li onclick="window.location.href='departments.html'">Departments</li>
-      <li onclick="window.location.href='equipment.html'">Equipment</li>
-      <li onclick="window.location.href='technicians.html'">Technicians</li>
-      <li onclick="window.location.href='reports.html'">Reports</li>
-    </ul>
-
-    <div class="sidebar-footer">
-      <small>CopierMaster C&amp;G<br>Technical Support</small>
-    </div>
-  </aside>
-
-  <main class="main-content">
-
-    <header class="dashboard-header">
-      <h1>Client Management</h1>
-      <button class="logout-btn" id="logoutBtn">Logout</button>
-    </header>
-
-    <section class="card">
-      <h2>Register New Institution</h2>
-
-      <form id="institutionForm">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Company Name</label>
-            <input type="text" id="name" placeholder="Ex: Hospital General" required />
-          </div>
-
-          <div class="form-group">
-            <label>Phone Contact</label>
-            <input type="text" id="phone" placeholder="Ex: 0991234567" />
-          </div>
+        <div class="card-3d">
+            <h3 style="margin-top:0">Nueva Institución</h3>
+            <form id="institutionForm">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                    <div class="form-group">
+                        <label>Nombre Empresa</label>
+                        <input type="text" id="name" class="input-3d" placeholder="Ej: Hospital General" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Teléfono</label>
+                        <input type="text" id="phone" class="input-3d" placeholder="Ej: 0991234567">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Dirección</label>
+                    <input type="text" id="address" class="input-3d" placeholder="Dirección completa">
+                </div>
+                <button type="submit" class="btn btn-primary">Guardar Institución</button>
+            </form>
         </div>
 
-        <div class="form-group">
-          <label>Address</label>
-          <input type="text" id="address" placeholder="Ex: Av. Amazonas N45 y La Prensa" />
+        <div class="card-3d">
+            <div class="table-container">
+                <table class="custom-table">
+                    <thead>
+                        <tr><th>ID</th><th>Nombre</th><th>Dirección</th><th>Teléfono</th><th>Acciones</th></tr>
+                    </thead>
+                    <tbody id="institutionsTable"></tbody>
+                </table>
+            </div>
         </div>
+    </main>
 
-        <button type="submit" class="btn-submit">Create Institution</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h2>Registered Institutions</h2>
-      
-      <div class="table-container">
-        <table class="tickets-table">
-          <thead>
-            <tr>
-              <th width="5%">ID</th>
-              <th width="30%">Name</th>
-              <th width="35%">Address</th>
-              <th width="15%">Phone</th>
-              <th width="15%">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="institutionsTable">
-            </tbody>
-        </table>
-      </div>
-    </section>
-
-  </main>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/institutions.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/institutions.js"></script>
 </body>
 </html>
