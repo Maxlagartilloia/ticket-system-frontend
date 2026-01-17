@@ -13,13 +13,11 @@
 
 <div class="app-container">
 
-  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="assets/logo.png" alt="CopierMaster">
     </div>
 
-    <!-- TÍTULO DINÁMICO SEGÚN ROL -->
     <div class="sidebar-title" id="panelTitle">Institutions</div>
 
     <ul class="sidebar-menu">
@@ -27,7 +25,7 @@
       <li onclick="goTo('tickets.html')">Tickets</li>
       <li class="active">Institutions</li>
       <li onclick="goTo('technicians.html')">Technicians</li>
-      <li onclick="goTo('reportes.html')">Reports</li>
+      <li onclick="goTo('reports.html')">Reports</li>
     </ul>
 
     <div class="sidebar-footer">
@@ -35,36 +33,38 @@
     </div>
   </aside>
 
-  <!-- MAIN -->
   <main class="main-content">
 
     <header class="dashboard-header">
-      <h1>Institutions</h1>
-      <button class="logout-btn" onclick="logout()">Logout</button>
+      <h1>Client Management</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
 
-    <!-- CREATE INSTITUTION (VISIBLE SOLO PARA ADMIN / SUPERVISOR DESDE JS) -->
     <section class="card" id="createInstitutionSection">
-      <h2>Create Institution</h2>
+      <h2>Register New Institution</h2>
 
       <form id="institutionForm">
         <div class="form-row">
-          <label>Name</label>
-          <input type="text" id="name" required />
+          <label>Company Name</label>
+          <input type="text" id="name" placeholder="Ex: Hospital General" required />
         </div>
 
         <div class="form-row">
           <label>Address</label>
-          <input type="text" id="address" />
+          <input type="text" id="address" placeholder="Ex: Av. Amazonas N45" />
+        </div>
+
+        <div class="form-row">
+          <label>Phone Contact</label>
+          <input type="text" id="phone" placeholder="Ex: 0991234567" />
         </div>
 
         <button type="submit">Create Institution</button>
       </form>
     </section>
 
-    <!-- LIST INSTITUTIONS -->
     <section class="card">
-      <h2>All Institutions</h2>
+      <h2>Registered Institutions</h2>
 
       <table class="tickets-table">
         <thead>
@@ -72,11 +72,11 @@
             <th>ID</th>
             <th>Name</th>
             <th>Address</th>
-            <!-- ACCIONES (EDIT / DELETE DESDE JS) -->
-            <th id="actionsHeader">Actions</th>
+            <th>Phone</th> <th>Actions</th>
           </tr>
         </thead>
-        <tbody id="institutionsTable"></tbody>
+        <tbody id="institutionsTable">
+          </tbody>
       </table>
     </section>
 
@@ -84,7 +84,9 @@
 
 </div>
 
-<!-- TODA LA LÓGICA Y SEGURIDAD SE MANEJA AQUÍ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="js/institutions.js"></script>
+
 </body>
 </html>
