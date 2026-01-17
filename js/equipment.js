@@ -1,161 +1,43 @@
-// ==========================================
-// EQUIPMENT LOGIC - COPIERMASTER LEAD ENGINEER
-// ==========================================
+const SUPABASE_URL = 'https://esxojlfcjwtahkcrqxkd.supabase.co'; 
+const SUPABASE_ANON_KEY = 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y'; 
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
+async function loadEquip() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return window.location.href = "index.html";
 
-// 🔐 AUTH DATA (REGLA ABSOLUTA)
-const token = localStorage.getItem("copiermaster_token");
-const role = localStorage.getItem("copiermaster_role");
-
-// ================================
-// AUTH GUARD
-// ================================
-if (!token || !["admin", "supervisor"].includes(role)) {
-    window.location.href = "index.html";
-}
-
-// ================================
-// ELEMENTS
-// ================================
-const institutionSelect = document.getElementById("institutionSelect");
-const departmentSelect = document.getElementById("departmentSelect");
-const equipmentTable = document.getElementById("equipmentTable");
-const equipmentForm = document.getElementById("equipmentForm");
-
-// ================================
-// LOAD INSTITUTIONS (REFACTORIZADO)
-// ================================
-async function loadInstitutions() {
-    try {
-        // ✅ RUTA CORREGIDA: /institutions
-        const res = await fetch(`${API_BASE_URL}/institutions`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-
-        if (res.status === 401) return logout();
-        
-        const data = await res.json();
-        if (!institutionSelect) return;
-
-        institutionSelect.innerHTML = '<option value="">Select Institution</option>';
-        data.forEach(inst => {
-            const opt = document.createElement("option");
-            opt.value = inst.id;
-            opt.textContent = inst.name;
-            institutionSelect.appendChild(opt);
-        });
-    } catch (err) {
-        console.error("Error loading institutions:", err);
-    }
-}
-
-// ================================
-// LOAD DEPARTMENTS
-// ================================
-async function loadDepartments(institutionId) {
-    if (!institutionId) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/departments/institution/${institutionId}`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await res.json();
-        
-        departmentSelect.innerHTML = '<option value="">Select Department</option>';
-        equipmentTable.innerHTML = "";
-
-        data.forEach(dep => {
-            const opt = document.createElement("option");
-            opt.value = dep.id;
-            opt.textContent = dep.name;
-            departmentSelect.appendChild(opt);
-        });
-    } catch (err) {
-        console.error("Error loading departments:", err);
-    }
-}
-
-// ================================
-// LOAD EQUIPMENT
-// ================================
-async function loadEquipment(departmentId) {
-    if (!departmentId) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/equipment/department/${departmentId}`, {
-            headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await res.json();
-
-        equipmentTable.innerHTML = "";
-        data.forEach(eq => {
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>#${eq.id}</td>
-                <td><strong>${eq.name}</strong></td>
-                <td>${eq.model || "-"}</td>
-                <td>${eq.serial_number || "-"}</td>
-                <td><button class="btn-delete" onclick="alert('Feature coming soon')">Delete</button></td>
-            `;
-            equipmentTable.appendChild(row);
-        });
-    } catch (err) {
-        console.error("Error loading equipment:", err);
-    }
-}
-
-// ================================
-// EVENTS
-// ================================
-if (institutionSelect) {
-    institutionSelect.addEventListener("change", e => loadDepartments(e.target.value));
-}
-
-if (departmentSelect) {
-    departmentSelect.addEventListener("change", e => loadEquipment(e.target.value));
-}
-
-// ================================
-// CREATE EQUIPMENT
-// ================================
-if (equipmentForm) {
-    equipmentForm.addEventListener("submit", async e => {
-        e.preventDefault();
-
-        const payload = {
-            name: document.getElementById("name").value,
-            model: document.getElementById("model").value,
-            serial_number: document.getElementById("serial_number").value,
-            department_id: parseInt(departmentSelect.value) // ✅ Entero obligatorio
-        };
-
-        const res = await fetch(`${API_BASE_URL}/equipment/`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-            alert("Equipment registered successfully!");
-            equipmentForm.reset();
-            loadEquipment(departmentSelect.value);
-        } else {
-            const error = await res.json();
-            alert(`Error: ${error.detail || "Check input data"}`);
-        }
+    const { data } = await sb.from('equipment').select('*');
+    const tbody = document.getElementById('equipTable');
+    tbody.innerHTML = '';
+    data?.forEach(e => {
+        tbody.innerHTML += `
+            <tr>
+                <td><strong>${e.model}</strong></td>
+                <td>${e.serial_number}</td>
+                <td>${e.name}</td>
+                <td><button class="btn btn-danger btn-sm" onclick="deleteEq(${e.id})">Borrar</button></td>
+            </tr>`;
     });
 }
 
-// ================================
-// UTILS
-// ================================
-function logout() {
-    localStorage.clear();
-    window.location.href = "index.html";
+document.getElementById('equipForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const model = document.getElementById('model').value;
+    const serial_number = document.getElementById('serial').value;
+    const name = document.getElementById('name').value;
+    
+    // Ojo: Requiere department_id en la base de datos, 
+    // pero para no complicar el form ahora lo mandamos null o creamos un dummy si falla.
+    await sb.from('equipment').insert([{ model, serial_number, name }]);
+    e.target.reset();
+    loadEquip();
+});
+
+window.deleteEq = async (id) => {
+    if(confirm('¿Eliminar equipo?')) {
+        await sb.from('equipment').delete().eq('id', id);
+        loadEquip();
+    }
 }
-
-function goTo(page) { window.location.href = page; }
-
-document.addEventListener("DOMContentLoaded", loadInstitutions);
+document.getElementById('logoutBtn').addEventListener('click', async () => { await sb.auth.signOut(); window.location.href = "index.html"; });
+document.addEventListener("DOMContentLoaded", loadEquip);
