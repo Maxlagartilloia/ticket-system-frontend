@@ -18,17 +18,18 @@
       <img src="assets/logo.png" alt="CopierMaster">
     </div>
 
-    <!-- Rol dinámico, no asumido -->
     <div class="sidebar-title" id="panelTitle">Dashboard</div>
+    
+    <div style="padding: 0 20px; color: #a5d6a7; font-size: 12px; margin-bottom: 10px;" id="userRoleDisplay"></div>
 
     <ul class="sidebar-menu">
-      <li class="active">Dashboard</li>
-      <li onclick="goTo('tickets.html')">Tickets</li>
-      <li onclick="goTo('institutions.html')">Institutions</li>
-      <li onclick="goTo('departments.html')">Departments</li>
-      <li onclick="goTo('equipment.html')">Equipment</li>
-      <li onclick="goTo('technicians.html')">Technicians</li>
-      <li onclick="goTo('reportes.html')">Reports</li>
+      <li class="active" onclick="window.location.href='dashboard.html'">Dashboard</li>
+      <li onclick="window.location.href='tickets.html'">Tickets</li>
+      <li onclick="window.location.href='institutions.html'">Institutions</li>
+      <li onclick="window.location.href='departments.html'">Departments</li>
+      <li onclick="window.location.href='equipment.html'">Equipment</li>
+      <li onclick="window.location.href='technicians.html'">Technicians</li>
+      <li onclick="window.location.href='reports.html'">Reports</li>
     </ul>
 
     <div class="sidebar-footer">
@@ -39,29 +40,29 @@
   <main class="main-content">
 
     <header class="dashboard-header">
-      <h1>Dashboard</h1>
-      <button class="logout-btn" onclick="logout()">Logout</button>
+      <h1>Dashboard Overview</h1>
+      <button class="logout-btn" id="logoutBtn">Logout</button>
     </header>
 
     <section class="metrics-grid">
       <div class="metric-card">
         <h3>Open Tickets</h3>
-        <span id="openTickets">0</span>
+        <span id="openTickets">Loading...</span>
       </div>
 
       <div class="metric-card">
-        <h3>In Progress</h3>
-        <span id="inProgress">0</span>
-      </div>
-
-      <div class="metric-card">
-        <h3>Resolved Today</h3>
-        <span id="resolvedToday">0</span>
+        <h3>Resolved Tickets</h3>
+        <span id="resolvedTickets">Loading...</span>
       </div>
 
       <div class="metric-card">
         <h3>Institutions</h3>
-        <span id="institutions">0</span>
+        <span id="institutions">Loading...</span>
+      </div>
+      
+      <div class="metric-card">
+        <h3>Users/Techs</h3>
+        <span id="totalUsers">Loading...</span>
       </div>
     </section>
 
@@ -69,7 +70,9 @@
 
 </div>
 
-<!-- Toda la lógica y seguridad se maneja aquí -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script src="js/dashboard.js"></script>
+
 </body>
 </html>
