@@ -7,94 +7,193 @@
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* ESTILO APP CLIENTE */
         .client-body { background: #f8fafc; font-family: 'Inter', sans-serif; }
-        .client-nav { background: white; padding: 15px 30px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .client-nav { background: white; padding: 15px 30px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .client-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
-        
-        /* BOTÓN FLOTANTE O GRANDE */
         .hero-section { text-align: center; margin-bottom: 40px; padding: 40px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 20px; color: white; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2); }
-        .btn-report { background: #ef4444; color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: 700; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); transition: transform 0.2s; display: inline-flex; align-items: center; gap: 10px; }
-        .btn-report:hover { transform: scale(1.05); background: #dc2626; }
-
-        /* LISTA DE TICKETS */
-        .ticket-item { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s; }
-        .ticket-item:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
-        
-        /* MODAL (Igual al del técnico pero adaptado) */
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-        .modal-box { background: white; width: 90%; max-width: 500px; border-radius: 16px; padding: 30px; position: relative; animation: slideUp 0.3s ease; }
+        .btn-report { background: #ef4444; color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: 700; border-radius: 50px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; }
+        .ticket-item { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        /* Modal y Upload */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 90%; max-width: 500px; border-radius: 16px; padding: 30px; animation: slideUp 0.3s ease; }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        
-        .form-label { display: block; font-size: 13px; font-weight: 700; color: #64748b; margin-bottom: 5px; text-transform: uppercase; }
         .form-input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; margin-bottom: 15px; background: #f8fafc; box-sizing: border-box; }
+        .upload-box { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; color: #64748b; margin-bottom: 15px; cursor: pointer; transition: 0.2s; }
+        .upload-box:hover { border-color: #3b82f6; background: #eff6ff; }
     </style>
 </head>
 <body class="client-body">
-
     <nav class="client-nav">
-        <img src="assets/logo.png" style="height: 40px; filter: invert(1) brightness(0);"> <div style="display: flex; align-items: center; gap: 15px;">
-            <div style="text-align: right; font-size: 13px;">
-                <div style="font-weight: 700; color: #1e293b;" id="clientName">Cargando...</div>
-                <div style="color: #64748b;" id="clientInst">...</div>
+        <img src="assets/logo.png" style="height: 40px; filter: invert(1);">
+        <div style="display:flex; align-items:center; gap:15px;">
+            <div style="text-align:right; font-size:13px;">
+                <div style="font-weight:700;" id="clientName">...</div>
+                <div style="color:#64748b;" id="clientInst">...</div>
             </div>
-            <button onclick="logout()" class="btn-logout" style="border:1px solid #e2e8f0; padding:8px 15px; border-radius:8px;">Salir</button>
+            <button onclick="logout()" class="btn-logout" style="border:1px solid #e2e8f0; padding:8px 15px;">Salir</button>
         </div>
     </nav>
 
     <div class="client-container">
         <div class="hero-section">
-            <h1 style="margin: 0 0 10px 0;">¿Problemas con un equipo?</h1>
-            <p style="color: #94a3b8; margin-bottom: 25px;">Estamos aquí para ayudarte. Reporta tu incidencia y un técnico te atenderá.</p>
-            <button class="btn-report" onclick="openModal()">
-                <i class="fas fa-exclamation-circle"></i> REPORTAR FALLA
-            </button>
+            <h1>¿Fallas en el equipo?</h1>
+            <p style="color:#94a3b8; margin-bottom:25px;">Reporta tu incidencia y enviaremos un técnico.</p>
+            <button class="btn-report" onclick="openModal()"><i class="fas fa-exclamation-circle"></i> REPORTAR FALLA</button>
         </div>
 
-        <h3 style="color: #475569; margin-bottom: 20px;"><i class="fas fa-history"></i> Mis Solicitudes</h3>
-        <div id="ticketsContainer">
-            <div style="text-align: center; color: #94a3b8; padding: 20px;">Cargando historial...</div>
-        </div>
+        <h3 style="color:#475569;">Historial de Solicitudes</h3>
+        <div id="ticketsContainer"><div style="text-align:center; padding:20px;">Cargando...</div></div>
     </div>
 
     <div id="ticketModal" class="modal-overlay">
         <div class="modal-box">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: #1e293b;">Nuevo Reporte</h2>
-                <button onclick="closeModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">&times;</button>
-            </div>
-
+            <h2 style="margin-top:0;">Nuevo Reporte</h2>
             <form id="newTicketForm">
-                <label class="form-label">1. ¿Dónde está el equipo?</label>
+                <label>1. Ubicación (Departamento)</label>
                 <select id="deptSelect" class="form-input" onchange="loadEquip(this.value)" required>
-                    <option value="">Selecciona Departamento...</option>
+                    <option value="">Selecciona Área...</option>
                 </select>
 
-                <label class="form-label">2. ¿Qué equipo es?</label>
+                <label>2. Equipo</label>
                 <select id="equipSelect" class="form-input" disabled required>
-                    <option value="">-- Selecciona Dpto Primero --</option>
+                    <option value="">-- Primero el Área --</option>
                 </select>
 
-                <label class="form-label">3. ¿Qué está pasando?</label>
-                <input id="title" class="form-input" placeholder="Ej: Atasco de papel, Manchas, Error C-001" required>
+                <label>3. Falla Presentada</label>
+                <input id="title" class="form-input" placeholder="Ej: Atasco constante, Manchas..." required>
 
-                <label class="form-label">Prioridad</label>
-                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                        <input type="radio" name="prio" value="medium" checked> Normal
-                    </label>
-                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: #ea580c; font-weight: 700;">
-                        <input type="radio" name="prio" value="high"> ALTA (Máquina Parada)
-                    </label>
+                <label>4. Evidencia (Foto/Video) - Opcional</label>
+                <div class="upload-box" onclick="document.getElementById('evidence').click()">
+                    <i class="fas fa-camera" style="font-size:24px; margin-bottom:10px;"></i><br>
+                    <span id="fileName">Clic para subir foto del error</span>
+                    <input type="file" id="evidence" accept="image/*" style="display:none;" onchange="showFile(this)">
                 </div>
 
-                <button type="submit" class="btn" style="width: 100%; background: #0f172a; color: white; padding: 15px; font-size: 16px;">ENVIAR SOLICITUD</button>
+                <button type="submit" class="btn" style="width:100%; background:#0f172a; color:white;">ENVIAR SOLICITUD</button>
+                <button type="button" class="btn-cancel" onclick="closeModal()" style="width:100%; margin-top:10px;">Cancelar</button>
             </form>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/client_portal.js"></script>
+    <script>
+        const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
+        let userProfile = null;
+        let evidenceFile = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await sb.auth.getSession();
+            if (!session) return window.location.href = "index.html";
+
+            const { data: profile } = await sb.from('profiles').select('*, institutions(name)').eq('id', session.user.id).single();
+            userProfile = profile;
+            
+            document.getElementById('clientName').textContent = userProfile.full_name || session.user.email;
+            document.getElementById('clientInst').textContent = userProfile.institutions?.name;
+
+            loadMyTickets();
+            loadDepartments();
+            setInterval(loadMyTickets, 10000);
+        });
+
+        async function loadDepartments() {
+            const { data } = await sb.from('departments').select('*').eq('institution_id', userProfile.institution_id);
+            const sel = document.getElementById('deptSelect');
+            sel.innerHTML = '<option value="">Selecciona Área...</option>';
+            data?.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+        }
+
+        window.loadEquip = async (deptId) => {
+            const sel = document.getElementById('equipSelect');
+            sel.disabled = true; sel.innerHTML = '<option>Cargando...</option>';
+            // Cargamos equipos de ese depto
+            const { data } = await sb.from('equipment').select('*').eq('department_id', deptId).eq('status', 'installed');
+            sel.innerHTML = '<option value="">Selecciona Equipo...</option>';
+            data?.forEach(e => sel.innerHTML += `<option value="${e.id}">${e.brand} ${e.model} (S/N: ${e.serial_number})</option>`);
+            sel.disabled = false;
+        }
+
+        window.showFile = (input) => {
+            if (input.files && input.files[0]) {
+                evidenceFile = input.files[0];
+                document.getElementById('fileName').innerText = "📸 " + evidenceFile.name;
+                document.getElementById('fileName').style.color = "#16a34a";
+                document.getElementById('fileName').style.fontWeight = "bold";
+            }
+        }
+
+        document.getElementById('newTicketForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerHTML = "Subiendo..."; btn.disabled = true;
+
+            let imageUrl = null;
+
+            // 1. SUBIR FOTO (Si existe)
+            if (evidenceFile) {
+                const fileExt = evidenceFile.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const { data, error } = await sb.storage.from('evidence').upload(fileName, evidenceFile);
+                
+                if (error) {
+                    console.error("Error subiendo foto:", error);
+                    alert("Error al subir la imagen, pero crearemos el ticket.");
+                } else {
+                    // Obtener URL pública
+                    const { data: { publicUrl } } = sb.storage.from('evidence').getPublicUrl(fileName);
+                    imageUrl = publicUrl;
+                }
+            }
+
+            // 2. CREAR TICKET (Ahora incluye description con la URL de la foto si hay)
+            const title = document.getElementById('title').value;
+            const desc = imageUrl ? `Evidencia adjunta: ${imageUrl}` : "Sin evidencia visual.";
+
+            const { error } = await sb.from('tickets').insert([{
+                institution_id: userProfile.institution_id,
+                department_id: document.getElementById('deptSelect').value,
+                equipment_id: document.getElementById('equipSelect').value,
+                reported_by: userProfile.id,
+                title: title,
+                description: desc, // Guardamos el link de la foto aquí
+                priority: 'medium',
+                status: 'open'
+            }]);
+
+            if (error) alert("Error: " + error.message);
+            else {
+                closeModal(); e.target.reset();
+                evidenceFile = null; document.getElementById('fileName').innerText = "Clic para subir foto";
+                loadMyTickets();
+                alert("✅ Solicitud enviada correctamente.");
+            }
+            btn.innerHTML = "ENVIAR SOLICITUD"; btn.disabled = false;
+        });
+
+        async function loadMyTickets() {
+            const { data } = await sb.from('tickets').select('*').eq('institution_id', userProfile.institution_id).order('created_at', { ascending: false });
+            const container = document.getElementById('ticketsContainer');
+            container.innerHTML = '';
+            if (!data.length) { container.innerHTML = '<div style="text-align:center; padding:20px;">Sin historial.</div>'; return; }
+
+            data.forEach(t => {
+                let statusInfo = { 'open': ['#fee2e2', '#ef4444', 'Pendiente'], 'in_progress': ['#fef3c7', '#d97706', 'Revisando'], 'resolved': ['#dcfce7', '#16a34a', 'Resuelto'] };
+                const s = statusInfo[t.status] || ['#eee', '#333', t.status];
+                container.innerHTML += `
+                    <div class="ticket-item">
+                        <div>
+                            <div style="font-weight:700;">${t.title}</div>
+                            <div style="font-size:13px; color:#64748b;">${new Date(t.created_at).toLocaleDateString()}</div>
+                        </div>
+                        <div class="status-badge" style="background:${s[0]}; color:${s[1]};">${s[2]}</div>
+                    </div>`;
+            });
+        }
+
+        window.openModal = () => document.getElementById('ticketModal').style.display = 'flex';
+        window.closeModal = () => document.getElementById('ticketModal').style.display = 'none';
+        window.logout = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
+    </script>
 </body>
 </html>
