@@ -7,34 +7,40 @@
     <style>
         body { background: #f8fafc; display: flex; justify-content: center; align-items: center; height: 100vh; }
         .register-box { background: white; width: 450px; padding: 40px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; }
-        .title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
-        .subtitle { font-size: 14px; color: #64748b; margin-bottom: 25px; }
     </style>
 </head>
 <body>
 
     <div class="register-box">
-        <div class="title">🔐 Generar Credenciales</div>
-        <div class="subtitle">Crear acceso seguro para un Cliente</div>
+        <h2 style="margin-top:0; color:#0f172a;">🔐 Generador de Credenciales</h2>
+        <p style="color:#64748b; margin-bottom:20px;">Crea accesos para Clientes o Técnicos.</p>
 
         <form id="regForm">
-            <label>Empresa a la que pertenece</label>
-            <select id="instSelect" required style="background:#f0f9ff; border-color:#bae6fd;">
-                <option value="">Cargando empresas...</option>
+            <label>1. ¿Qué rol tendrá?</label>
+            <select id="roleSelect" onchange="toggleInst(this.value)" required style="background:#f0f9ff; border-color:#bae6fd; font-weight:bold;">
+                <option value="client">Cliente (Requiere Empresa)</option>
+                <option value="technician">Técnico (Staff)</option>
             </select>
+
+            <div id="instContainer">
+                <label>2. Empresa del Cliente</label>
+                <select id="instSelect">
+                    <option value="">Cargando empresas...</option>
+                </select>
+            </div>
 
             <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
 
-            <label>Correo Electrónico (Usuario)</label>
-            <input type="email" id="email" placeholder="cliente@empresa.com" required>
+            <label>Correo Electrónico</label>
+            <input type="email" id="email" placeholder="usuario@dominio.com" required>
 
             <label>Contraseña Temporal</label>
-            <input type="text" id="password" placeholder="Ej: Copier2026" required>
+            <input type="text" id="password" placeholder="Ej: Acceso2026" required>
 
-            <label>Nombre del Encargado</label>
-            <input type="text" id="fullname" placeholder="Ej: Dra. Maria Perez" required>
+            <label>Nombre Completo</label>
+            <input type="text" id="fullname" placeholder="Ej: Juan Pérez" required>
 
-            <button type="submit" class="btn" style="background:#0f172a; color:white; margin-top:10px;">Crear y Vincular Usuario</button>
+            <button type="submit" class="btn" style="background:#0f172a; color:white; margin-top:10px;">Crear Usuario</button>
         </form>
         
         <div id="msg" style="margin-top:20px; font-size:13px; text-align:center;"></div>
@@ -44,36 +50,44 @@
     <script>
         const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
 
-        // Cargar empresas al abrir
+        // Mostrar/Ocultar selector de empresa según el rol
+        window.toggleInst = (role) => {
+            const div = document.getElementById('instContainer');
+            if (role === 'technician') {
+                div.style.display = 'none';
+                document.getElementById('instSelect').required = false;
+            } else {
+                div.style.display = 'block';
+                document.getElementById('instSelect').required = true;
+            }
+        }
+
+        // Cargar empresas
         async function loadInst() {
             const { data } = await sb.from('institutions').select('id, name').order('name');
             const sel = document.getElementById('instSelect');
             sel.innerHTML = '<option value="">-- Seleccione Empresa --</option>';
-            data?.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.name} (ID: ${i.id})</option>`);
+            data?.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.name}</option>`);
         }
         loadInst();
 
-        // Proceso de Registro
+        // Crear Usuario
         document.getElementById('regForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button');
             const msg = document.getElementById('msg');
-            
-            btn.innerHTML = "Creando..."; btn.disabled = true;
-            msg.innerHTML = "";
+            btn.innerHTML = "Procesando..."; btn.disabled = true; msg.innerHTML = "";
 
+            const role = document.getElementById('roleSelect').value;
+            const instId = role === 'client' ? document.getElementById('instSelect').value : null;
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const name = document.getElementById('fullname').value;
-            const instId = document.getElementById('instSelect').value;
 
-            // 1. Crear Usuario en Auth
+            // 1. Auth SignUp
             const { data, error } = await sb.auth.signUp({
-                email: email,
-                password: password,
-                options: {
-                    data: { full_name: name } // Guardar nombre en metadata
-                }
+                email: email, password: password,
+                options: { data: { full_name: name } }
             });
 
             if (error) {
@@ -82,39 +96,27 @@
                 return;
             }
 
-            // 2. Vincular el perfil a la empresa (Actualizar tabla profiles)
-            // Nota: El usuario se crea, pero necesitamos asignarle el ID de empresa inmediatamente.
-            // Como estamos "deslogueados" o somos el usuario nuevo, aprovechamos su propia sesión para actualizarse.
-            
+            // 2. Profile Update (Esperar un poco para que el trigger termine)
             if (data.user) {
-                // Pequeño delay para asegurar que el trigger de base de datos creó el perfil
                 setTimeout(async () => {
-                    const { error: updateError } = await sb.from('profiles')
-                        .update({ 
-                            institution_id: instId,
-                            full_name: name,
-                            role: 'client' // Asegurar rol cliente
-                        })
-                        .eq('id', data.user.id);
+                    const { error: upError } = await sb.from('profiles').update({ 
+                        institution_id: instId,
+                        full_name: name,
+                        role: role // AQUÍ SE GUARDA SI ES TÉCNICO O CLIENTE
+                    }).eq('id', data.user.id);
 
-                    if (updateError) {
-                        console.error(updateError);
-                        msg.innerHTML = `<span style="color:orange;">Usuario creado, pero hubo error vinculando empresa. Revisar manualmente.</span>`;
-                    } else {
-                        msg.innerHTML = `<div style="background:#dcfce7; color:#166534; padding:10px; border-radius:8px;">
-                            <strong>¡Éxito!</strong><br>
-                            Usuario: ${email}<br>
-                            Clave: ${password}<br>
-                            Empresa ID: ${instId}<br>
-                            <br>Ya puedes entregar estas credenciales.
-                        </div>`;
-                        e.target.reset();
-                    }
-                    btn.innerHTML = "Crear Otro Usuario"; btn.disabled = false;
+                    if (upError) console.error(upError);
                     
-                    // IMPORTANTE: Cerrar la sesión del nuevo usuario para no quedarnos logueados como él
-                    await sb.auth.signOut();
+                    msg.innerHTML = `<div style="background:#dcfce7; color:#166534; padding:10px; border-radius:8px;">
+                        <strong>¡Usuario Creado!</strong><br>
+                        Rol: ${role.toUpperCase()}<br>
+                        Email: ${email}<br>
+                        Clave: ${password}
+                    </div>`;
                     
+                    e.target.reset();
+                    btn.innerHTML = "Crear Otro"; btn.disabled = false;
+                    await sb.auth.signOut(); // Limpiar sesión para no quedar logueado
                 }, 1000);
             }
         });
