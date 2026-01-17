@@ -1,122 +1,161 @@
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Inter", sans-serif;
+/* =========================================
+   MASTER STYLESHEET - COPIERMASTER 3D UI
+   ========================================= */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;600;700&display=swap');
+
+:root {
+    --primary: #2e7d32;       /* Verde Corporativo */
+    --primary-dark: #1b5e20;
+    --danger: #d32f2f;        /* Rojo Salida/Borrar */
+    --bg-body: #eef2f6;       /* Gris azulado moderno */
+    --surface: #ffffff;       /* Blanco puro */
+    --text-main: #2c3e50;
+    --text-muted: #7f8c8d;
+    
+    /* EFECTOS 3D */
+    --shadow-card: 0 10px 30px -10px rgba(0,0,0,0.1);
+    --shadow-hover: 0 20px 40px -10px rgba(46, 125, 50, 0.2);
+    --shadow-inset: inset 2px 2px 5px rgba(0,0,0,0.05), inset -2px -2px 5px rgba(255,255,255,0.8);
+    --radius: 16px;
 }
 
 body {
-  background: #f4f6f8;
-  color: #1f2937;
+    margin: 0;
+    font-family: 'Manrope', sans-serif;
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
 }
 
-.app-container {
-  display: flex;
-  height: 100vh;
-}
-
-/* SIDEBAR */
+/* SIDEBAR 3D */
 .sidebar {
-  width: 260px;
-  background: #2e7d32;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  padding: 30px 20px;
+    width: 280px;
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(0,0,0,0.05);
+    z-index: 10;
 }
 
 .sidebar-logo {
-  text-align: center;
-  margin-bottom: 20px;
+    padding: 30px;
+    text-align: center;
+    border-bottom: 1px solid #f0f0f0;
 }
+.sidebar-logo img { width: 140px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
 
-.sidebar-logo img {
-  width: 120px;
-}
-
-.sidebar-title {
-  text-align: center;
-  font-size: 16px;
-  margin-bottom: 30px;
-  font-weight: 600;
-}
-
-.sidebar-menu {
-  list-style: none;
-  flex: 1;
-}
-
+.sidebar-menu { list-style: none; padding: 20px; margin: 0; flex-grow: 1; }
 .sidebar-menu li {
-  padding: 12px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-bottom: 8px;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: all 0.3s ease;
+    display: flex; align-items: center;
 }
 
-.sidebar-menu li:hover,
-.sidebar-menu .active {
-  background: rgba(255,255,255,0.15);
+.sidebar-menu li:hover {
+    background: #f0f7f1;
+    color: var(--primary);
+    transform: translateX(5px); /* Efecto movimiento */
 }
 
-.sidebar-footer {
-  font-size: 12px;
-  text-align: center;
-  opacity: 0.8;
+.sidebar-menu li.active {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 8px 20px rgba(46, 125, 50, 0.3); /* Sombra 3D verde */
 }
 
-/* MAIN */
+/* MAIN CONTENT */
 .main-content {
-  flex: 1;
-  padding: 30px;
+    flex-grow: 1;
+    padding: 40px;
+    overflow-y: auto;
+    background: var(--bg-body);
 }
 
-/* HEADER */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
+.header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+h1 { font-weight: 800; font-size: 28px; letter-spacing: -0.5px; margin: 0; }
+
+/* TARJETAS 3D (CARDS) */
+.card-3d {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 30px;
+    box-shadow: var(--shadow-card);
+    border: 1px solid rgba(255,255,255,0.5);
+    margin-bottom: 30px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.dashboard-header h1 {
-  font-size: 26px;
+.card-3d:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-hover);
 }
 
-.logout-btn {
-  background: #2e7d32;
-  border: none;
-  color: white;
-  padding: 10px 18px;
-  border-radius: 6px;
-  cursor: pointer;
+/* BOTONES 3D */
+.btn {
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    display: inline-flex; align-items: center; gap: 8px; justify-content: center;
 }
 
-.logout-btn:hover {
-  background: #256428;
+.btn-primary {
+    background: var(--primary);
+    color: white;
+    box-shadow: 0 4px 15px rgba(46, 125, 50, 0.3);
 }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(46, 125, 50, 0.4); }
+.btn-primary:active { transform: translateY(1px); }
 
-/* METRICS */
-.metrics-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 20px;
+.btn-danger {
+    background: white;
+    color: var(--danger);
+    border: 2px solid var(--danger);
 }
+.btn-danger:hover { background: var(--danger); color: white; }
 
-.metric-card {
-  background: white;
-  padding: 25px;
-  border-radius: 10px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-  text-align: center;
-}
+.btn-sm { padding: 8px 16px; font-size: 13px; }
 
-.metric-card h4 {
-  margin-bottom: 10px;
-  font-weight: 600;
+/* INPUTS ESTILO "CARVED" (Hundidos) */
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; color: var(--text-main); }
+.input-3d {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    background: #f8fafc;
+    border-radius: 10px;
+    box-shadow: var(--shadow-inset); /* Efecto hundido */
+    font-size: 15px;
+    color: #333;
+    box-sizing: border-box;
+    transition: all 0.3s;
 }
+.input-3d:focus { outline: none; background: white; box-shadow: 0 0 0 2px var(--primary); }
 
-.metric-card span {
-  font-size: 32px;
-  font-weight: 700;
-  color: #2e7d32;
-}
+/* TABLAS MODERNAS */
+.table-container { overflow-x: auto; border-radius: 12px; }
+.custom-table { width: 100%; border-collapse: collapse; background: white; }
+.custom-table th { background: #f8fafc; padding: 16px; text-align: left; font-weight: 700; color: #555; border-bottom: 2px solid #eee; }
+.custom-table td { padding: 16px; border-bottom: 1px solid #f0f0f0; color: #444; }
+.custom-table tr:hover { background-color: #fcfcfc; }
+
+/* MÉTRICAS (DASHBOARD) */
+.metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; }
+.metric-value { font-size: 48px; font-weight: 800; color: var(--primary); display: block; margin-top: 10px; }
+.metric-label { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
