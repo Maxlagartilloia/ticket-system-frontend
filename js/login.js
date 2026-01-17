@@ -1,11 +1,13 @@
-const API_BASE_URL = "https://ticket-system-backend-4h25.onrender.com";
+// ✅ URL Corregida: Ahora apunta a tu propio dominio en Netlify donde corre el backend
+const API_BASE_URL = "https://soporte.copiermastercyg.com.ec";
 
 const loginForm = document.getElementById("loginForm");
 const errorDiv = document.getElementById("error");
 
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    errorDiv.textContent = "Conectando..."; 
+    errorDiv.style.color = "blue"; // Para que se note el cambio
+    errorDiv.textContent = "Validando credenciales en Supabase..."; 
 
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -17,6 +19,9 @@ loginForm.addEventListener("submit", async (e) => {
     try {
         const response = await fetch(`${API_BASE_URL}/auth/login`, {
             method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
             body: params
         });
 
@@ -26,11 +31,20 @@ loginForm.addEventListener("submit", async (e) => {
             localStorage.setItem("copiermaster_token", data.access_token);
             localStorage.setItem("copiermaster_role", data.role);
             localStorage.setItem("copiermaster_user", data.full_name);
-            window.location.href = "dashboard.html";
+            
+            errorDiv.style.color = "green";
+            errorDiv.textContent = "Acceso concedido. Redirigiendo...";
+            
+            setTimeout(() => {
+                window.location.href = "dashboard.html";
+            }, 1000);
         } else {
-            errorDiv.textContent = data.detail || "Fallo en la conexión";
+            errorDiv.style.color = "red";
+            errorDiv.textContent = data.detail || "Credenciales incorrectas";
         }
     } catch (err) {
-        errorDiv.textContent = "Error de red o bloqueo de seguridad.";
+        console.error("Error capturado:", err);
+        errorDiv.style.color = "red";
+        errorDiv.textContent = "Error de conexión con el servidor.";
     }
 });
