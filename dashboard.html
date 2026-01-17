@@ -4,23 +4,149 @@
   <meta charset="UTF-8" />
   <title>Dashboard | CopierMaster</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <link rel="stylesheet" href="css/styles.css" />
+  
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ESTILOS "ELEGANT UI" INCORPORADOS */
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background-color: #f4f6f8;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px;
+      background-color: #2e7d32; /* Verde Corporativo */
+      color: white;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+    }
+
+    .sidebar-logo {
+      padding: 30px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .sidebar-logo img { width: 120px; }
+
+    .sidebar-menu {
+      list-style: none;
+      padding: 20px 0;
+      margin: 0;
+      flex-grow: 1;
+    }
+
+    .sidebar-menu li {
+      padding: 15px 30px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.3s;
+      border-left: 4px solid transparent;
+    }
+
+    .sidebar-menu li:hover { background-color: rgba(255,255,255,0.1); }
+    
+    .sidebar-menu li.active {
+      background-color: rgba(255,255,255,0.2);
+      border-left-color: #fff;
+      font-weight: 700;
+    }
+
+    .sidebar-footer {
+      padding: 20px;
+      font-size: 12px;
+      text-align: center;
+      opacity: 0.7;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* MAIN CONTENT */
+    .main-content {
+      flex-grow: 1;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    .dashboard-header h1 {
+      margin: 0;
+      color: #333;
+      font-size: 28px;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 2px solid #d32f2f;
+      color: #d32f2f;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .logout-btn:hover { background: #d32f2f; color: white; }
+
+    /* METRICS GRID */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 25px;
+    }
+
+    .metric-card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid #eef2f5;
+      text-align: center;
+      transition: transform 0.3s ease;
+    }
+
+    .metric-card:hover {
+      transform: translateY(-5px);
+      border-color: #2e7d32;
+    }
+
+    .metric-card h3 {
+      margin: 0 0 15px 0;
+      color: #666;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .metric-card span {
+      font-size: 42px;
+      font-weight: 700;
+      color: #2e7d32;
+      display: block;
+    }
+    
+    .loading-text { font-size: 18px !important; color: #aaa !important; }
+
+  </style>
 </head>
 
 <body>
-
-<div class="app-container">
 
   <aside class="sidebar">
     <div class="sidebar-logo">
       <img src="assets/logo.png" alt="CopierMaster">
     </div>
-
-    <div class="sidebar-title" id="panelTitle">Dashboard</div>
-    
-    <div style="padding: 0 20px; color: #a5d6a7; font-size: 12px; margin-bottom: 10px;" id="userRoleDisplay"></div>
 
     <ul class="sidebar-menu">
       <li class="active" onclick="window.location.href='dashboard.html'">Dashboard</li>
@@ -33,46 +159,44 @@
     </ul>
 
     <div class="sidebar-footer">
-      <small>CopierMaster C&amp;G<br>Technical Support</small>
+      <p>CopierMaster C&G<br>System v2.0</p>
     </div>
   </aside>
 
   <main class="main-content">
-
     <header class="dashboard-header">
-      <h1>Dashboard Overview</h1>
-      <button class="logout-btn" id="logoutBtn">Logout</button>
+      <div>
+        <h1>General Overview</h1>
+        <p style="color:#666; margin-top:5px;">Welcome back, <span id="userEmailDisplay">User</span></p>
+      </div>
+      <button class="logout-btn" id="logoutBtn">Cerrar Sesión</button>
     </header>
 
     <section class="metrics-grid">
       <div class="metric-card">
         <h3>Open Tickets</h3>
-        <span id="openTickets">Loading...</span>
+        <span id="openTickets" class="loading-text">Loading...</span>
       </div>
 
       <div class="metric-card">
-        <h3>Resolved Tickets</h3>
-        <span id="resolvedTickets">Loading...</span>
+        <h3>In Progress</h3>
+        <span id="inProgress" class="loading-text">Loading...</span>
       </div>
 
       <div class="metric-card">
         <h3>Institutions</h3>
-        <span id="institutions">Loading...</span>
+        <span id="institutions" class="loading-text">Loading...</span>
       </div>
-      
+
       <div class="metric-card">
-        <h3>Users/Techs</h3>
-        <span id="totalUsers">Loading...</span>
+        <h3>Total Users</h3>
+        <span id="totalUsers" class="loading-text">Loading...</span>
       </div>
     </section>
-
   </main>
 
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="js/dashboard.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/dashboard.js"></script>
 
 </body>
 </html>
