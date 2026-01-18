@@ -10,7 +10,8 @@
         .dept-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
         .dept-item { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
         .dept-item:last-child { border-bottom: none; }
-        .btn-mini-del { color: #ef4444; cursor: pointer; border: none; background: none; font-size: 14px; }
+        .btn-mini-del { color: #ef4444; cursor: pointer; border: none; background: none; font-size: 14px; transition: color 0.2s; }
+        .btn-mini-del:hover { color: #b91c1c; }
     </style>
 </head>
 <body>
@@ -37,10 +38,12 @@
                 <h3 style="margin-top:0; color:var(--text-main);"><i class="fas fa-plus-circle"></i> Nuevo Cliente</h3>
                 <form id="instForm">
                     <div class="actions-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
-                        <input id="name" type="text" placeholder="Nombre Comercial" required style="margin-bottom:0;">
-                        <input id="phone" type="text" placeholder="Teléfono" style="margin-bottom:0;">
-                        <input id="address" type="text" placeholder="Dirección" style="margin-bottom:0;">
-                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:100%;">Guardar</button>
+                        <input id="name" type="text" placeholder="Nombre Comercial / Razón Social" required style="margin-bottom:0;">
+                        <input id="phone" type="text" placeholder="Teléfono de Contacto" style="margin-bottom:0;">
+                        <input id="address" type="text" placeholder="Dirección / Ciudad" style="margin-bottom:0;">
+                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:100%;">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
                     </div>
                 </form>
             </div>
@@ -53,18 +56,18 @@
                     </button>
                 </div>
                 <div style="overflow-x:auto;">
-                    <table style="width:100%;">
+                    <table style="width:100%; border-collapse: collapse;">
                         <thead>
-                            <tr>
-                                <th style="width:50px;">ID</th>
-                                <th>Empresa</th>
-                                <th>Contacto</th>
-                                <th>Estructura Organizacional</th>
-                                <th style="text-align:center;">Acciones</th>
+                            <tr style="background:#f8fafc; text-align:left;">
+                                <th style="padding:12px; width:50px;">ID</th>
+                                <th style="padding:12px;">Empresa</th>
+                                <th style="padding:12px;">Contacto</th>
+                                <th style="padding:12px;">Estructura (Departamentos)</th>
+                                <th style="padding:12px; text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="instTable">
-                            <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando...</td></tr>
+                            <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando cartera...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -74,94 +77,32 @@
 
     <div id="deptModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 class="modal-title">Estructura: <span id="modalInstName">...</span></h3>
+            <h3 class="modal-title">📂 Estructura: <span id="modalInstName" style="color:#3b82f6;">...</span></h3>
+            <p style="font-size:12px; color:#64748b; margin-bottom:15px;">Define las áreas donde se instalarán equipos (Ej: RRHH, Gerencia).</p>
+            
             <div style="display:flex; gap:10px; margin-bottom:20px; background:#f1f5f9; padding:15px; border-radius:8px;">
-                <input id="newDeptName" type="text" placeholder="Nombre del Área" style="margin:0; background:white;">
+                <input id="newDeptName" type="text" placeholder="Nombre del Área" style="margin:0; background:white; flex:1;">
                 <button onclick="addDepartment()" class="btn" style="width:auto; background:#0f172a; color:white;"><i class="fas fa-plus"></i></button>
             </div>
-            <ul id="deptList" class="dept-list"></ul>
+            
+            <ul id="deptList" class="dept-list">
+                </ul>
+            
             <div style="margin-top:20px; text-align:right;">
-                <button class="btn-cancel" onclick="closeDeptModal()">Cerrar</button>
+                <button class="btn-cancel" onclick="closeDeptModal()">Cerrar y Actualizar</button>
             </div>
         </div>
     </div>
 
     <div id="usersModal" class="modal-overlay">
-        <div class="modal-box">
+        <div class="modal-box" style="max-width:400px;">
             <h3 class="modal-title">Usuarios de <span id="modalUserInstName">...</span></h3>
-            <div id="usersList" style="margin-bottom:20px;">Cargando...</div>
+            <div id="usersList" style="margin-bottom:20px; max-height:200px; overflow-y:auto;">Cargando...</div>
             <button class="btn-cancel" onclick="document.getElementById('usersModal').style.display='none'">Cerrar</button>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/security.js"></script>
-    <script>
-        const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
-        let currentInstId = null;
-
-        async function loadInstitutions() {
-            const { data: insts } = await sb.from('institutions').select('*').order('id', {ascending:false});
-            const { data: depts } = await sb.from('departments').select('institution_id');
-            const deptCounts = {};
-            depts?.forEach(d => deptCounts[d.institution_id] = (deptCounts[d.institution_id] || 0) + 1);
-
-            const tb = document.getElementById('instTable');
-            tb.innerHTML = '';
-            if(!insts || !insts.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;">Sin datos</td></tr>'; return; }
-
-            insts.forEach(i => {
-                tb.innerHTML += `<tr>
-                    <td><b>${i.id}</b></td>
-                    <td style="font-weight:600;">${i.name}</td>
-                    <td>${i.phone || '-'}</td>
-                    <td><button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="width:auto; background:#e0f2fe; color:#0369a1; padding:6px 12px; font-size:12px;">Administrar Áreas (${deptCounts[i.id] || 0})</button></td>
-                    <td style="text-align:center;">
-                        <button onclick="viewUsers(${i.id}, '${i.name}')" style="cursor:pointer; border:none; background:none;"><i class="fas fa-users"></i></button>
-                        <button onclick="delInst(${i.id})" style="cursor:pointer; border:none; background:none; color:red; margin-left:10px;"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            });
-        }
-
-        document.getElementById('instForm').addEventListener('submit', async(e) => {
-            e.preventDefault();
-            await sb.from('institutions').insert([{ name: document.getElementById('name').value, phone: document.getElementById('phone').value, address: document.getElementById('address').value }]);
-            e.target.reset(); loadInstitutions();
-        });
-
-        window.openDeptModal = async (id, name) => {
-            currentInstId = id; document.getElementById('modalInstName').innerText = name;
-            document.getElementById('deptModal').style.display = 'flex'; loadDepartmentsInternal(id);
-        }
-        window.closeDeptModal = () => { document.getElementById('deptModal').style.display = 'none'; loadInstitutions(); }
-
-        async function loadDepartmentsInternal(instId) {
-            const list = document.getElementById('deptList'); list.innerHTML = '<li>Cargando...</li>';
-            const { data } = await sb.from('departments').select('*').eq('institution_id', instId).order('name');
-            list.innerHTML = '';
-            if(!data.length) list.innerHTML = '<li style="padding:15px; text-align:center; color:#ccc;">Sin áreas</li>';
-            data.forEach(d => { list.innerHTML += `<li class="dept-item"><span>${d.name}</span> <button onclick="deleteDept(${d.id})" class="btn-mini-del"><i class="fas fa-times"></i></button></li>`; });
-        }
-
-        window.addDepartment = async () => {
-            const val = document.getElementById('newDeptName').value.trim();
-            if(!val) return;
-            await sb.from('departments').insert([{ name: val, institution_id: currentInstId }]);
-            document.getElementById('newDeptName').value = ''; loadDepartmentsInternal(currentInstId);
-        }
-
-        window.deleteDept = async (id) => { if(confirm('¿Borrar?')) { await sb.from('departments').delete().eq('id', id); loadDepartmentsInternal(currentInstId); } }
-        
-        window.viewUsers = async (id, name) => {
-            document.getElementById('modalUserInstName').innerText = name; document.getElementById('usersModal').style.display = 'flex';
-            const list = document.getElementById('usersList'); list.innerHTML = '...';
-            const { data } = await sb.from('profiles').select('email').eq('institution_id', id);
-            list.innerHTML = data.length ? data.map(u => `<div>👤 ${u.email}</div>`).join('') : 'Sin usuarios';
-        }
-
-        window.delInst = async(id) => { if(confirm('¿Eliminar?')) { await sb.from('institutions').delete().eq('id',id); loadInstitutions(); } };
-        document.addEventListener("DOMContentLoaded", loadInstitutions);
-    </script>
-</body>
+    <script src="js/institutions.js"></script> </body>
 </html>
