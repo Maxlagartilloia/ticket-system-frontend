@@ -38,6 +38,8 @@ body {
     transition: transform 0.3s ease;
     z-index: 1000;
 }
+
+/* ESTILO SEGURO DEL LOGO */
 .sidebar-brand { 
     height: 80px; 
     display: flex; 
@@ -46,6 +48,14 @@ body {
     border-bottom: 1px solid rgba(255,255,255,0.1); 
     padding: 10px;
 }
+
+.sidebar-brand img {
+    max-height: 70px;  /* ESTO EVITA QUE SE HAGA GIGANTE */
+    max-width: 100%;
+    width: auto;
+    object-fit: contain;
+}
+
 .sidebar-menu { list-style: none; padding: 20px 0; margin: 0; flex: 1; overflow-y: auto; }
 .menu-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 15px; color: var(--sidebar-text); font-size: 15px; font-weight: 500; transition: 0.2s; }
 .menu-item:hover { background: rgba(255,255,255,0.05); color: white; }
@@ -58,27 +68,26 @@ body {
 .page-title { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .scroll-area { padding: 20px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
 
-/* --- COMPONENTES (DASHBOARD & TABLAS) --- */
+/* --- COMPONENTES --- */
 .card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; overflow-x: auto; }
 
-/* KPIs Grid - Por defecto para escritorio */
+/* KPIs Grid */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
 .kpi-title { font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; }
 .kpi-value { font-size: 28px; font-weight: 800; color: var(--text-main); }
 
-/* Acciones Rápidas - Por defecto para escritorio */
+/* Acciones Rápidas */
 .actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
 .action-btn { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .action-btn:hover { border-color: var(--sidebar-active); box-shadow: var(--shadow); transform: translateY(-2px); }
 .action-btn i { font-size: 24px; }
 
-/* Botones */
+/* Botones y Forms */
 .btn { width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 14px; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
 .btn-confirm { background: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 .btn-cancel { background: #f1f5f9; color: #64748b; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
 .btn-logout { background: transparent; border: 1px solid var(--danger); color: var(--danger); width: auto; padding: 8px 12px; font-size: 13px; cursor: pointer; border-radius: 6px; }
 
-/* Formularios */
 input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; background: #f8fafc; font-size: 14px; }
 input:focus, select:focus { outline: none; border-color: var(--sidebar-active); background: white; }
 
@@ -102,42 +111,33 @@ tr:hover { background: #f8fafc; }
 .btn-login { width: 100%; padding: 14px; background: #0f172a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.2s; }
 .btn-login:hover { background: #1e293b; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2); }
 
-/* --- BADGES (Kanban & Tablas) --- */
+/* --- BADGES Y KANBAN --- */
 .badge-prio { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; color: white; }
 .badge-type { font-size: 10px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #475569; margin-left: 5px; }
 
-/* --- KANBAN BOARD (Tickets) --- */
 .kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; height: calc(100vh - 180px); overflow-y: hidden; }
 .kanban-column { background: #f1f5f9; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; }
 .column-header { font-weight: 700; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0; }
 .ticket-list { flex: 1; overflow-y: auto; padding-right: 5px; }
 .ticket-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 10px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border-left: 4px solid #cbd5e1; }
 .ticket-card:hover { transform: translateY(-2px); box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-.ticket-meta { display: flex; justify-content: space-between; font-size: 11px; color: #64748b; margin-top: 10px; }
 
-/* --- RESPONSIVE MOBILE --- */
+/* --- MÓVIL (CORREGIDO) --- */
 @media (max-width: 768px) {
     body { flex-direction: column; overflow: auto; }
     .sidebar { width: 100%; height: auto; flex-direction: row; padding: 10px; overflow-x: auto; position: sticky; top: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    /* Ocultamos el logo en móvil para dar espacio al menú horizontal */
+    
+    /* EN MÓVIL: Ocultamos el logo si ocupa mucho, o lo hacemos muy pequeño */
     .sidebar-brand { display: none; } 
+
     .menu-item { padding: 10px 15px; font-size: 12px; flex-direction: column; white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; border-radius: 8px; }
     .menu-item.active { border-left: none; border-bottom-color: #3b82f6; background: rgba(255,255,255,0.1); }
     .main-content { overflow: visible; height: auto; }
     .top-bar { padding: 0 15px; }
     .scroll-area { padding: 15px; }
     
-    /* AJUSTE CLAVE PARA EL DASHBOARD EN MÓVIL */
-    /* Fuerza a que las tarjetas se apilen en una sola columna y ocupen todo el ancho */
-    .kpi-grid, .actions-grid {
-        grid-template-columns: 1fr; 
-        gap: 15px;
-    }
-    .card, .action-btn {
-        margin-bottom: 0; /* El gap se encarga del espaciado */
-    }
-
-    /* Ajustes para otras vistas en móvil */
+    /* FIX DE PESTAÑAS Y GRID */
+    .kpi-grid, .actions-grid { grid-template-columns: 1fr; gap: 15px; }
     .kanban-board { display: flex; flex-direction: column; height: auto; overflow: visible; }
     .kanban-column { height: auto; max-height: 500px; margin-bottom: 20px; }
     .modal-overlay { align-items: flex-end; }
