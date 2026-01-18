@@ -9,7 +9,10 @@
 </head>
 <body>
     <aside class="sidebar">
-        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
+        <div class="sidebar-brand">
+            <img src="assets/logo.png" alt="CopierMaster Logo" style="height: 60px; width: auto;">
+        </div>
+
         <ul class="sidebar-menu">
             <li class="menu-item active" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
             <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
@@ -25,8 +28,10 @@
             <div class="page-title">Visión General</div>
             <div style="display:flex; align-items:center; gap:15px;">
                 <div class="user-badge" onclick="openProfileModal()" style="cursor:pointer; display:flex; align-items:center; gap:10px;">
-                    <span id="userName">Cargando...</span>
-                    <i class="fas fa-user-circle" style="font-size:20px;"></i>
+                    <span id="userName" style="font-weight:600; font-size:14px;">Cargando...</span>
+                    <div style="width:35px; height:35px; background:#e2e8f0; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#64748b;">
+                        <i class="fas fa-user"></i>
+                    </div>
                 </div>
                 <button class="btn-logout" id="logoutBtn" title="Cerrar Sesión"><i class="fas fa-power-off"></i></button>
             </div>
@@ -37,38 +42,44 @@
                 <div class="card">
                     <div class="kpi-title">Tickets Abiertos</div>
                     <div class="kpi-value" id="openTickets">--</div>
-                    <small style="color:#ef4444; font-size:11px;">Requieren atención</small>
+                    <small style="color:#ef4444; font-size:11px; font-weight:600;">Pendientes de atención</small>
                 </div>
                 <div class="card">
                     <div class="kpi-title">En Proceso</div>
                     <div class="kpi-value" id="inProgress" style="color:#f59e0b;">--</div>
-                    <small style="color:#f59e0b; font-size:11px;">Técnicos trabajando</small>
+                    <small style="color:#f59e0b; font-size:11px; font-weight:600;">Técnicos trabajando</small>
                 </div>
                 <div class="card">
-                    <div class="kpi-title">Clientes Activos</div>
+                    <div class="kpi-title">Clientes</div>
                     <div class="kpi-value" id="institutions">--</div>
-                    <small style="color:#64748b; font-size:11px;">Cartera Total</small>
+                    <small style="color:#64748b; font-size:11px;">Instituciones Activas</small>
                 </div>
                 <div class="card">
-                    <div class="kpi-title">Equipos Instalados</div>
+                    <div class="kpi-title">Equipos</div>
                     <div class="kpi-value" id="equipment">--</div>
-                    <small style="color:#16a34a; font-size:11px;">Activos en renta</small>
+                    <small style="color:#16a34a; font-size:11px;">Parque Total Instalado</small>
                 </div>
             </div>
 
             <h3 style="color:var(--text-main); margin-top:40px;">⚡ Gestión Rápida</h3>
             <div class="actions-grid">
                 <div class="action-btn" onclick="location.href='tickets.html'">
-                    <i class="fas fa-file-medical" style="color:#ea580c;"></i>
+                    <div style="background:#fff7ed; padding:15px; border-radius:50%; width:60px; height:60px; display:flex; align-items:center; justify-content:center;">
+                         <i class="fas fa-file-medical" style="color:#ea580c; font-size:24px;"></i>
+                    </div>
                     <span>Crear Ticket</span>
                 </div>
                 <div class="action-btn" onclick="location.href='institutions.html'">
-                    <i class="fas fa-plus-circle" style="color:#16a34a;"></i>
+                    <div style="background:#dcfce7; padding:15px; border-radius:50%; width:60px; height:60px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-building" style="color:#16a34a; font-size:24px;"></i>
+                    </div>
                     <span>Nuevo Cliente</span>
                 </div>
                 <div class="action-btn" onclick="location.href='technicians.html'">
-                    <i class="fas fa-user-shield" style="color:#9333ea;"></i>
-                    <span>Registrar Técnico</span>
+                    <div style="background:#f3e8ff; padding:15px; border-radius:50%; width:60px; height:60px; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas fa-users-cog" style="color:#9333ea; font-size:24px;"></i>
+                    </div>
+                    <span>Personal</span>
                 </div>
             </div>
         </div>
@@ -78,14 +89,11 @@
         <div class="modal-box">
             <h3 class="modal-title">🔐 Seguridad de la Cuenta</h3>
             <p style="color:#64748b; font-size:14px;">Actualiza tu contraseña de acceso.</p>
-            
             <form id="passForm">
                 <label>Nueva Contraseña</label>
                 <input type="password" id="newPass" placeholder="Mínimo 6 caracteres" required>
-                
                 <label>Confirmar Contraseña</label>
                 <input type="password" id="confPass" placeholder="Repite la contraseña" required>
-
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeProfileModal()">Cancelar</button>
                     <button type="submit" class="btn-confirm">Actualizar Clave</button>
@@ -95,7 +103,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/security.js"></script> 
+    <script src="js/security.js"></script>
     <script src="js/dashboard.js"></script>
 </body>
 </html>
