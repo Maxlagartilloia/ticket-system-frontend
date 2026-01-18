@@ -9,11 +9,19 @@
     <style>
         .client-body { background: #f8fafc; font-family: 'Inter', sans-serif; }
         .client-nav { background: white; padding: 15px 30px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-        .client-container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+        .client-container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
         .hero-section { text-align: center; margin-bottom: 40px; padding: 40px; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-radius: 20px; color: white; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2); }
-        .btn-report { background: #ef4444; color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: 700; border-radius: 50px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; }
-        .ticket-item { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+        .btn-report { background: #ef4444; color: white; border: none; padding: 15px 30px; font-size: 16px; font-weight: 700; border-radius: 50px; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; transition: transform 0.2s; }
+        .btn-report:hover { transform: scale(1.05); }
+        
+        /* Tabla Auditable */
+        .audit-table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .audit-table th { background: #f1f5f9; padding: 15px; text-align: left; font-size: 13px; color: #64748b; font-weight: 700; text-transform: uppercase; }
+        .audit-table td { padding: 15px; border-bottom: 1px solid #e2e8f0; font-size: 14px; color: #334155; }
+        .audit-table tr:last-child td { border-bottom: none; }
+        
+        .status-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; display: inline-block; }
+        
         /* Modal y Upload */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.8); z-index: 1000; justify-content: center; align-items: center; }
         .modal-box { background: white; width: 90%; max-width: 500px; border-radius: 16px; padding: 30px; animation: slideUp 0.3s ease; }
@@ -25,55 +33,79 @@
 </head>
 <body class="client-body">
     <nav class="client-nav">
-        <img src="assets/logo.png" style="height: 40px; filter: invert(1);">
-        <div style="display:flex; align-items:center; gap:15px;">
+        <img src="assets/logo.png" style="height: 40px; filter: invert(1);"> <div style="display:flex; align-items:center; gap:15px;">
             <div style="text-align:right; font-size:13px;">
-                <div style="font-weight:700;" id="clientName">...</div>
+                <div style="font-weight:700;" id="clientName">Cargando...</div>
                 <div style="color:#64748b;" id="clientInst">...</div>
             </div>
-            <button onclick="logout()" class="btn-logout" style="border:1px solid #e2e8f0; padding:8px 15px;">Salir</button>
+            <button onclick="logout()" class="btn-logout" style="border:1px solid #e2e8f0; padding:8px 15px; border-radius:6px; background:white; cursor:pointer;">
+                <i class="fas fa-sign-out-alt"></i> Salir
+            </button>
         </div>
     </nav>
 
     <div class="client-container">
         <div class="hero-section">
-            <h1>¿Fallas en el equipo?</h1>
-            <p style="color:#94a3b8; margin-bottom:25px;">Reporta tu incidencia y enviaremos un técnico.</p>
-            <button class="btn-report" onclick="openModal()"><i class="fas fa-exclamation-circle"></i> REPORTAR FALLA</button>
+            <h1>Centro de Soporte Técnico</h1>
+            <p style="color:#cbd5e1; margin-bottom:25px;">Gestiona tus reportes y revisa el estado de tus equipos en tiempo real.</p>
+            <button class="btn-report" onclick="openModal()"><i class="fas fa-plus-circle"></i> NUEVO REPORTE</button>
         </div>
 
-        <h3 style="color:#475569;">Historial de Solicitudes</h3>
-        <div id="ticketsContainer"><div style="text-align:center; padding:20px;">Cargando...</div></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <h3 style="color:#475569; margin:0;"><i class="fas fa-history"></i> Historial de Auditoría</h3>
+            <button onclick="loadMyTickets()" style="border:none; background:transparent; color:#3b82f6; cursor:pointer;"><i class="fas fa-sync-alt"></i> Actualizar</button>
+        </div>
+
+        <div style="overflow-x:auto;">
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>Fecha y Hora</th>
+                        <th>Equipo Reportado</th>
+                        <th>Falla / Incidente</th>
+                        <th>Evidencia</th>
+                        <th>Estado Actual</th>
+                    </tr>
+                </thead>
+                <tbody id="ticketsContainer">
+                    <tr><td colspan="5" style="text-align:center; padding:30px;">Cargando historial...</td></tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div id="ticketModal" class="modal-overlay">
         <div class="modal-box">
-            <h2 style="margin-top:0;">Nuevo Reporte</h2>
+            <h2 style="margin-top:0; color:#1e293b;">📝 Reportar Falla</h2>
+            <p style="font-size:13px; color:#64748b; margin-bottom:20px;">Un técnico será notificado inmediatamente.</p>
+            
             <form id="newTicketForm">
-                <label>1. Ubicación (Departamento)</label>
-                <select id="deptSelect" class="form-input" onchange="loadEquip(this.value)" required>
-                    <option value="">Selecciona Área...</option>
+                
+                <label style="font-weight:bold; font-size:12px; color:#475569;">EQUIPO CON FALLA</label>
+                <select id="equipSelect" class="form-input" required>
+                    <option value="">Cargando tus equipos...</option>
                 </select>
 
-                <label>2. Equipo</label>
-                <select id="equipSelect" class="form-input" disabled required>
-                    <option value="">-- Primero el Área --</option>
-                </select>
+                <label style="font-weight:bold; font-size:12px; color:#475569;">DESCRIPCIÓN DEL PROBLEMA</label>
+                <input id="title" class="form-input" placeholder="Ej: Atasco de papel, mancha en copia..." required>
 
-                <label>3. Falla Presentada</label>
-                <input id="title" class="form-input" placeholder="Ej: Atasco constante, Manchas..." required>
-
-                <label>4. Evidencia (Foto/Video) - Opcional</label>
+                <label style="font-weight:bold; font-size:12px; color:#475569;">FOTO DE EVIDENCIA (Recomendado)</label>
                 <div class="upload-box" onclick="document.getElementById('evidence').click()">
-                    <i class="fas fa-camera" style="font-size:24px; margin-bottom:10px;"></i><br>
-                    <span id="fileName">Clic para subir foto del error</span>
+                    <i class="fas fa-camera" style="font-size:24px; margin-bottom:10px; color:#94a3b8;"></i><br>
+                    <span id="fileName">Toca para subir foto</span>
                     <input type="file" id="evidence" accept="image/*" style="display:none;" onchange="showFile(this)">
                 </div>
 
-                <button type="submit" class="btn" style="width:100%; background:#0f172a; color:white;">ENVIAR SOLICITUD</button>
-                <button type="button" class="btn-cancel" onclick="closeModal()" style="width:100%; margin-top:10px;">Cancelar</button>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <button type="button" class="btn-cancel" onclick="closeModal()" style="background:#f1f5f9; color:#475569; border:none; padding:12px; border-radius:8px; cursor:pointer;">Cancelar</button>
+                    <button type="submit" class="btn" style="background:#0f172a; color:white; border:none; padding:12px; border-radius:8px; cursor:pointer; font-weight:bold;">Enviar Reporte</button>
+                </div>
             </form>
         </div>
+    </div>
+
+    <div id="photoModal" class="modal-overlay" onclick="this.style.display='none'">
+        <img id="photoVisor" src="" style="max-width:90%; max-height:90%; border-radius:8px; box-shadow:0 20px 50px rgba(0,0,0,0.5);">
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -83,116 +115,160 @@
         let evidenceFile = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
+            // 1. Verificar Sesión
             const { data: { session } } = await sb.auth.getSession();
             if (!session) return window.location.href = "index.html";
 
+            // 2. Cargar Perfil de Cliente
             const { data: profile } = await sb.from('profiles').select('*, institutions(name)').eq('id', session.user.id).single();
-            userProfile = profile;
+            if (!profile) return alert("Error de perfil");
             
+            userProfile = profile;
             document.getElementById('clientName').textContent = userProfile.full_name || session.user.email;
-            document.getElementById('clientInst').textContent = userProfile.institutions?.name;
+            document.getElementById('clientInst').textContent = userProfile.institutions?.name || 'Cliente';
 
+            // 3. Cargar Datos
             loadMyTickets();
-            loadDepartments();
-            setInterval(loadMyTickets, 10000);
+            loadClientEquipments(); // Carga directa de equipos de la institución
         });
 
-        async function loadDepartments() {
-            const { data } = await sb.from('departments').select('*').eq('institution_id', userProfile.institution_id);
-            const sel = document.getElementById('deptSelect');
-            sel.innerHTML = '<option value="">Selecciona Área...</option>';
-            data?.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
-        }
-
-        window.loadEquip = async (deptId) => {
+        // CARGAR EQUIPOS (Simplificado: Solo los de su institución)
+        async function loadClientEquipments() {
             const sel = document.getElementById('equipSelect');
-            sel.disabled = true; sel.innerHTML = '<option>Cargando...</option>';
-            // Cargamos equipos de ese depto
-            const { data } = await sb.from('equipment').select('*').eq('department_id', deptId).eq('status', 'installed');
-            sel.innerHTML = '<option value="">Selecciona Equipo...</option>';
-            data?.forEach(e => sel.innerHTML += `<option value="${e.id}">${e.brand} ${e.model} (S/N: ${e.serial_number})</option>`);
-            sel.disabled = false;
+            sel.innerHTML = '<option>Cargando...</option>';
+            
+            // Traemos equipos vinculados a la institución del usuario
+            const { data } = await sb.from('equipment')
+                .select('id, brand, model, serial_number, departments(name)')
+                .eq('institution_id', userProfile.institution_id)
+                .order('model');
+
+            sel.innerHTML = '<option value="">-- Selecciona el Equipo --</option>';
+            
+            if (data && data.length > 0) {
+                data.forEach(e => {
+                    const deptName = e.departments?.name || 'General';
+                    sel.innerHTML += `<option value="${e.id}">[${deptName}] ${e.brand} ${e.model} - ${e.serial_number}</option>`;
+                });
+            } else {
+                sel.innerHTML = '<option value="">No hay equipos registrados</option>';
+            }
         }
 
         window.showFile = (input) => {
             if (input.files && input.files[0]) {
                 evidenceFile = input.files[0];
-                document.getElementById('fileName').innerText = "📸 " + evidenceFile.name;
+                document.getElementById('fileName').innerText = "✅ Foto lista: " + evidenceFile.name;
                 document.getElementById('fileName').style.color = "#16a34a";
                 document.getElementById('fileName').style.fontWeight = "bold";
             }
         }
 
+        // ENVIAR TICKET
         document.getElementById('newTicketForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
-            btn.innerHTML = "Subiendo..."; btn.disabled = true;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...'; btn.disabled = true;
 
-            let imageUrl = null;
+            try {
+                let imageUrl = null;
 
-            // 1. SUBIR FOTO (Si existe)
-            if (evidenceFile) {
-                const fileExt = evidenceFile.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const { data, error } = await sb.storage.from('evidence').upload(fileName, evidenceFile);
-                
-                if (error) {
-                    console.error("Error subiendo foto:", error);
-                    alert("Error al subir la imagen, pero crearemos el ticket.");
-                } else {
-                    // Obtener URL pública
-                    const { data: { publicUrl } } = sb.storage.from('evidence').getPublicUrl(fileName);
-                    imageUrl = publicUrl;
+                // Subir Foto
+                if (evidenceFile) {
+                    const fileExt = evidenceFile.name.split('.').pop();
+                    const fileName = `${Date.now()}.${fileExt}`;
+                    const { error: upErr } = await sb.storage.from('evidence').upload(fileName, evidenceFile);
+                    if (upErr) throw upErr;
+                    const { data: urlData } = sb.storage.from('evidence').getPublicUrl(fileName);
+                    imageUrl = urlData.publicUrl;
                 }
-            }
 
-            // 2. CREAR TICKET (Ahora incluye description con la URL de la foto si hay)
-            const title = document.getElementById('title').value;
-            const desc = imageUrl ? `Evidencia adjunta: ${imageUrl}` : "Sin evidencia visual.";
+                // Insertar Ticket
+                const { error } = await sb.from('tickets').insert([{
+                    institution_id: userProfile.institution_id,
+                    equipment_id: document.getElementById('equipSelect').value,
+                    description: document.getElementById('title').value,
+                    priority: 'Media', // Default
+                    status: 'open',
+                    incident_type: 'General', // Default
+                    image_url: imageUrl,
+                    created_at: new Date()
+                }]);
 
-            const { error } = await sb.from('tickets').insert([{
-                institution_id: userProfile.institution_id,
-                department_id: document.getElementById('deptSelect').value,
-                equipment_id: document.getElementById('equipSelect').value,
-                reported_by: userProfile.id,
-                title: title,
-                description: desc, // Guardamos el link de la foto aquí
-                priority: 'medium',
-                status: 'open'
-            }]);
+                if (error) throw error;
 
-            if (error) alert("Error: " + error.message);
-            else {
-                closeModal(); e.target.reset();
-                evidenceFile = null; document.getElementById('fileName').innerText = "Clic para subir foto";
+                alert("✅ Reporte enviado con éxito. Un técnico lo revisará pronto.");
+                closeModal();
+                e.target.reset();
+                evidenceFile = null;
+                document.getElementById('fileName').innerText = "Toca para subir foto";
+                document.getElementById('fileName').style.color = "#64748b";
                 loadMyTickets();
-                alert("✅ Solicitud enviada correctamente.");
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                btn.innerHTML = originalText; btn.disabled = false;
             }
-            btn.innerHTML = "ENVIAR SOLICITUD"; btn.disabled = false;
         });
 
+        // CARGAR HISTORIAL (Tabla Auditable)
         async function loadMyTickets() {
-            const { data } = await sb.from('tickets').select('*').eq('institution_id', userProfile.institution_id).order('created_at', { ascending: false });
             const container = document.getElementById('ticketsContainer');
-            container.innerHTML = '';
-            if (!data.length) { container.innerHTML = '<div style="text-align:center; padding:20px;">Sin historial.</div>'; return; }
+            
+            const { data: tickets } = await sb
+                .from('tickets')
+                .select(`
+                    *,
+                    equipment (brand, model, serial_number)
+                `)
+                .eq('institution_id', userProfile.institution_id)
+                .order('created_at', { ascending: false });
 
-            data.forEach(t => {
-                let statusInfo = { 'open': ['#fee2e2', '#ef4444', 'Pendiente'], 'in_progress': ['#fef3c7', '#d97706', 'Revisando'], 'resolved': ['#dcfce7', '#16a34a', 'Resuelto'] };
-                const s = statusInfo[t.status] || ['#eee', '#333', t.status];
+            container.innerHTML = '';
+            
+            if (!tickets || tickets.length === 0) {
+                container.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8;">No hay reportes previos.</td></tr>';
+                return;
+            }
+
+            tickets.forEach(t => {
+                // Configuración de Estados
+                let statusColor = '#94a3b8'; let statusBg = '#f1f5f9'; let statusText = 'Desconocido';
+                if (t.status === 'open') { statusColor = '#ef4444'; statusBg = '#fee2e2'; statusText = 'Pendiente'; }
+                if (t.status === 'in_progress') { statusColor = '#d97706'; statusBg = '#fef3c7'; statusText = 'En Revisión'; }
+                if (t.status === 'closed') { statusColor = '#16a34a'; statusBg = '#dcfce7'; statusText = 'Resuelto'; }
+
+                // Botón de Evidencia
+                const evidenceBtn = t.image_url 
+                    ? `<button onclick="showPhoto('${t.image_url}')" style="border:none; background:none; color:#3b82f6; cursor:pointer;" title="Ver Foto"><i class="fas fa-image"></i> Ver</button>` 
+                    : '<span style="color:#cbd5e1;">-</span>';
+
+                const dateStr = new Date(t.created_at).toLocaleString();
+
                 container.innerHTML += `
-                    <div class="ticket-item">
-                        <div>
-                            <div style="font-weight:700;">${t.title}</div>
-                            <div style="font-size:13px; color:#64748b;">${new Date(t.created_at).toLocaleDateString()}</div>
-                        </div>
-                        <div class="status-badge" style="background:${s[0]}; color:${s[1]};">${s[2]}</div>
-                    </div>`;
+                    <tr>
+                        <td>${dateStr}</td>
+                        <td>
+                            <div style="font-weight:bold;">${t.equipment?.brand} ${t.equipment?.model}</div>
+                            <div style="font-size:11px; color:#64748b;">SN: ${t.equipment?.serial_number}</div>
+                        </td>
+                        <td>${t.description}</td>
+                        <td style="text-align:center;">${evidenceBtn}</td>
+                        <td><span class="status-badge" style="background:${statusBg}; color:${statusColor};">${statusText}</span></td>
+                    </tr>`;
             });
         }
 
         window.openModal = () => document.getElementById('ticketModal').style.display = 'flex';
         window.closeModal = () => document.getElementById('ticketModal').style.display = 'none';
+        
+        window.showPhoto = (url) => {
+            document.getElementById('photoVisor').src = url;
+            document.getElementById('photoModal').style.display = 'flex';
+        }
+
         window.logout = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
     </script>
 </body>
