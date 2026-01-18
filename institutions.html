@@ -1,232 +1,157 @@
-const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
-let currentInstId = null;
-let isEditing = false;
-let editId = null;
-
-document.addEventListener("DOMContentLoaded", () => {
-    loadTechniciansForSelect();
-    loadInstitutions();
-});
-
-// 1. CARGAR TÉCNICOS
-async function loadTechniciansForSelect() {
-    const { data: techs } = await sb.from('profiles').select('id, full_name').eq('role', 'technician');
-    const sel = document.getElementById('techSelect');
-    if(sel) {
-        sel.innerHTML = '<option value="">-- Sin Técnico Fijo --</option>';
-        techs?.forEach(t => sel.innerHTML += `<option value="${t.id}">🔧 ${t.full_name}</option>`);
-    }
-}
-
-// 2. CARGAR CLIENTES
-async function loadInstitutions() {
-    const { data: insts, error } = await sb.from('institutions').select('*').order('id', {ascending: false});
-    const tb = document.getElementById('instTable');
-    tb.innerHTML = '';
-
-    if (error) { tb.innerHTML = `<tr><td colspan="7" style="color:red;">Error: ${error.message}</td></tr>`; return; }
-    if (!insts || !insts.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;">Base de datos vacía.</td></tr>'; return; }
-
-    // Mapas auxiliares
-    const techMap = {};
-    const opts = document.getElementById('techSelect').options;
-    for(let i=0; i<opts.length; i++) techMap[opts[i].value] = opts[i].text.replace('🔧 ', '');
-
-    const { data: equips } = await sb.from('equipment').select('institution_id');
-    const equipCounts = {};
-    equips?.forEach(e => equipCounts[e.institution_id] = (equipCounts[e.institution_id] || 0) + 1);
-
-    insts.forEach(i => {
-        const safePhone = i.phone || '';
-        let techName = '<span style="color:#cbd5e1;">Manual</span>';
-        if (i.default_technician_id && techMap[i.default_technician_id]) techName = `<b>${techMap[i.default_technician_id]}</b>`;
-        const eCount = equipCounts[i.id] || 0;
-
-        tb.innerHTML += `
-            <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:12px;"><b>${i.id}</b></td>
-                <td style="padding:12px; font-weight:600; color:#1e293b;">${i.name}</td>
-                <td style="padding:12px;">${safePhone}</td>
-                <td style="padding:12px; font-size:13px;">${techName}</td>
-                <td style="padding:12px;">
-                    <button onclick="openEquipModal(${i.id}, '${i.name}')" class="btn" style="background:#fff7ed; color:#c2410c; padding:5px 10px; font-size:12px; border:1px solid #fed7aa;">
-                        <i class="fas fa-print"></i> Equipos (${eCount})
-                    </button>
-                </td>
-                <td style="padding:12px;">
-                    <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="background:#e0f2fe; color:#0369a1; padding:5px 10px; font-size:12px; border:1px solid #bae6fd;">
-                        <i class="fas fa-sitemap"></i> Áreas
-                    </button>
-                </td>
-                <td style="padding:12px; text-align:center;">
-                    <button onclick="startEdit(${i.id}, '${i.name}', '${safePhone}', '${i.address||''}', '${i.default_technician_id||''}')" title="Editar" style="cursor:pointer; border:none; background:none; color:#f59e0b; margin-right:10px;"><i class="fas fa-pen"></i></button>
-                    <button onclick="delInst(${i.id})" title="Eliminar" style="cursor:pointer; border:none; background:none; color:#ef4444;"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`;
-    });
-}
-
-// ==========================================
-// 3. GESTIÓN DE EQUIPOS (MODAL AVANZADO)
-// ==========================================
-
-window.openEquipModal = async (id, name) => {
-    currentInstId = id; 
-    document.getElementById('modalEquipInstName').innerText = name;
-    document.getElementById('equipModal').style.display = 'flex';
-    
-    // 1. Cargar Áreas (Departamentos) para el Select
-    const deptSelect = document.getElementById('newEquipDeptSelect');
-    deptSelect.innerHTML = '<option value="">Cargando áreas...</option>';
-    const { data: depts } = await sb.from('departments').select('*').eq('institution_id', id).order('name');
-    
-    deptSelect.innerHTML = '<option value="">- Seleccionar Área -</option>';
-    if(depts && depts.length > 0) {
-        depts.forEach(d => {
-            deptSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
-        });
-    } else {
-        deptSelect.innerHTML = '<option value="">(Sin áreas creadas)</option>';
-    }
-
-    // 2. Cargar Lista de Equipos
-    loadEquipListInternal(id);
-}
-
-async function loadEquipListInternal(instId) {
-    const list = document.getElementById('equipList');
-    list.innerHTML = '<div style="padding:20px; text-align:center;">Cargando...</div>';
-
-    const { data: equips } = await sb
-        .from('equipment')
-        .select('*, departments(name)')
-        .eq('institution_id', instId)
-        .order('department_id'); 
-
-    list.innerHTML = '';
-    if (!equips || !equips.length) {
-        list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">No hay equipos registrados. Usa el formulario de arriba.</div>';
-        return;
-    }
-
-    equips.forEach(e => {
-        const deptName = e.departments?.name || '<span style="color:orange">Sin Área</span>';
-        list.innerHTML += `
-            <div class="equip-item">
-                <div style="flex:1;">
-                    <div style="font-weight:bold; font-size:13px; color:#1e293b;">${e.model}</div>
-                    <div style="font-size:11px; color:#64748b;">SN: ${e.serial_number}</div>
-                </div>
-                <div style="text-align:right; margin-right:15px;">
-                    <div style="font-size:10px; background:#f1f5f9; padding:3px 8px; border-radius:10px; color:#475569;">
-                        <i class="fas fa-map-marker-alt"></i> ${deptName}
-                    </div>
-                </div>
-                <button onclick="deleteEquipment(${e.id})" title="Eliminar Equipo" style="background:none; border:none; color:#ef4444; cursor:pointer;">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>`;
-    });
-}
-
-// AGREGAR EQUIPO MANUALMENTE
-window.addEquipmentDirect = async () => {
-    const model = document.getElementById('newEquipModel').value.trim();
-    const serial = document.getElementById('newEquipSerial').value.trim();
-    const deptId = document.getElementById('newEquipDeptSelect').value;
-
-    if(!model || !serial) { alert("Por favor ingresa Modelo y Serie."); return; }
-    if(!deptId) { alert("Por favor selecciona un Área (Departamento)."); return; }
-
-    const btn = document.querySelector('#equipModal .btn'); 
-    const originalText = btn.innerHTML;
-    btn.innerHTML = '...'; btn.disabled = true;
-
-    try {
-        const { error } = await sb.from('equipment').insert([{
-            model: model,
-            serial_number: serial,
-            institution_id: currentInstId,
-            department_id: deptId,
-            status: 'installed'
-        }]);
-
-        if(error) throw error;
-
-        // Limpiar inputs
-        document.getElementById('newEquipModel').value = '';
-        document.getElementById('newEquipSerial').value = '';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clientes | CopierMaster</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos para el Modal de Departamentos */
+        .dept-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .dept-item { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        .dept-item:last-child { border-bottom: none; }
         
-        loadEquipListInternal(currentInstId);
-        loadInstitutions(); 
+        /* Botones pequeños de borrar */
+        .btn-mini-del { color: #ef4444; cursor: pointer; border: none; background: none; font-size: 14px; transition: color 0.2s; }
+        .btn-mini-del:hover { color: #b91c1c; }
 
-    } catch(err) {
-        alert("Error: " + err.message);
-    } finally {
-        btn.innerHTML = originalText; btn.disabled = false;
-    }
-}
+        /* Estilos para el Modal de Equipos (Inventario) */
+        .equip-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .equip-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .equip-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <img src="assets/logo.png" alt="CopierMaster">
+        </div>
+        
+        <ul class="sidebar-menu">
+            <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
+            <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
+            <li class="menu-item active" onclick="location.href='institutions.html'"><i class="fas fa-building"></i> Clientes</li>
+            <li class="menu-item" onclick="location.href='equipment.html'"><i class="fas fa-print"></i> Equipos</li>
+            <li class="menu-item" onclick="location.href='technicians.html'"><i class="fas fa-users-cog"></i> Técnicos</li>
+            <li class="menu-item" onclick="location.href='reports.html'"><i class="fas fa-file-invoice-dollar"></i> Reportes</li>
+        </ul>
+    </aside>
 
-// BORRAR EQUIPO
-window.deleteEquipment = async (id) => {
-    if(confirm('¿Seguro que deseas eliminar este equipo del inventario?')) {
-        const { error } = await sb.from('equipment').delete().eq('id', id);
-        if(error) alert("Error: " + error.message);
-        else {
-            loadEquipListInternal(currentInstId);
-            loadInstitutions(); 
-        }
-    }
-}
+    <main class="main-content">
+        <header class="top-bar">
+            <div class="page-title">Cartera de Clientes</div>
+            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
+        </header>
 
-// 4. EDICIÓN CLIENTE (FORMULARIO PRINCIPAL)
-window.startEdit = (id, name, phone, address, techId) => {
-    isEditing = true; editId = id;
-    document.getElementById('name').value = name;
-    document.getElementById('phone').value = phone;
-    document.getElementById('address').value = address;
-    document.getElementById('techSelect').value = (techId && techId !== 'null') ? techId : "";
-    const btn = document.querySelector('#instForm button');
-    btn.innerHTML = 'ACTUALIZAR'; btn.style.background = '#f59e0b';
-    document.querySelector('.scroll-area').scrollTop = 0;
-};
+        <div class="scroll-area">
+            
+            <div class="card">
+                <h3 style="margin-top:0; color:var(--text-main);"><i class="fas fa-plus-circle"></i> Gestión de Clientes</h3>
+                <form id="instForm">
+                    <div class="actions-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr auto;">
+                        <input id="name" type="text" placeholder="Nombre Comercial (Ej: GAD MUNICIPAL)" required style="margin-bottom:0;">
+                        <input id="phone" type="text" placeholder="Teléfono" style="margin-bottom:0;">
+                        <input id="address" type="text" placeholder="Dirección" style="margin-bottom:0;">
+                        
+                        <select id="techSelect" style="margin-bottom:0; background:white;">
+                            <option value="">Cargando técnicos...</option>
+                        </select>
 
-document.getElementById('instForm').addEventListener('submit', async(e) => {
-    e.preventDefault();
-    const btn = e.target.querySelector('button'); btn.disabled = true;
-    const formData = {
-        name: document.getElementById('name').value, 
-        phone: document.getElementById('phone').value, 
-        address: document.getElementById('address').value,
-        default_technician_id: document.getElementById('techSelect').value || null
-    };
-    try {
-        if (isEditing) { await sb.from('institutions').update(formData).eq('id', editId); alert("✅ Actualizado"); } 
-        else { await sb.from('institutions').insert([formData]); alert("✅ Creado"); }
-        e.target.reset(); isEditing = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.style.background = 'var(--sidebar-active)';
-        loadInstitutions();
-    } catch (err) { alert("Error: " + err.message); } finally { btn.disabled = false; }
-});
+                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:100%;">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-// 5. FUNCIONES AUXILIARES
-window.openDeptModal = async (id, name) => { currentInstId = id; document.getElementById('modalInstName').innerText = name; document.getElementById('deptModal').style.display = 'flex'; loadDepartmentsInternal(id); }
-window.closeDeptModal = () => { document.getElementById('deptModal').style.display = 'none'; loadInstitutions(); }
-async function loadDepartmentsInternal(instId) {
-    const list = document.getElementById('deptList'); list.innerHTML = '<li>Cargando...</li>';
-    const { data } = await sb.from('departments').select('*').eq('institution_id', instId).order('name');
-    list.innerHTML = '';
-    data?.forEach(d => list.innerHTML += `<li class="dept-item"><span>${d.name}</span> <button onclick="deleteDept(${d.id})" class="btn-mini-del"><i class="fas fa-times"></i></button></li>`);
-}
-window.addDepartment = async () => {
-    const val = document.getElementById('newDeptName').value.trim(); if(!val) return;
-    await sb.from('departments').insert([{ name: val, institution_id: currentInstId }]);
-    document.getElementById('newDeptName').value = ''; loadDepartmentsInternal(currentInstId);
-}
-window.deleteDept = async (id) => { if(confirm('¿Borrar área?')) { await sb.from('departments').delete().eq('id', id); loadDepartmentsInternal(currentInstId); } }
-window.delInst = async(id) => { if(confirm('¿Eliminar cliente?')) { await sb.from('institutions').delete().eq('id', id); loadInstitutions(); } };
-window.viewUsers = async (id, name) => {
-    document.getElementById('usersModal').style.display = 'flex';
-    const list = document.getElementById('usersList'); list.innerHTML = 'Cargando...';
-    const { data } = await sb.from('profiles').select('email, full_name, role').eq('institution_id', id);
-    list.innerHTML = data?.map(u => `<div style="padding:10px; border-bottom:1px solid #eee;"><b>${u.full_name}</b><br><small>${u.email}</small></div>`).join('') || 'Sin usuarios.';
-}
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
+                    <h3 style="margin:0;">Empresas Registradas</h3>
+                    <button onclick="window.open('register.html', '_blank')" class="btn" style="width:auto; background:#16a34a; color:white; font-size:13px; padding: 8px 15px;">
+                        <i class="fas fa-key"></i> Crear Accesos
+                    </button>
+                </div>
+                
+                <div style="overflow-x:auto;">
+                    <table style="width:100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background:#f8fafc; text-align:left;">
+                                <th style="padding:12px; width:50px;">ID</th>
+                                <th style="padding:12px;">Empresa</th>
+                                <th style="padding:12px;">Teléfono</th>
+                                <th style="padding:12px;">Técnico</th> 
+                                <th style="padding:12px;">Inventario</th> <th style="padding:12px;">Estructura</th>
+                                <th style="padding:12px; text-align:center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="instTable">
+                            <tr><td colspan="7" style="text-align:center; padding:20px;">Cargando cartera...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="deptModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="modal-title">📂 Estructura: <span id="modalInstName" style="color:#3b82f6;">...</span></h3>
+            <p style="font-size:12px; color:#64748b; margin-bottom:15px;">Define las áreas físicas (Ej: Recepción, Gerencia).</p>
+            <div style="display:flex; gap:10px; margin-bottom:20px; background:#f1f5f9; padding:15px; border-radius:8px;">
+                <input id="newDeptName" type="text" placeholder="Nombre del Área" style="margin:0; background:white; flex:1;">
+                <button onclick="addDepartment()" class="btn" style="width:auto; background:#0f172a; color:white;"><i class="fas fa-plus"></i></button>
+            </div>
+            <ul id="deptList" class="dept-list"></ul>
+            <div style="margin-top:20px; text-align:right;">
+                <button class="btn-cancel" onclick="closeDeptModal()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="equipModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:700px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 class="modal-title">🖨️ Inventario: <span id="modalEquipInstName" style="color:#3b82f6;">...</span></h3>
+                <span class="equip-status" style="background:#e0f2fe; color:#0369a1; font-size:12px;">EN COMODATO</span>
+            </div>
+
+            <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:20px;">
+                <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:10px;">AGREGAR NUEVO EQUIPO:</div>
+                <div style="display:grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap:10px;">
+                    <input id="newEquipModel" type="text" placeholder="Modelo (Ej: Ricoh IM 550)" style="margin:0; background:white;">
+                    <input id="newEquipSerial" type="text" placeholder="Serie / ID" style="margin:0; background:white;">
+                    
+                    <select id="newEquipDeptSelect" style="margin:0; background:white;">
+                        <option value="">- Área -</option>
+                    </select>
+
+                    <button onclick="addEquipmentDirect()" class="btn" style="width:auto; background:#16a34a; color:white;">
+                        <i class="fas fa-plus"></i> Añadir
+                    </button>
+                </div>
+            </div>
+
+            <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:5px;">INVENTARIO ACTUAL:</div>
+            <div id="equipList" style="max-height:300px; overflow-y:auto; margin-bottom:20px; border-top:1px solid #eee;">
+                Cargando inventario...
+            </div>
+
+            <div style="text-align:right;">
+                <button class="btn-cancel" onclick="document.getElementById('equipModal').style.display='none'">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="usersModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:400px;">
+            <h3 class="modal-title">Usuarios Vinculados</h3>
+            <div id="usersList" style="margin-bottom:20px; max-height:200px; overflow-y:auto;">Cargando...</div>
+            <button class="btn-cancel" onclick="document.getElementById('usersModal').style.display='none'">Cerrar</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/institutions.js"></script>
+</body>
+</html>
