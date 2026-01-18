@@ -38,8 +38,14 @@ body {
     transition: transform 0.3s ease;
     z-index: 1000;
 }
-.sidebar-brand { height: 70px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.sidebar-brand img { height: 35px; filter: brightness(0) invert(1); }
+.sidebar-brand { 
+    height: 80px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    border-bottom: 1px solid rgba(255,255,255,0.1); 
+    padding: 10px;
+}
 .sidebar-menu { list-style: none; padding: 20px 0; margin: 0; flex: 1; overflow-y: auto; }
 .menu-item { padding: 15px 20px; cursor: pointer; display: flex; align-items: center; gap: 15px; color: var(--sidebar-text); font-size: 15px; font-weight: 500; transition: 0.2s; }
 .menu-item:hover { background: rgba(255,255,255,0.05); color: white; }
@@ -55,12 +61,12 @@ body {
 /* --- COMPONENTES (DASHBOARD & TABLAS) --- */
 .card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; overflow-x: auto; }
 
-/* KPIs Grid */
+/* KPIs Grid - Por defecto para escritorio */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
 .kpi-title { font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 5px; }
 .kpi-value { font-size: 28px; font-weight: 800; color: var(--text-main); }
 
-/* Acciones Rápidas */
+/* Acciones Rápidas - Por defecto para escritorio */
 .actions-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
 .action-btn { background: white; border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .action-btn:hover { border-color: var(--sidebar-active); box-shadow: var(--shadow); transform: translateY(-2px); }
@@ -113,13 +119,27 @@ tr:hover { background: #f8fafc; }
 @media (max-width: 768px) {
     body { flex-direction: column; overflow: auto; }
     .sidebar { width: 100%; height: auto; flex-direction: row; padding: 10px; overflow-x: auto; position: sticky; top: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .sidebar-brand { display: none; }
+    /* Ocultamos el logo en móvil para dar espacio al menú horizontal */
+    .sidebar-brand { display: none; } 
     .menu-item { padding: 10px 15px; font-size: 12px; flex-direction: column; white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; border-radius: 8px; }
     .menu-item.active { border-left: none; border-bottom-color: #3b82f6; background: rgba(255,255,255,0.1); }
     .main-content { overflow: visible; height: auto; }
     .top-bar { padding: 0 15px; }
+    .scroll-area { padding: 15px; }
+    
+    /* AJUSTE CLAVE PARA EL DASHBOARD EN MÓVIL */
+    /* Fuerza a que las tarjetas se apilen en una sola columna y ocupen todo el ancho */
+    .kpi-grid, .actions-grid {
+        grid-template-columns: 1fr; 
+        gap: 15px;
+    }
+    .card, .action-btn {
+        margin-bottom: 0; /* El gap se encarga del espaciado */
+    }
+
+    /* Ajustes para otras vistas en móvil */
     .kanban-board { display: flex; flex-direction: column; height: auto; overflow: visible; }
-    .kanban-column { height: auto; max-height: 500px; }
+    .kanban-column { height: auto; max-height: 500px; margin-bottom: 20px; }
     .modal-overlay { align-items: flex-end; }
     .modal-box { width: 100%; border-radius: 20px 20px 0 0; }
 }
