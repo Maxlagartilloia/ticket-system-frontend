@@ -27,12 +27,11 @@ async function loadInstitutions() {
     if (error) { tb.innerHTML = `<tr><td colspan="7" style="color:red;">Error: ${error.message}</td></tr>`; return; }
     if (!insts || !insts.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;">Base de datos vacía.</td></tr>'; return; }
 
-    // Mapa de técnicos para mostrar nombres
+    // Mapas auxiliares
     const techMap = {};
     const opts = document.getElementById('techSelect').options;
     for(let i=0; i<opts.length; i++) techMap[opts[i].value] = opts[i].text.replace('🔧 ', '');
 
-    // Contar equipos por institución (para el botón)
     const { data: equips } = await sb.from('equipment').select('institution_id');
     const equipCounts = {};
     equips?.forEach(e => equipCounts[e.institution_id] = (equipCounts[e.institution_id] || 0) + 1);
@@ -41,7 +40,6 @@ async function loadInstitutions() {
         const safePhone = i.phone || '';
         let techName = '<span style="color:#cbd5e1;">Manual</span>';
         if (i.default_technician_id && techMap[i.default_technician_id]) techName = `<b>${techMap[i.default_technician_id]}</b>`;
-        
         const eCount = equipCounts[i.id] || 0;
 
         tb.innerHTML += `
@@ -50,13 +48,11 @@ async function loadInstitutions() {
                 <td style="padding:12px; font-weight:600; color:#1e293b;">${i.name}</td>
                 <td style="padding:12px;">${safePhone}</td>
                 <td style="padding:12px; font-size:13px;">${techName}</td>
-                
                 <td style="padding:12px;">
                     <button onclick="openEquipModal(${i.id}, '${i.name}')" class="btn" style="background:#fff7ed; color:#c2410c; padding:5px 10px; font-size:12px; border:1px solid #fed7aa;">
                         <i class="fas fa-print"></i> Equipos (${eCount})
                     </button>
                 </td>
-
                 <td style="padding:12px;">
                     <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="background:#e0f2fe; color:#0369a1; padding:5px 10px; font-size:12px; border:1px solid #bae6fd;">
                         <i class="fas fa-sitemap"></i> Áreas
@@ -70,43 +66,120 @@ async function loadInstitutions() {
     });
 }
 
-// 3. NUEVA FUNCIÓN: ABRIR MODAL DE EQUIPOS
+// ==========================================
+// 3. GESTIÓN DE EQUIPOS (MODAL AVANZADO)
+// ==========================================
+
 window.openEquipModal = async (id, name) => {
+    currentInstId = id; 
     document.getElementById('modalEquipInstName').innerText = name;
     document.getElementById('equipModal').style.display = 'flex';
-    const list = document.getElementById('equipList');
-    list.innerHTML = '<div style="text-align:center; padding:20px;">Cargando equipos...</div>';
+    
+    // 1. Cargar Áreas (Departamentos) para el Select
+    const deptSelect = document.getElementById('newEquipDeptSelect');
+    deptSelect.innerHTML = '<option value="">Cargando áreas...</option>';
+    const { data: depts } = await sb.from('departments').select('*').eq('institution_id', id).order('name');
+    
+    deptSelect.innerHTML = '<option value="">- Seleccionar Área -</option>';
+    if(depts && depts.length > 0) {
+        depts.forEach(d => {
+            deptSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+        });
+    } else {
+        deptSelect.innerHTML = '<option value="">(Sin áreas creadas)</option>';
+    }
 
-    // Consultamos equipos + nombre del departamento
+    // 2. Cargar Lista de Equipos
+    loadEquipListInternal(id);
+}
+
+async function loadEquipListInternal(instId) {
+    const list = document.getElementById('equipList');
+    list.innerHTML = '<div style="padding:20px; text-align:center;">Cargando...</div>';
+
     const { data: equips } = await sb
         .from('equipment')
         .select('*, departments(name)')
-        .eq('institution_id', id)
-        .order('department_id');
+        .eq('institution_id', instId)
+        .order('department_id'); 
 
     list.innerHTML = '';
     if (!equips || !equips.length) {
-        list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">No hay equipos registrados en este cliente.</div>';
+        list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">No hay equipos registrados. Usa el formulario de arriba.</div>';
         return;
     }
 
     equips.forEach(e => {
-        const deptName = e.departments?.name || 'General';
+        const deptName = e.departments?.name || '<span style="color:orange">Sin Área</span>';
         list.innerHTML += `
             <div class="equip-item">
-                <div>
+                <div style="flex:1;">
                     <div style="font-weight:bold; font-size:13px; color:#1e293b;">${e.model}</div>
                     <div style="font-size:11px; color:#64748b;">SN: ${e.serial_number}</div>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-size:11px; font-weight:bold; color:#475569; margin-bottom:3px;">${deptName}</div>
-                    <div class="equip-status">INSTALADO</div>
+                <div style="text-align:right; margin-right:15px;">
+                    <div style="font-size:10px; background:#f1f5f9; padding:3px 8px; border-radius:10px; color:#475569;">
+                        <i class="fas fa-map-marker-alt"></i> ${deptName}
+                    </div>
                 </div>
+                <button onclick="deleteEquipment(${e.id})" title="Eliminar Equipo" style="background:none; border:none; color:#ef4444; cursor:pointer;">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>`;
     });
 }
 
-// 4. EDICIÓN
+// AGREGAR EQUIPO MANUALMENTE
+window.addEquipmentDirect = async () => {
+    const model = document.getElementById('newEquipModel').value.trim();
+    const serial = document.getElementById('newEquipSerial').value.trim();
+    const deptId = document.getElementById('newEquipDeptSelect').value;
+
+    if(!model || !serial) { alert("Por favor ingresa Modelo y Serie."); return; }
+    if(!deptId) { alert("Por favor selecciona un Área (Departamento)."); return; }
+
+    const btn = document.querySelector('#equipModal .btn'); 
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '...'; btn.disabled = true;
+
+    try {
+        const { error } = await sb.from('equipment').insert([{
+            model: model,
+            serial_number: serial,
+            institution_id: currentInstId,
+            department_id: deptId,
+            status: 'installed'
+        }]);
+
+        if(error) throw error;
+
+        // Limpiar inputs
+        document.getElementById('newEquipModel').value = '';
+        document.getElementById('newEquipSerial').value = '';
+        
+        loadEquipListInternal(currentInstId);
+        loadInstitutions(); 
+
+    } catch(err) {
+        alert("Error: " + err.message);
+    } finally {
+        btn.innerHTML = originalText; btn.disabled = false;
+    }
+}
+
+// BORRAR EQUIPO
+window.deleteEquipment = async (id) => {
+    if(confirm('¿Seguro que deseas eliminar este equipo del inventario?')) {
+        const { error } = await sb.from('equipment').delete().eq('id', id);
+        if(error) alert("Error: " + error.message);
+        else {
+            loadEquipListInternal(currentInstId);
+            loadInstitutions(); 
+        }
+    }
+}
+
+// 4. EDICIÓN CLIENTE (FORMULARIO PRINCIPAL)
 window.startEdit = (id, name, phone, address, techId) => {
     isEditing = true; editId = id;
     document.getElementById('name').value = name;
@@ -140,7 +213,7 @@ window.openDeptModal = async (id, name) => { currentInstId = id; document.getEle
 window.closeDeptModal = () => { document.getElementById('deptModal').style.display = 'none'; loadInstitutions(); }
 async function loadDepartmentsInternal(instId) {
     const list = document.getElementById('deptList'); list.innerHTML = '<li>Cargando...</li>';
-    const { data } = await sb.from('departments').select('*').eq('institution_id', instId);
+    const { data } = await sb.from('departments').select('*').eq('institution_id', instId).order('name');
     list.innerHTML = '';
     data?.forEach(d => list.innerHTML += `<li class="dept-item"><span>${d.name}</span> <button onclick="deleteDept(${d.id})" class="btn-mini-del"><i class="fas fa-times"></i></button></li>`);
 }
