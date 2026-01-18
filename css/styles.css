@@ -49,8 +49,9 @@ body {
     padding: 10px;
 }
 
+/* REGLA CRÍTICA: Controla el tamaño de la imagen */
 .sidebar-brand img {
-    max-height: 70px;  /* ESTO EVITA QUE SE HAGA GIGANTE */
+    max-height: 70px; 
     max-width: 100%;
     width: auto;
     object-fit: contain;
@@ -127,7 +128,7 @@ tr:hover { background: #f8fafc; }
     body { flex-direction: column; overflow: auto; }
     .sidebar { width: 100%; height: auto; flex-direction: row; padding: 10px; overflow-x: auto; position: sticky; top: 0; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     
-    /* EN MÓVIL: Ocultamos el logo si ocupa mucho, o lo hacemos muy pequeño */
+    /* EN MÓVIL: Ocultamos el logo para ganar espacio */
     .sidebar-brand { display: none; } 
 
     .menu-item { padding: 10px 15px; font-size: 12px; flex-direction: column; white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; border-radius: 8px; }
@@ -136,8 +137,10 @@ tr:hover { background: #f8fafc; }
     .top-bar { padding: 0 15px; }
     .scroll-area { padding: 15px; }
     
-    /* FIX DE PESTAÑAS Y GRID */
+    /* FIX DE PESTAÑAS Y GRID PARA CELULARES */
+    /* Fuerza una sola columna y elimina espacios innecesarios */
     .kpi-grid, .actions-grid { grid-template-columns: 1fr; gap: 15px; }
+    
     .kanban-board { display: flex; flex-direction: column; height: auto; overflow: visible; }
     .kanban-column { height: auto; max-height: 500px; margin-bottom: 20px; }
     .modal-overlay { align-items: flex-end; }
