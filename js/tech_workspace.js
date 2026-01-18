@@ -1,7 +1,7 @@
 const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
 let currentUser = null;
 let activeTicketId = null;
-let ticketToStart = null; // Variable temporal para saber cuál vamos a iniciar
+let ticketToStart = null; 
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -10,7 +10,7 @@ async function init() {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) return window.location.href = 'index.html';
     
-    // Cargar nombre
+    // Cargar nombre del técnico
     const { data: profile } = await sb.from('profiles').select('full_name').eq('id', session.user.id).single();
     document.getElementById('techName').textContent = profile?.full_name || 'Técnico';
     currentUser = session.user;
@@ -19,10 +19,11 @@ async function init() {
 }
 
 async function loadTickets() {
-    // 1. Buscar Ticket EN CURSO
+    // 1. Buscar Ticket EN CURSO (Lo que ya empecé y no he terminado)
+    // Usamos el nombre correcto de campo: description (en vez de title)
     const { data: active } = await sb.from('tickets')
         .select('*, institutions(name), equipment(model, serial_number)')
-        .eq('assigned_to', currentUser.id)
+        .eq('technician_id', currentUser.id) // Ojo: campo technician_id, no assigned_to
         .eq('status', 'in_progress')
         .maybeSingle();
 
@@ -32,13 +33,13 @@ async function loadTickets() {
         activeTicketId = active.id;
         activeZone.innerHTML = `
             <div class="active-job-card">
-                <div class="job-id">Orden #${active.id}</div>
-                <div class="job-title">${active.title}</div>
+                <div class="job-id">Orden #${active.id.substring(0,8)}</div>
+                <div class="job-title">${active.description || 'Sin descripción'}</div>
                 <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
                 
-                <div class="info-row"><div class="info-icon"><i class="fas fa-building"></i></div><div class="info-text">${active.institutions?.name}</div></div>
-                <div class="info-row"><div class="info-icon"><i class="fas fa-print"></i></div><div class="info-text">${active.equipment?.model}</div></div>
-                <div class="info-row"><div class="info-icon"><i class="fas fa-barcode"></i></div><div class="info-text">${active.equipment?.serial_number}</div></div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-building"></i></div><div class="info-text">${active.institutions?.name || 'Cliente'}</div></div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-print"></i></div><div class="info-text">${active.equipment?.model || 'Equipo'}</div></div>
+                <div class="info-row"><div class="info-icon"><i class="fas fa-barcode"></i></div><div class="info-text">${active.equipment?.serial_number || 'S/N'}</div></div>
                 
                 <button class="btn-big btn-finish" onclick="openModal('auditModal')">
                     <i class="fas fa-check-circle"></i> FINALIZAR TRABAJO
@@ -54,40 +55,36 @@ async function loadTickets() {
             </div>`;
     }
 
-    // 2. Cargar PENDIENTES
+    // 2. Cargar PENDIENTES (Asignados a mí pero aún 'open')
     const { data: pending } = await sb.from('tickets')
         .select('*, institutions(name)')
-        .eq('assigned_to', currentUser.id)
-        .in('status', ['open', 'assigned'])
-        .order('priority', { ascending: false });
+        .eq('technician_id', currentUser.id)
+        .in('status', ['open']) // Solo los que están abiertos
+        .order('priority', { ascending: false }); // Urgentes primero
 
     document.getElementById('pendingCount').textContent = pending?.length || 0;
     const pContainer = document.getElementById('pendingContainer');
     pContainer.innerHTML = '';
 
     pending?.forEach(t => {
-        let badge = t.priority === 'high' ? '<span style="color:#ef4444;">🔥 URGENTE</span>' : '';
+        let badge = t.priority === 'Alta' ? '<span style="color:#ef4444; font-weight:bold;">🔥 URGENTE</span>' : `<span style="color:#64748b;">${t.priority}</span>`;
+        
         pContainer.innerHTML += `
             <div class="pending-card">
                 <div>
-                    <div style="font-weight:700; color:#334155;">#${t.id} - ${t.title}</div>
-                    <div style="font-size:13px; color:#64748b;">${t.institutions?.name}</div>
-                    <div style="font-size:11px;">${badge}</div>
+                    <div style="font-weight:700; color:#334155;">#${t.id.substring(0,6)}...</div>
+                    <div style="font-size:14px; margin-top:4px;">${t.description.substring(0,40)}...</div>
+                    <div style="font-size:13px; color:#64748b; margin-top:4px;">${t.institutions?.name}</div>
+                    <div style="font-size:11px; margin-top:5px;">${badge}</div>
                 </div>
-                <button class="pending-btn" onclick="askToStart(${t.id})">INICIAR ▶</button>
+                <button class="pending-btn" onclick="askToStart('${t.id}')">INICIAR ▶</button>
             </div>`;
     });
 }
 
 // --- GESTIÓN DE MODALES ---
-
-window.openModal = (id) => {
-    document.getElementById(id).style.display = 'flex';
-}
-
-window.closeModal = (id) => {
-    document.getElementById(id).style.display = 'none';
-}
+window.openModal = (id) => document.getElementById(id).style.display = 'flex';
+window.closeModal = (id) => document.getElementById(id).style.display = 'none';
 
 window.showMsg = (title, text, type = 'success') => {
     const icon = document.getElementById('msgIcon');
@@ -99,33 +96,33 @@ window.showMsg = (title, text, type = 'success') => {
 
 // --- LÓGICA DE NEGOCIO ---
 
-// 1. INTENTO DE INICIO (Abre Modal)
+// 1. INTENTO DE INICIO
 window.askToStart = (id) => {
     if (activeTicketId) {
         showMsg("Ocupado", "Ya tienes una orden en curso. Termínala primero.", "error");
         return;
     }
-    ticketToStart = id; // Guardamos ID temporalmente
+    ticketToStart = id; 
     openModal('startModal');
 }
 
-// 2. CONFIRMAR INICIO (Botón del Modal)
+// 2. CONFIRMAR INICIO
 window.confirmStartJob = async () => {
     closeModal('startModal');
     
+    // Cambiamos estado a 'in_progress'
     const { error } = await sb.from('tickets').update({
-        status: 'in_progress',
-        tech_arrival_at: new Date().toISOString()
+        status: 'in_progress'
+        // Podríamos guardar tech_arrival_at si creamos ese campo en la BD, por ahora solo status
     }).eq('id', ticketToStart);
 
     if (error) showMsg("Error", error.message, "error");
     else {
-        // Recargar
         loadTickets();
     }
 }
 
-// 3. FINALIZAR ORDEN (Desde el Modal de Auditoría)
+// 3. FINALIZAR ORDEN (Auditoría)
 document.getElementById('auditForm').addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -137,14 +134,20 @@ document.getElementById('auditForm').addEventListener('submit', async (e) => {
     const btn = e.target.querySelector('button[type="submit"]');
     btn.innerHTML = "Guardando..."; btn.disabled = true;
 
+    // Concatenamos el reporte técnico en la descripción para que quede en el historial
+    // (O idealmente en campos separados si la BD los tiene, aquí aseguramos que se guarde todo)
+    const finalReport = ` || [REPORTE TÉCNICO] DIAGNÓSTICO: ${diagnosis}. ACCIÓN: ${action}. REPUESTOS: ${parts}. CONTADOR: ${counter}.`;
+
+    // Primero traemos la descripción original
+    const { data: currentTicket } = await sb.from('tickets').select('description').eq('id', activeTicketId).single();
+    const newDesc = (currentTicket?.description || '') + finalReport;
+
     const { error } = await sb.from('tickets').update({
-        status: 'resolved',
-        tech_departure_at: new Date().toISOString(),
-        technical_diagnosis: diagnosis,
-        action_taken: action,
-        spare_parts_used: parts,
-        final_meter_reading: parseInt(counter),
-        resolution_notes: `DIAGNÓSTICO: ${diagnosis} | ACCIÓN: ${action}`
+        status: 'closed',
+        closed_at: new Date(), // Vital para KPIs
+        description: newDesc
+        // Si tu tabla tiene columnas 'final_meter_reading', etc., agrégalas aquí.
+        // Por seguridad, lo guardo todo en description para que no se pierda nada.
     }).eq('id', activeTicketId);
 
     if (error) {
