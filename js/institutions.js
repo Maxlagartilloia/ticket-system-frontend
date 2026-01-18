@@ -3,19 +3,35 @@ let currentInstId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadInstitutions();
+    loadTechniciansForSelect(); // Cargamos técnicos al inicio
 });
+
+// NUEVA FUNCIÓN: Cargar lista de técnicos en el select
+async function loadTechniciansForSelect() {
+    const { data: techs } = await sb.from('profiles')
+        .select('id, full_name')
+        .eq('role', 'technician')
+        .order('full_name');
+    
+    const sel = document.getElementById('techSelect');
+    if(sel) {
+        sel.innerHTML = '<option value="">-- Sin Técnico Fijo --</option>';
+        techs?.forEach(t => {
+            sel.innerHTML += `<option value="${t.id}">🔧 ${t.full_name}</option>`;
+        });
+    }
+}
 
 // 1. CARGAR LISTA PRINCIPAL
 async function loadInstitutions() {
-    // Cargar Instituciones
+    // JOIN con profiles para traer el nombre del técnico
     const { data: insts, error } = await sb
         .from('institutions')
-        .select('*')
+        .select('*, profiles(full_name)') 
         .order('id', {ascending: false});
 
     if (error) { console.error(error); return; }
 
-    // Cargar conteo de Departamentos (para mostrar en el botón)
     const { data: depts } = await sb.from('departments').select('institution_id');
     const deptCounts = {};
     depts?.forEach(d => deptCounts[d.institution_id] = (deptCounts[d.institution_id] || 0) + 1);
@@ -24,7 +40,7 @@ async function loadInstitutions() {
     tb.innerHTML = '';
 
     if (!insts || insts.length === 0) {
-        tb.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">No hay clientes registrados.</td></tr>';
+        tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">No hay clientes registrados.</td></tr>';
         return;
     }
 
@@ -32,12 +48,15 @@ async function loadInstitutions() {
         const count = deptCounts[i.id] || 0;
         const btnColor = count > 0 ? '#e0f2fe' : '#f1f5f9';
         const btnTextColor = count > 0 ? '#0369a1' : '#64748b';
+        // Mostrar nombre del técnico o "Manual"
+        const assignedTech = i.profiles?.full_name || '<span style="color:#cbd5e1; font-style:italic;">Asignación Manual</span>';
 
         tb.innerHTML += `
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td style="padding:12px;"><b>${i.id}</b></td>
                 <td style="padding:12px; font-weight:600; color:#1e293b;">${i.name}</td>
                 <td style="padding:12px;">${i.phone || '<span style="color:#cbd5e1">-</span>'}</td>
+                <td style="padding:12px; font-size:13px; color:#475569;"><i class="fas fa-user-cog"></i> ${assignedTech}</td>
                 <td style="padding:12px;">
                     <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" 
                         style="width:auto; background:${btnColor}; color:${btnTextColor}; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1;">
@@ -56,18 +75,21 @@ async function loadInstitutions() {
     });
 }
 
-// 2. CREAR NUEVO CLIENTE
+// 2. CREAR NUEVO CLIENTE (Actualizado con Técnico)
 document.getElementById('instForm').addEventListener('submit', async(e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
     const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ...'; btn.disabled = true;
 
+    const techId = document.getElementById('techSelect').value || null;
+
     try {
         const { error } = await sb.from('institutions').insert([{ 
             name: document.getElementById('name').value, 
             phone: document.getElementById('phone').value, 
-            address: document.getElementById('address').value 
+            address: document.getElementById('address').value,
+            default_technician_id: techId // Guardamos la asignación automática
         }]);
         
         if(error) throw error;
@@ -82,7 +104,7 @@ document.getElementById('instForm').addEventListener('submit', async(e) => {
     }
 });
 
-// 3. GESTIÓN DE DEPARTAMENTOS (MODAL)
+// 3. GESTIÓN DE DEPARTAMENTOS (Sin cambios)
 window.openDeptModal = async (id, name) => {
     currentInstId = id; 
     document.getElementById('modalInstName').innerText = name;
@@ -92,7 +114,7 @@ window.openDeptModal = async (id, name) => {
 
 window.closeDeptModal = () => { 
     document.getElementById('deptModal').style.display = 'none'; 
-    loadInstitutions(); // Recargar para actualizar contadores
+    loadInstitutions();
 }
 
 async function loadDepartmentsInternal(instId) {
@@ -138,7 +160,7 @@ window.deleteDept = async (id) => {
     } 
 }
 
-// 4. VER USUARIOS
+// 4. VER USUARIOS (Sin cambios)
 window.viewUsers = async (id, name) => {
     document.getElementById('modalUserInstName').innerText = name; 
     document.getElementById('usersModal').style.display = 'flex';
@@ -160,13 +182,10 @@ window.viewUsers = async (id, name) => {
     }
 }
 
-// 5. BORRAR INSTITUCIÓN (Con seguridad básica)
+// 5. BORRAR INSTITUCIÓN (Sin cambios)
 window.delInst = async(id) => { 
     if(confirm('⛔ ¡ADVERTENCIA! \n\nEliminar este cliente borrará también:\n- Todos sus departamentos\n- Historial de tickets\n\n¿Estás realmente seguro?')) { 
-        // Supabase con FK CASCADE configurado debería borrar todo,
-        // pero capturamos error por si acaso hay restricciones.
         const { error } = await sb.from('institutions').delete().eq('id', id);
-        
         if (error) {
             alert("Error al eliminar: " + error.message);
         } else {
