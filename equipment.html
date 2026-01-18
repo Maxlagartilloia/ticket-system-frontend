@@ -31,21 +31,18 @@
             <div class="card" style="background:#f8fafc; border:1px solid #cbd5e1; margin-bottom:20px;">
                 <h4 style="margin-top:0; color:#475569; margin-bottom:10px;"><i class="fas fa-filter"></i> Filtrar Equipos</h4>
                 <div class="actions-grid" style="grid-template-columns: 1fr 1fr auto; gap:15px;">
-                    
                     <div>
                         <select id="filterClient" onchange="filterByClient()" style="margin-bottom:0; background:white;">
-                            <option value="">-- Todos los Clientes --</option>
-                            </select>
+                            <option value="">-- Cargando Clientes... --</option>
+                        </select>
                     </div>
-
                     <div>
                         <select id="filterDept" onchange="filterByDept()" disabled style="margin-bottom:0; background:white;">
                             <option value="">-- Todas las Áreas --</option>
                         </select>
                     </div>
-
                     <button onclick="openNewModal()" class="btn" style="width:auto; background:#16a34a; color:white; height:100%;">
-                        <i class="fas fa-plus-circle"></i> Nuevo
+                        <i class="fas fa-plus-circle"></i> Nuevo Equipo
                     </button>
                 </div>
             </div>
@@ -53,7 +50,7 @@
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h3 style="margin:0;">Listado de Equipos</h3>
-                    <span id="resultCount" style="font-size:12px; color:#64748b; font-weight:bold;">0 equipos encontrados</span>
+                    <span id="resultCount" style="font-size:12px; color:#64748b; font-weight:bold;">Cargando...</span>
                 </div>
 
                 <div style="overflow-x:auto;">
@@ -61,14 +58,14 @@
                         <thead>
                             <tr>
                                 <th>Ubicación</th>
-                                <th>Equipo</th>
+                                <th>Marca / Modelo</th>
                                 <th>Serie / IP</th>
                                 <th>Estado</th>
                                 <th style="text-align:center;">Gestión</th>
                             </tr>
                         </thead>
                         <tbody id="equipTable">
-                            <tr><td colspan="5" style="text-align:center; padding:20px;">Selecciona un cliente para ver sus equipos...</td></tr>
+                            <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando inventario...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -82,8 +79,12 @@
             <form id="equipForm">
                 <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #e2e8f0;">
                     <label style="color:#3b82f6;">📍 Ubicación Inicial</label>
-                    <select id="instSelect" onchange="loadDepts(this.value)" required><option value="">Cliente...</option></select>
-                    <select id="deptSelect" required disabled><option value="">-- Seleccione Cliente --</option></select>
+                    <select id="instSelect" onchange="loadDepts(this.value)" required>
+                        <option value="">Cargando...</option>
+                    </select>
+                    <select id="deptSelect" required disabled>
+                        <option value="">-- Seleccione Cliente Primero --</option>
+                    </select>
                 </div>
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
@@ -112,33 +113,43 @@
     
     <div id="swapModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 class="modal-title"><i class="fas fa-sync-alt" style="color:#f59e0b;"></i> Rotación de Equipo</h3>
-            <p style="font-size:13px; color:#64748b;">Estás retirando: <strong id="swapModel">...</strong></p>
+            <h3 class="modal-title"><i class="fas fa-sync-alt" style="color:#f59e0b;"></i> Retiro de Equipo</h3>
+            <p style="font-size:13px; color:#64748b;">Equipo: <strong id="swapModel">...</strong></p>
             <form id="swapForm">
                 <input type="hidden" id="swapEquipId">
-                <input type="hidden" id="swapDeptId"> 
-                <label>Motivo</label><textarea id="swapReason" rows="2" required></textarea>
-                <label>Contador Final</label><input type="number" id="swapMeter" required>
-                <div style="background:#fff7ed; padding:10px; margin-top:10px;">
-                    <label style="color:#c2410c;">Destino</label>
+                
+                <label>Motivo del Retiro</label>
+                <textarea id="swapReason" rows="2" placeholder="Ej: Falla mecánica grave, fin de contrato..." required></textarea>
+                
+                <label>Contador Final (Al retirar)</label>
+                <input type="number" id="swapMeter" required>
+                
+                <div style="background:#fff7ed; padding:10px; margin-top:10px; border-radius:6px; border:1px solid #fed7aa;">
+                    <label style="color:#c2410c; font-weight:bold;">Destino del Equipo</label>
                     <select id="swapDestination" required>
-                        <option value="workshop">Taller</option>
-                        <option value="retired">Baja</option>
+                        <option value="workshop">🛠️ Taller (Reparación)</option>
+                        <option value="retired">🗑️ Baja Definitiva (Chatarra)</option>
+                        <option value="inventory">📦 Bodega (Disponible)</option>
                     </select>
                 </div>
+                
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal('swapModal')">Cancelar</button>
-                    <button type="submit" class="btn-confirm" style="background:#ea580c;">Retirar</button>
+                    <button type="submit" class="btn-confirm" style="background:#ea580c;">Confirmar Retiro</button>
                 </div>
             </form>
         </div>
     </div>
 
     <div id="historyModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 class="modal-title">📜 Historial</h3>
-            <ul id="historyList" style="list-style:none; padding:0;"></ul>
-            <button class="btn-cancel" onclick="closeModal('historyModal')">Cerrar</button>
+        <div class="modal-box" style="max-width:500px;">
+            <h3 class="modal-title">📜 Historial de Fallas</h3>
+            <div id="historyList" style="max-height:300px; overflow-y:auto; padding-right:5px;">
+                Cargando...
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal('historyModal')">Cerrar</button>
+            </div>
         </div>
     </div>
 
