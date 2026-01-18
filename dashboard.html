@@ -37,18 +37,22 @@
                 <div class="card">
                     <div class="kpi-title">Tickets Abiertos</div>
                     <div class="kpi-value" id="openTickets">--</div>
+                    <small style="color:#ef4444; font-size:11px;">Requieren atención</small>
                 </div>
                 <div class="card">
                     <div class="kpi-title">En Proceso</div>
                     <div class="kpi-value" id="inProgress" style="color:#f59e0b;">--</div>
+                    <small style="color:#f59e0b; font-size:11px;">Técnicos trabajando</small>
                 </div>
                 <div class="card">
-                    <div class="kpi-title">Clientes</div>
+                    <div class="kpi-title">Clientes Activos</div>
                     <div class="kpi-value" id="institutions">--</div>
+                    <small style="color:#64748b; font-size:11px;">Cartera Total</small>
                 </div>
                 <div class="card">
-                    <div class="kpi-title">Equipos</div>
+                    <div class="kpi-title">Equipos Instalados</div>
                     <div class="kpi-value" id="equipment">--</div>
+                    <small style="color:#16a34a; font-size:11px;">Activos en renta</small>
                 </div>
             </div>
 
@@ -83,7 +87,7 @@
                 <input type="password" id="confPass" placeholder="Repite la contraseña" required>
 
                 <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="document.getElementById('profileModal').style.display='none'">Cancelar</button>
+                    <button type="button" class="btn-cancel" onclick="closeProfileModal()">Cancelar</button>
                     <button type="submit" class="btn-confirm">Actualizar Clave</button>
                 </div>
             </form>
@@ -91,38 +95,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/security.js"></script>
+    <script src="js/security.js"></script> 
     <script src="js/dashboard.js"></script>
-    
-    <script>
-        window.openProfileModal = () => {
-            document.getElementById('profileModal').style.display = 'flex';
-        }
-
-        document.getElementById('passForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const p1 = document.getElementById('newPass').value;
-            const p2 = document.getElementById('confPass').value;
-            const btn = e.target.querySelector('.btn-confirm');
-
-            if (p1.length < 6) return alert("La contraseña debe tener al menos 6 caracteres.");
-            if (p1 !== p2) return alert("Las contraseñas no coinciden.");
-
-            btn.innerHTML = "Guardando..."; btn.disabled = true;
-
-            // Actualizar en Supabase Auth
-            const { error } = await sb.auth.updateUser({ password: p1 });
-
-            if (error) {
-                alert("Error: " + error.message);
-                btn.innerHTML = "Actualizar Clave"; btn.disabled = false;
-            } else {
-                alert("✅ Contraseña actualizada correctamente.");
-                document.getElementById('profileModal').style.display = 'none';
-                e.target.reset();
-                btn.innerHTML = "Actualizar Clave"; btn.disabled = false;
-            }
-        });
-    </script>
 </body>
 </html>
