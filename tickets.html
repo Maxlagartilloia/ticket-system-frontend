@@ -3,9 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tickets | CopierMaster</title>
+    <title>Help Desk | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos específicos para el tablero Kanban */
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            height: calc(100vh - 180px);
+            overflow-y: hidden;
+        }
+        .kanban-column {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .column-header {
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .ticket-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .ticket-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border-left: 4px solid #cbd5e1; /* Color por defecto */
+        }
+        .ticket-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .ticket-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 10px;
+        }
+        .badge-prio {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+        }
+    </style>
 </head>
 <body>
     <aside class="sidebar">
@@ -22,37 +81,131 @@
 
     <main class="main-content">
         <header class="top-bar">
-            <div class="page-title">Gestión de Tickets</div>
-            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
+            <div class="page-title">Mesa de Ayuda</div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="searchTicket" placeholder="Buscar ticket..." style="padding:8px; border-radius:6px; border:1px solid #cbd5e1;">
+                <button class="btn-confirm" onclick="openNewTicketModal()">
+                    <i class="fas fa-plus"></i> Nuevo Ticket
+                </button>
+            </div>
         </header>
 
         <div class="scroll-area">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0; color:var(--text-main);">Solicitudes Recientes</h3>
-                <button class="action-btn" style="flex-direction:row; padding:10px 20px; gap:10px; width:auto; min-height:auto;" onclick="location.href='ticket_details.html?new=true'">
-                    <i class="fas fa-plus" style="font-size:16px;"></i> <span>Nuevo Ticket</span>
-                </button>
-            </div>
+            <div class="kanban-board">
+                
+                <div class="kanban-column">
+                    <div class="column-header" style="color:#ef4444;">
+                        <span><i class="fas fa-exclamation-circle"></i> Abiertos</span>
+                        <span id="count-open" style="background:#fee2e2; px; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
+                    </div>
+                    <div class="ticket-list" id="col-open">
+                        </div>
+                </div>
 
-            <div class="card">
-                <table style="width:100%;">
-                    <thead>
-                        <tr>
-                            <th style="width:10%;">ID</th>
-                            <th style="width:30%;">Asunto</th>
-                            <th style="width:20%;">Cliente</th>
-                            <th style="width:15%;">Estado</th>
-                            <th style="width:20%;">Asignado</th>
-                            <th style="width:5%;"></th>
-                        </tr>
-                    </thead>
-                    <tbody id="ticketTable">
-                         <tr><td colspan="6" style="text-align:center; padding:30px;">Cargando...</td></tr>
-                    </tbody>
-                </table>
+                <div class="kanban-column">
+                    <div class="column-header" style="color:#f59e0b;">
+                        <span><i class="fas fa-tools"></i> En Proceso</span>
+                        <span id="count-progress" style="background:#fef3c7; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
+                    </div>
+                    <div class="ticket-list" id="col-progress">
+                        </div>
+                </div>
+
+                <div class="kanban-column">
+                    <div class="column-header" style="color:#16a34a;">
+                        <span><i class="fas fa-check-circle"></i> Cerrados</span>
+                        <span id="count-closed" style="background:#dcfce7; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
+                    </div>
+                    <div class="ticket-list" id="col-closed">
+                        </div>
+                </div>
+
             </div>
         </div>
     </main>
+
+    <div id="newTicketModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 class="modal-title">🎫 Crear Nuevo Ticket</h3>
+            <form id="createTicketForm">
+                
+                <label>Cliente / Institución</label>
+                <select id="clientSelect" required onchange="loadClientEquipment(this.value)">
+                    <option value="">Cargando clientes...</option>
+                </select>
+
+                <label>Equipo Afectado</label>
+                <select id="equipSelect" required disabled>
+                    <option value="">Seleccione primero un cliente</option>
+                </select>
+
+                <div style="margin-top: 15px; margin-bottom: 15px;">
+                    <label style="font-weight:bold; color:#334155;">Nivel de Prioridad</label>
+                    <select id="ticketPriority" style="width: 100%; padding: 10px; border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc;">
+                        <option value="Baja">🟢 Baja (Mantenimiento, consultas)</option>
+                        <option value="Media" selected>🟡 Media (Falla parcial, atascos)</option>
+                        <option value="Alta">🔴 Alta (Equipo detenido, Urgente)</option>
+                    </select>
+                </div>
+
+                <label>Descripción de la Falla</label>
+                <textarea id="ticketDesc" rows="3" placeholder="Describa el problema..." required></textarea>
+
+                <label>Foto de Evidencia (Opcional)</label>
+                <input type="file" id="ticketFile" accept="image/*">
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('newTicketModal')">Cancelar</button>
+                    <button type="submit" class="btn-confirm">Crear Ticket</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="viewTicketModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 600px;">
+            <div style="display:flex; justify-content:space-between; align-items:start;">
+                <h3 class="modal-title" id="viewTitle">Detalle Ticket</h3>
+                <span id="viewPriorityBadge" style="padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;"></span>
+            </div>
+            
+            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin:15px 0;">
+                <p><strong>Cliente:</strong> <span id="viewClient">...</span></p>
+                <p><strong>Equipo:</strong> <span id="viewEquip">...</span></p>
+                <p><strong>Reportado:</strong> <span id="viewDate">...</span></p>
+                <p style="margin-top:10px;"><strong>Descripción:</strong></p>
+                <p id="viewDesc" style="background:white; padding:10px; border-radius:4px; border:1px solid #e2e8f0;">...</p>
+            </div>
+
+            <div id="viewImageContainer" style="margin-bottom:15px; display:none;">
+                <label>Evidencia:</label>
+                <img id="viewImage" src="" style="max-width:100%; border-radius:8px; border:1px solid #cbd5e1;">
+            </div>
+
+            <div style="border-top:1px solid #e2e8f0; padding-top:15px;">
+                <label style="color:#3b82f6; font-weight:bold;">👷 Asignar Técnico</label>
+                <div style="display:flex; gap:10px;">
+                    <select id="assignTechSelect" style="flex:1;">
+                        <option value="">Sin Asignar</option>
+                    </select>
+                    <button type="button" class="btn-confirm" onclick="saveAssignment()">Guardar</button>
+                </div>
+            </div>
+
+            <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
+                <label>Estado Actual:</label>
+                <select id="changeStatusSelect" onchange="updateTicketStatus()">
+                    <option value="open">Abierto</option>
+                    <option value="in_progress">En Proceso</option>
+                    <option value="closed">Cerrado</option>
+                </select>
+            </div>
+
+            <div class="modal-actions" style="margin-top:20px;">
+                <button type="button" class="btn-cancel" onclick="closeModal('viewTicketModal')">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/security.js"></script>
