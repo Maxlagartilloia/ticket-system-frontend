@@ -51,11 +51,15 @@ async function loadTickets() {
         // Borde izquierdo según prioridad
         card.style.borderLeft = `4px solid ${prioColor}`;
 
+        // [MODIFICACIÓN] Agregamos el Badge de TIPO (Hardware/Software) para cumplir contrato
+        const typeLabel = t.incident_type ? `<span class="badge-type" style="background:#e2e8f0; padding:2px 5px; border-radius:4px; font-size:10px; color:#475569; margin-left:5px;">${t.incident_type}</span>` : '';
+
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                 <span style="font-weight:bold; color:#1e293b;">${t.institutions?.name || 'Cliente Desconocido'}</span>
                 <span class="badge-prio" style="background:${prioColor};">${t.priority || 'Media'}</span>
             </div>
+            <div style="font-size:12px; margin-bottom:5px;">${typeLabel}</div>
             <div style="font-size:13px; color:#334155; margin-bottom:8px;">
                 ${t.description.substring(0, 60)}${t.description.length > 60 ? '...' : ''}
             </div>
@@ -141,11 +145,13 @@ document.getElementById('createTicketForm').addEventListener('submit', async (e)
         }
 
         // 2. Insertar Ticket en Base de Datos
+        // [AUDITORÍA] Agregamos incident_type para cumplir el requisito de clasificación
         const { error } = await sb.from('tickets').insert([{
             institution_id: document.getElementById('clientSelect').value,
             equipment_id: document.getElementById('equipSelect').value,
             description: document.getElementById('ticketDesc').value,
-            priority: document.getElementById('ticketPriority').value, // <--- AQUÍ CAPTURAMOS LA PRIORIDAD
+            priority: document.getElementById('ticketPriority').value,
+            incident_type: document.getElementById('ticketType').value, // <--- CAMPO NUEVO
             status: 'open',
             image_url: publicUrl,
             created_at: new Date()
@@ -191,5 +197,86 @@ window.openViewModal = async (ticketId) => {
     // Llenar campos
     document.getElementById('viewClient').innerText = t.institutions?.name;
     document.getElementById('viewEquip').innerText = `${t.equipment?.brand} ${t.equipment?.model}`;
+    // Continuamos donde se quedó tu código...
     document.getElementById('viewDate').innerText = new Date(t.created_at).toLocaleString();
-    document.
+    document.getElementById('viewDesc').innerText = t.description;
+
+    // [NUEVO] Llenar Badges de Tipo y Prioridad
+    const typeBadge = document.getElementById('viewTypeBadge');
+    if(typeBadge) typeBadge.innerText = t.incident_type || 'General';
+
+    const prioBadge = document.getElementById('viewPriorityBadge');
+    if(prioBadge) {
+        prioBadge.innerText = t.priority || 'Media';
+        prioBadge.style.background = t.priority === 'Alta' ? '#ef4444' : (t.priority === 'Baja' ? '#22c55e' : '#f59e0b');
+    }
+
+    // Imagen
+    const imgCont = document.getElementById('viewImageContainer');
+    if (t.image_url) {
+        document.getElementById('viewImage').src = t.image_url;
+        imgCont.style.display = 'block';
+    } else {
+        imgCont.style.display = 'none';
+    }
+
+    // Configurar Selectores de Gestión
+    document.getElementById('changeStatusSelect').value = t.status;
+    document.getElementById('assignTechSelect').value = t.technician_id || "";
+
+    modal.style.display = 'flex';
+};
+
+// [RECUPERADO] Cargar Lista de Técnicos para asignar (Faltaba en tu código pegado)
+async function loadTechnicians() {
+    const { data } = await sb.from('profiles')
+        .select('id, full_name')
+        .eq('role', 'technician'); 
+    
+    const sel = document.getElementById('assignTechSelect');
+    // Mantenemos la opción default de "Sin Asignar" y agregamos los técnicos
+    sel.innerHTML = '<option value="">Sin Asignar</option>';
+    data?.forEach(tech => {
+        sel.innerHTML += `<option value="${tech.id}">${tech.full_name}</option>`;
+    });
+}
+
+// [RECUPERADO] Guardar Asignación de Técnico
+window.saveAssignment = async () => {
+    const techId = document.getElementById('assignTechSelect').value;
+    
+    const { error } = await sb.from('tickets')
+        .update({ technician_id: techId || null })
+        .eq('id', currentTicketId);
+
+    if(error) alert("Error al asignar: " + error.message);
+    else {
+        alert("✅ Técnico asignado correctamente");
+        loadTickets(); // Refrescar tablero
+    }
+};
+
+// [RECUPERADO] Actualizar Estado y Fecha de Cierre (Vital para el Reporte de Tiempos)
+window.updateTicketStatus = async () => {
+    const newStatus = document.getElementById('changeStatusSelect').value;
+    
+    // Si cierran el ticket, guardamos la fecha de cierre para cumplir el contrato (tiempos de respuesta)
+    const updateData = { status: newStatus };
+    if (newStatus === 'closed') {
+        updateData.closed_at = new Date(); 
+    }
+
+    const { error } = await sb.from('tickets')
+        .update(updateData)
+        .eq('id', currentTicketId);
+
+    if(error) alert("Error: " + error.message);
+    else {
+        loadTickets(); // Se moverá de columna automáticamente
+        closeModal('viewTicketModal'); 
+    }
+};
+
+// Utilitarios de Ventana
+window.openNewTicketModal = () => document.getElementById('newTicketModal').style.display = 'flex';
+window.closeModal = (id) => document.getElementById(id).style.display = 'none';.
