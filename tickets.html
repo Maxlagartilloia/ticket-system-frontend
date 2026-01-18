@@ -6,8 +6,8 @@
     <title>Help Desk | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
-        /* Estilos específicos para el tablero Kanban */
         .kanban-board {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -57,12 +57,21 @@
             color: #64748b;
             margin-top: 10px;
         }
+        /* Estilos nuevos para las etiquetas de contrato */
         .badge-prio {
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 10px;
             font-weight: bold;
             color: white;
+        }
+        .badge-type {
+            font-size: 10px; 
+            background: #e2e8f0; 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+            color: #475569; 
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -96,10 +105,9 @@
                 <div class="kanban-column">
                     <div class="column-header" style="color:#ef4444;">
                         <span><i class="fas fa-exclamation-circle"></i> Abiertos</span>
-                        <span id="count-open" style="background:#fee2e2; px; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
+                        <span id="count-open" style="background:#fee2e2; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
                     </div>
-                    <div class="ticket-list" id="col-open">
-                        </div>
+                    <div class="ticket-list" id="col-open"></div>
                 </div>
 
                 <div class="kanban-column">
@@ -107,8 +115,7 @@
                         <span><i class="fas fa-tools"></i> En Proceso</span>
                         <span id="count-progress" style="background:#fef3c7; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
                     </div>
-                    <div class="ticket-list" id="col-progress">
-                        </div>
+                    <div class="ticket-list" id="col-progress"></div>
                 </div>
 
                 <div class="kanban-column">
@@ -116,8 +123,7 @@
                         <span><i class="fas fa-check-circle"></i> Cerrados</span>
                         <span id="count-closed" style="background:#dcfce7; padding:2px 8px; border-radius:10px; font-size:12px;">0</span>
                     </div>
-                    <div class="ticket-list" id="col-closed">
-                        </div>
+                    <div class="ticket-list" id="col-closed"></div>
                 </div>
 
             </div>
@@ -139,13 +145,25 @@
                     <option value="">Seleccione primero un cliente</option>
                 </select>
 
-                <div style="margin-top: 15px; margin-bottom: 15px;">
-                    <label style="font-weight:bold; color:#334155;">Nivel de Prioridad</label>
-                    <select id="ticketPriority" style="width: 100%; padding: 10px; border:1px solid #cbd5e1; border-radius:6px; background:#f8fafc;">
-                        <option value="Baja">🟢 Baja (Mantenimiento, consultas)</option>
-                        <option value="Media" selected>🟡 Media (Falla parcial, atascos)</option>
-                        <option value="Alta">🔴 Alta (Equipo detenido, Urgente)</option>
-                    </select>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 15px 0;">
+                    <div>
+                        <label style="font-weight:bold; font-size:12px;">Tipo de Incidente</label>
+                        <select id="ticketType" required style="width: 100%; padding: 8px; border:1px solid #cbd5e1; border-radius:6px;">
+                            <option value="Hardware">🔩 Falla de Hardware</option>
+                            <option value="Toner">⚫ Suministros / Tóner</option>
+                            <option value="Software">💻 Software / Config</option>
+                            <option value="Redes">🌐 Conectividad / Red</option>
+                            <option value="Otro">❓ Otro</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight:bold; font-size:12px;">Prioridad</label>
+                        <select id="ticketPriority" style="width: 100%; padding: 8px; border:1px solid #cbd5e1; border-radius:6px;">
+                            <option value="Baja">🟢 Baja</option>
+                            <option value="Media" selected>🟡 Media</option>
+                            <option value="Alta">🔴 Alta</option>
+                        </select>
+                    </div>
                 </div>
 
                 <label>Descripción de la Falla</label>
@@ -166,7 +184,10 @@
         <div class="modal-box" style="max-width: 600px;">
             <div style="display:flex; justify-content:space-between; align-items:start;">
                 <h3 class="modal-title" id="viewTitle">Detalle Ticket</h3>
-                <span id="viewPriorityBadge" style="padding:4px 8px; border-radius:4px; font-size:12px; font-weight:bold;"></span>
+                <div>
+                    <span id="viewTypeBadge" style="padding:4px 8px; border-radius:4px; font-size:11px; background:#e2e8f0; margin-right:5px;"></span>
+                    <span id="viewPriorityBadge" style="padding:4px 8px; border-radius:4px; font-size:11px; font-weight:bold; color:white;"></span>
+                </div>
             </div>
             
             <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin:15px 0;">
