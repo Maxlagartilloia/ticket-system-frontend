@@ -4,166 +4,156 @@ let isEditing = false;
 let editId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM Cargado. Iniciando script..."); // Debug
     loadTechniciansForSelect();
     loadInstitutions();
 });
 
 // 1. CARGAR TÉCNICOS
 async function loadTechniciansForSelect() {
-    // Solo traemos ID y Nombre
-    const { data: techs, error } = await sb.from('profiles')
-        .select('id, full_name')
-        .eq('role', 'technician');
-
+    const { data: techs } = await sb.from('profiles').select('id, full_name').eq('role', 'technician');
     const sel = document.getElementById('techSelect');
     if(sel) {
         sel.innerHTML = '<option value="">-- Sin Técnico Fijo --</option>';
-        if(techs) {
-            techs.forEach(t => {
-                sel.innerHTML += `<option value="${t.id}">🔧 ${t.full_name}</option>`;
-            });
-        }
+        techs?.forEach(t => sel.innerHTML += `<option value="${t.id}">🔧 ${t.full_name}</option>`);
     }
 }
 
-// 2. CARGAR CLIENTES (MODO SEGURO)
+// 2. CARGAR CLIENTES
 async function loadInstitutions() {
-    console.log("Cargando clientes..."); 
-    
-    // NOTA: Quitamos el JOIN con profiles temporalmente para evitar errores de relación.
-    // Usaremos una segunda consulta para mapear nombres si es necesario, o mostraremos solo ID por ahora.
-    const { data: insts, error } = await sb
-        .from('institutions')
-        .select('*') 
-        .order('id', {ascending: false});
-
+    const { data: insts, error } = await sb.from('institutions').select('*').order('id', {ascending: false});
     const tb = document.getElementById('instTable');
     tb.innerHTML = '';
 
-    if (error) {
-        console.error("Error Supabase:", error);
-        tb.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">ERROR: ${error.message}</td></tr>`;
-        return;
-    }
+    if (error) { tb.innerHTML = `<tr><td colspan="7" style="color:red;">Error: ${error.message}</td></tr>`; return; }
+    if (!insts || !insts.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:center;">Base de datos vacía.</td></tr>'; return; }
 
-    if (!insts || insts.length === 0) {
-        tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">La base de datos está vacía.</td></tr>';
-        return;
-    }
-
-    // Para mostrar el nombre del técnico, necesitamos hacer un truco rápido
-    // Mapeamos los técnicos que ya cargamos en el select
+    // Mapa de técnicos para mostrar nombres
     const techMap = {};
-    const techOptions = document.getElementById('techSelect').options;
-    for(let i=0; i<techOptions.length; i++) {
-        if(techOptions[i].value) {
-            techMap[techOptions[i].value] = techOptions[i].text.replace('🔧 ', '');
-        }
-    }
+    const opts = document.getElementById('techSelect').options;
+    for(let i=0; i<opts.length; i++) techMap[opts[i].value] = opts[i].text.replace('🔧 ', '');
+
+    // Contar equipos por institución (para el botón)
+    const { data: equips } = await sb.from('equipment').select('institution_id');
+    const equipCounts = {};
+    equips?.forEach(e => equipCounts[e.institution_id] = (equipCounts[e.institution_id] || 0) + 1);
 
     insts.forEach(i => {
         const safePhone = i.phone || '';
-        
-        // Buscamos el nombre del técnico en nuestro mapa local
         let techName = '<span style="color:#cbd5e1;">Manual</span>';
-        if (i.default_technician_id && techMap[i.default_technician_id]) {
-            techName = `<b>${techMap[i.default_technician_id]}</b>`;
-        }
+        if (i.default_technician_id && techMap[i.default_technician_id]) techName = `<b>${techMap[i.default_technician_id]}</b>`;
+        
+        const eCount = equipCounts[i.id] || 0;
 
         tb.innerHTML += `
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td style="padding:12px;"><b>${i.id}</b></td>
                 <td style="padding:12px; font-weight:600; color:#1e293b;">${i.name}</td>
                 <td style="padding:12px;">${safePhone}</td>
-                <td style="padding:12px; font-size:13px; color:#475569;">${techName}</td>
+                <td style="padding:12px; font-size:13px;">${techName}</td>
+                
                 <td style="padding:12px;">
-                    <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="background:#e0f2fe; color:#0369a1; padding:5px 10px; font-size:12px;">
+                    <button onclick="openEquipModal(${i.id}, '${i.name}')" class="btn" style="background:#fff7ed; color:#c2410c; padding:5px 10px; font-size:12px; border:1px solid #fed7aa;">
+                        <i class="fas fa-print"></i> Equipos (${eCount})
+                    </button>
+                </td>
+
+                <td style="padding:12px;">
+                    <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="background:#e0f2fe; color:#0369a1; padding:5px 10px; font-size:12px; border:1px solid #bae6fd;">
                         <i class="fas fa-sitemap"></i> Áreas
                     </button>
                 </td>
                 <td style="padding:12px; text-align:center;">
-                    <button onclick="startEdit(${i.id}, '${i.name}', '${safePhone}', '${i.address || ''}', '${i.default_technician_id || ''}')" 
-                        title="Editar" style="cursor:pointer; border:none; background:none; color:#f59e0b; margin-right:10px;">
-                        <i class="fas fa-pen"></i>
-                    </button>
-                    <button onclick="delInst(${i.id})" title="Eliminar" style="cursor:pointer; border:none; background:none; color:#ef4444;">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <button onclick="startEdit(${i.id}, '${i.name}', '${safePhone}', '${i.address||''}', '${i.default_technician_id||''}')" title="Editar" style="cursor:pointer; border:none; background:none; color:#f59e0b; margin-right:10px;"><i class="fas fa-pen"></i></button>
+                    <button onclick="delInst(${i.id})" title="Eliminar" style="cursor:pointer; border:none; background:none; color:#ef4444;"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>`;
     });
 }
 
-// 3. EDITAR / GUARDAR
+// 3. NUEVA FUNCIÓN: ABRIR MODAL DE EQUIPOS
+window.openEquipModal = async (id, name) => {
+    document.getElementById('modalEquipInstName').innerText = name;
+    document.getElementById('equipModal').style.display = 'flex';
+    const list = document.getElementById('equipList');
+    list.innerHTML = '<div style="text-align:center; padding:20px;">Cargando equipos...</div>';
+
+    // Consultamos equipos + nombre del departamento
+    const { data: equips } = await sb
+        .from('equipment')
+        .select('*, departments(name)')
+        .eq('institution_id', id)
+        .order('department_id');
+
+    list.innerHTML = '';
+    if (!equips || !equips.length) {
+        list.innerHTML = '<div style="text-align:center; color:#94a3b8; padding:20px;">No hay equipos registrados en este cliente.</div>';
+        return;
+    }
+
+    equips.forEach(e => {
+        const deptName = e.departments?.name || 'General';
+        list.innerHTML += `
+            <div class="equip-item">
+                <div>
+                    <div style="font-weight:bold; font-size:13px; color:#1e293b;">${e.model}</div>
+                    <div style="font-size:11px; color:#64748b;">SN: ${e.serial_number}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:11px; font-weight:bold; color:#475569; margin-bottom:3px;">${deptName}</div>
+                    <div class="equip-status">INSTALADO</div>
+                </div>
+            </div>`;
+    });
+}
+
+// 4. EDICIÓN
 window.startEdit = (id, name, phone, address, techId) => {
-    isEditing = true;
-    editId = id;
+    isEditing = true; editId = id;
     document.getElementById('name').value = name;
     document.getElementById('phone').value = phone;
     document.getElementById('address').value = address;
     document.getElementById('techSelect').value = (techId && techId !== 'null') ? techId : "";
-
     const btn = document.querySelector('#instForm button');
-    btn.innerHTML = 'ACTUALIZAR';
-    btn.style.background = '#f59e0b';
+    btn.innerHTML = 'ACTUALIZAR'; btn.style.background = '#f59e0b';
     document.querySelector('.scroll-area').scrollTop = 0;
 };
 
 document.getElementById('instForm').addEventListener('submit', async(e) => {
     e.preventDefault();
-    const btn = e.target.querySelector('button');
-    btn.disabled = true;
-
+    const btn = e.target.querySelector('button'); btn.disabled = true;
     const formData = {
         name: document.getElementById('name').value, 
         phone: document.getElementById('phone').value, 
         address: document.getElementById('address').value,
         default_technician_id: document.getElementById('techSelect').value || null
     };
-
     try {
-        if (isEditing) {
-            await sb.from('institutions').update(formData).eq('id', editId);
-            alert("✅ Actualizado");
-        } else {
-            await sb.from('institutions').insert([formData]);
-            alert("✅ Creado");
-        }
-        e.target.reset();
-        isEditing = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
-        btn.style.background = 'var(--sidebar-active)';
+        if (isEditing) { await sb.from('institutions').update(formData).eq('id', editId); alert("✅ Actualizado"); } 
+        else { await sb.from('institutions').insert([formData]); alert("✅ Creado"); }
+        e.target.reset(); isEditing = false; btn.innerHTML = '<i class="fas fa-save"></i> Guardar'; btn.style.background = 'var(--sidebar-active)';
         loadInstitutions();
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        btn.disabled = false;
-    }
+    } catch (err) { alert("Error: " + err.message); } finally { btn.disabled = false; }
 });
 
-// 4. FUNCIONES AUXILIARES
-window.openDeptModal = async (id, name) => {
-    currentInstId = id; 
-    document.getElementById('modalInstName').innerText = name;
-    document.getElementById('deptModal').style.display = 'flex'; 
-    loadDepartmentsInternal(id);
-}
-window.closeDeptModal = () => { document.getElementById('deptModal').style.display = 'none'; }
-
+// 5. FUNCIONES AUXILIARES
+window.openDeptModal = async (id, name) => { currentInstId = id; document.getElementById('modalInstName').innerText = name; document.getElementById('deptModal').style.display = 'flex'; loadDepartmentsInternal(id); }
+window.closeDeptModal = () => { document.getElementById('deptModal').style.display = 'none'; loadInstitutions(); }
 async function loadDepartmentsInternal(instId) {
     const list = document.getElementById('deptList'); list.innerHTML = '<li>Cargando...</li>';
     const { data } = await sb.from('departments').select('*').eq('institution_id', instId);
     list.innerHTML = '';
-    data?.forEach(d => { 
-        list.innerHTML += `<li class="dept-item"><span>${d.name}</span> <button onclick="deleteDept(${d.id})" class="btn-mini-del"><i class="fas fa-times"></i></button></li>`; 
-    });
+    data?.forEach(d => list.innerHTML += `<li class="dept-item"><span>${d.name}</span> <button onclick="deleteDept(${d.id})" class="btn-mini-del"><i class="fas fa-times"></i></button></li>`);
 }
 window.addDepartment = async () => {
-    const val = document.getElementById('newDeptName').value.trim();
-    if(!val) return;
+    const val = document.getElementById('newDeptName').value.trim(); if(!val) return;
     await sb.from('departments').insert([{ name: val, institution_id: currentInstId }]);
     document.getElementById('newDeptName').value = ''; loadDepartmentsInternal(currentInstId);
 }
-window.deleteDept = async (id) => { if(confirm('¿Borrar?')) { await sb.from('departments').delete().eq('id', id); loadDepartmentsInternal(currentInstId); } }
-window.delInst = async(id) => { if(confirm('¿Eliminar?')) { await sb.from('institutions').delete().eq('id', id); loadInstitutions(); } };
+window.deleteDept = async (id) => { if(confirm('¿Borrar área?')) { await sb.from('departments').delete().eq('id', id); loadDepartmentsInternal(currentInstId); } }
+window.delInst = async(id) => { if(confirm('¿Eliminar cliente?')) { await sb.from('institutions').delete().eq('id', id); loadInstitutions(); } };
+window.viewUsers = async (id, name) => {
+    document.getElementById('usersModal').style.display = 'flex';
+    const list = document.getElementById('usersList'); list.innerHTML = 'Cargando...';
+    const { data } = await sb.from('profiles').select('email, full_name, role').eq('institution_id', id);
+    list.innerHTML = data?.map(u => `<div style="padding:10px; border-bottom:1px solid #eee;"><b>${u.full_name}</b><br><small>${u.email}</small></div>`).join('') || 'Sin usuarios.';
+}
