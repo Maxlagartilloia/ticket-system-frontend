@@ -31,10 +31,9 @@
         .pending-card:active { transform: scale(0.98); }
         .pending-btn { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
 
-        /* --- SISTEMA DE MODALES (VENTANAS EMERGENTES) --- */
+        /* MODALES */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); z-index: 1000; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; backdrop-filter: blur(4px); }
         .modal-box { background: white; width: 100%; max-width: 500px; border-radius: 16px; padding: 25px; position: relative; animation: slideUp 0.3s ease; max-height: 90vh; overflow-y: auto; }
-        
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         .modal-title { font-size: 18px; font-weight: 800; color: #1e293b; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
@@ -42,7 +41,7 @@
         .btn-cancel { flex: 1; padding: 15px; background: #f1f5f9; border: none; border-radius: 8px; color: #64748b; font-weight: 600; cursor: pointer; }
         .btn-confirm { flex: 1; padding: 15px; background: #2563eb; border: none; border-radius: 8px; color: white; font-weight: 600; cursor: pointer; }
 
-        /* INPUTS DEL MODAL */
+        /* INPUTS */
         .input-group { margin-bottom: 15px; }
         .input-label { display: block; font-weight: 600; font-size: 13px; color: #475569; margin-bottom: 8px; text-transform: uppercase; }
         .modal-input { width: 100%; padding: 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; background: #f8fafc; }
@@ -76,7 +75,7 @@
     <div id="startModal" class="modal-overlay">
         <div class="modal-box">
             <h3 class="modal-title"><i class="fas fa-play-circle" style="color:#16a34a;"></i> Iniciar Servicio</h3>
-            <p style="color:#64748b; line-height: 1.5;">¿Confirmas que has llegado a la ubicación del cliente y estás listo para comenzar el cronómetro de servicio?</p>
+            <p style="color:#64748b; line-height: 1.5;">¿Confirmas que has llegado a la ubicación y estás listo para iniciar el trabajo?</p>
             <div class="modal-actions">
                 <button class="btn-cancel" onclick="closeModal('startModal')">Cancelar</button>
                 <button class="btn-confirm" onclick="confirmStartJob()" style="background:#16a34a;">SÍ, INICIAR</button>
