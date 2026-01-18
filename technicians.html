@@ -31,18 +31,29 @@
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <h3 style="margin:0;">Staff Autorizado</h3>
                     <button onclick="window.open('register.html', '_blank')" class="btn" style="width:auto; background:#16a34a; color:white;">
-                        <i class="fas fa-user-plus"></i> Crear Técnico
+                        <i class="fas fa-user-plus"></i> Registrar Nuevo
                     </button>
                 </div>
-                <table style="width:100%; margin-top:15px;">
-                    <thead>
-                        <tr><th>Nombre</th><th>Email</th><th>Rol</th></tr>
-                    </thead>
-                    <tbody id="techTable"></tbody>
-                </table>
+                
+                <div style="margin-top:20px; overflow-x:auto;">
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f8fafc; text-align:left;">
+                                <th style="padding:12px;">Nombre del Técnico</th>
+                                <th style="padding:12px;">Correo Electrónico</th>
+                                <th style="padding:12px;">Rol / Permisos</th>
+                                <th style="padding:12px; text-align:center;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="techTable">
+                            <tr><td colspan="4" style="text-align:center; padding:20px;">Cargando personal...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/security.js"></script>
     <script src="js/technicians.js"></script>
