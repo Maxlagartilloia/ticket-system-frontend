@@ -7,27 +7,19 @@
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilos para el Modal de Departamentos */
-        .dept-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .dept-item { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .dept-item:last-child { border-bottom: none; }
-        
-        /* Botones pequeños de borrar */
-        .btn-mini-del { color: #ef4444; cursor: pointer; border: none; background: none; font-size: 14px; transition: color 0.2s; }
-        .btn-mini-del:hover { color: #b91c1c; }
-
-        /* Estilos para el Modal de Equipos (Inventario) */
-        .equip-item { background: #fff; border: 1px solid #e2e8f0; padding: 10px 15px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-        .equip-item:hover { border-color: #cbd5e1; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .equip-status { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+        /* ESTILOS DE LIMPIEZA VISUAL */
+        .modal-box { max-width: 600px; width: 90%; }
+        .list-container { max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; }
+        .list-item { padding: 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fff; }
+        .list-item:hover { background: #f8fafc; }
+        .tag-dept { font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #64748b; font-weight: 600; }
+        .btn-icon-del { color: #ef4444; background: none; border: none; cursor: pointer; padding: 5px; }
+        .btn-icon-del:hover { background: #fee2e2; border-radius: 4px; }
     </style>
 </head>
 <body>
     <aside class="sidebar">
-        <div class="sidebar-brand">
-            <img src="assets/logo.png" alt="CopierMaster">
-        </div>
-        
+        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
         <ul class="sidebar-menu">
             <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
             <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
@@ -40,25 +32,20 @@
 
     <main class="main-content">
         <header class="top-bar">
-            <div class="page-title">Cartera de Clientes</div>
+            <div class="page-title">Gestión de Clientes</div>
             <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
         </header>
 
         <div class="scroll-area">
-            
             <div class="card">
-                <h3 style="margin-top:0; color:var(--text-main);"><i class="fas fa-plus-circle"></i> Gestión de Clientes</h3>
+                <h3><i class="fas fa-plus-circle"></i> Nuevo / Editar Cliente</h3>
                 <form id="instForm">
-                    <div class="actions-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr auto;">
-                        <input id="name" type="text" placeholder="Nombre Comercial (Ej: GAD MUNICIPAL)" required style="margin-bottom:0;">
-                        <input id="phone" type="text" placeholder="Teléfono" style="margin-bottom:0;">
-                        <input id="address" type="text" placeholder="Dirección" style="margin-bottom:0;">
-                        
-                        <select id="techSelect" style="margin-bottom:0; background:white;">
-                            <option value="">Cargando técnicos...</option>
-                        </select>
-
-                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:100%;">
+                    <div class="actions-grid" style="grid-template-columns: 1.5fr 1fr 1.5fr 1fr auto; gap: 10px;">
+                        <input id="name" type="text" placeholder="Nombre Empresa (Ej: GAD XXX)" required>
+                        <input id="phone" type="text" placeholder="Teléfono">
+                        <input id="address" type="text" placeholder="Dirección">
+                        <select id="techSelect"><option value="">Cargando técnicos...</option></select>
+                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:42px;">
                             <i class="fas fa-save"></i> Guardar
                         </button>
                     </div>
@@ -66,27 +53,26 @@
             </div>
 
             <div class="card">
-                <div style="display:flex; justify-content:space-between; margin-bottom:15px; align-items:center;">
-                    <h3 style="margin:0;">Empresas Registradas</h3>
-                    <button onclick="window.open('register.html', '_blank')" class="btn" style="width:auto; background:#16a34a; color:white; font-size:13px; padding: 8px 15px;">
-                        <i class="fas fa-key"></i> Crear Accesos
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3 style="margin:0;">Cartera de Clientes</h3>
+                    <button onclick="window.open('register.html', '_blank')" class="btn" style="width:auto; background:#16a34a; color:white; font-size:13px; padding:8px 15px;">
+                        <i class="fas fa-user-plus"></i> Crear Accesos
                     </button>
                 </div>
-                
                 <div style="overflow-x:auto;">
                     <table style="width:100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background:#f8fafc; text-align:left;">
-                                <th style="padding:12px; width:50px;">ID</th>
+                            <tr style="background:#f8fafc; text-align:left; color:#475569;">
                                 <th style="padding:12px;">Empresa</th>
                                 <th style="padding:12px;">Teléfono</th>
-                                <th style="padding:12px;">Técnico</th> 
-                                <th style="padding:12px;">Inventario</th> <th style="padding:12px;">Estructura</th>
+                                <th style="padding:12px;">Técnico Asignado</th>
+                                <th style="padding:12px;">Gestión Inventario</th>
+                                <th style="padding:12px;">Estructura</th>
                                 <th style="padding:12px; text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="instTable">
-                            <tr><td colspan="7" style="text-align:center; padding:20px;">Cargando cartera...</td></tr>
+                            <tr><td colspan="6" style="padding:20px; text-align:center;">Cargando base de datos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -94,60 +80,42 @@
         </div>
     </main>
 
-    <div id="deptModal" class="modal-overlay">
-        <div class="modal-box">
-            <h3 class="modal-title">📂 Estructura: <span id="modalInstName" style="color:#3b82f6;">...</span></h3>
-            <p style="font-size:12px; color:#64748b; margin-bottom:15px;">Define las áreas físicas (Ej: Recepción, Gerencia).</p>
-            <div style="display:flex; gap:10px; margin-bottom:20px; background:#f1f5f9; padding:15px; border-radius:8px;">
-                <input id="newDeptName" type="text" placeholder="Nombre del Área" style="margin:0; background:white; flex:1;">
-                <button onclick="addDepartment()" class="btn" style="width:auto; background:#0f172a; color:white;"><i class="fas fa-plus"></i></button>
-            </div>
-            <ul id="deptList" class="dept-list"></ul>
-            <div style="margin-top:20px; text-align:right;">
-                <button class="btn-cancel" onclick="closeDeptModal()">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
     <div id="equipModal" class="modal-overlay">
-        <div class="modal-box" style="max-width:700px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 class="modal-title">🖨️ Inventario: <span id="modalEquipInstName" style="color:#3b82f6;">...</span></h3>
-                <span class="equip-status" style="background:#e0f2fe; color:#0369a1; font-size:12px;">EN COMODATO</span>
-            </div>
-
-            <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:20px;">
-                <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:10px;">AGREGAR NUEVO EQUIPO:</div>
-                <div style="display:grid; grid-template-columns: 1.5fr 1fr 1fr auto; gap:10px;">
-                    <input id="newEquipModel" type="text" placeholder="Modelo (Ej: Ricoh IM 550)" style="margin:0; background:white;">
-                    <input id="newEquipSerial" type="text" placeholder="Serie / ID" style="margin:0; background:white;">
-                    
-                    <select id="newEquipDeptSelect" style="margin:0; background:white;">
-                        <option value="">- Área -</option>
-                    </select>
-
-                    <button onclick="addEquipmentDirect()" class="btn" style="width:auto; background:#16a34a; color:white;">
-                        <i class="fas fa-plus"></i> Añadir
-                    </button>
+        <div class="modal-box">
+            <h3 style="border-bottom:1px solid #eee; padding-bottom:10px; margin-top:0;">🖨️ Inventario: <span id="lblEquipClient" style="color:#2563eb;">...</span></h3>
+            
+            <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:5px;">AÑADIR EQUIPO:</div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:8px;">
+                    <input id="newEquipModel" type="text" placeholder="Modelo" style="margin:0; background:#fff;">
+                    <input id="newEquipSerial" type="text" placeholder="Serie" style="margin:0; background:#fff;">
+                    <select id="newEquipDept" style="margin:0; background:#fff;"><option value="">- Área -</option></select>
+                    <button onclick="addEquipmentDirect()" class="btn" style="width:auto; background:#16a34a; color:white;"><i class="fas fa-plus"></i></button>
                 </div>
             </div>
 
-            <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:5px;">INVENTARIO ACTUAL:</div>
-            <div id="equipList" style="max-height:300px; overflow-y:auto; margin-bottom:20px; border-top:1px solid #eee;">
-                Cargando inventario...
-            </div>
+            <div class="list-container" id="equipList">Cargando...</div>
+            <div style="text-align:right;"><button class="btn-cancel" onclick="document.getElementById('equipModal').style.display='none'">Cerrar</button></div>
+        </div>
+    </div>
 
-            <div style="text-align:right;">
-                <button class="btn-cancel" onclick="document.getElementById('equipModal').style.display='none'">Cerrar</button>
+    <div id="deptModal" class="modal-overlay">
+        <div class="modal-box" style="max-width:500px;">
+            <h3>📂 Estructura: <span id="lblDeptClient" style="color:#2563eb;">...</span></h3>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input id="newDeptName" type="text" placeholder="Nombre del Área / Oficina" style="flex:1;">
+                <button onclick="addDepartment()" class="btn" style="width:auto; background:#0f172a; color:white;"><i class="fas fa-plus"></i></button>
             </div>
+            <div class="list-container" id="deptList">Cargando...</div>
+            <div style="text-align:right;"><button class="btn-cancel" onclick="document.getElementById('deptModal').style.display='none'">Cerrar</button></div>
         </div>
     </div>
 
     <div id="usersModal" class="modal-overlay">
         <div class="modal-box" style="max-width:400px;">
-            <h3 class="modal-title">Usuarios Vinculados</h3>
-            <div id="usersList" style="margin-bottom:20px; max-height:200px; overflow-y:auto;">Cargando...</div>
-            <button class="btn-cancel" onclick="document.getElementById('usersModal').style.display='none'">Cerrar</button>
+            <h3>Usuarios Vinculados</h3>
+            <div class="list-container" id="usersList">Cargando...</div>
+            <div style="text-align:right;"><button class="btn-cancel" onclick="document.getElementById('usersModal').style.display='none'">Cerrar</button></div>
         </div>
     </div>
 
