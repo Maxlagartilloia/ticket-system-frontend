@@ -6,8 +6,7 @@
     <title>Generador de Usuarios | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        /* Ajuste específico para centrar esta caja */
-        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background-color: #f1f5f9; }
         .register-container { background: white; width: 100%; max-width: 500px; padding: 30px; border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; margin: 20px; }
     </style>
 </head>
@@ -22,6 +21,7 @@
             <select id="roleSelect" onchange="toggleInst(this.value)" required style="background:#f0f9ff; border-color:#bae6fd; font-weight:bold;">
                 <option value="client">Cliente (Requiere Empresa)</option>
                 <option value="technician">Técnico (Staff)</option>
+                <option value="supervisor">Supervisor (Admin)</option>
             </select>
 
             <div id="instContainer">
@@ -54,13 +54,9 @@
 
         window.toggleInst = (role) => {
             const div = document.getElementById('instContainer');
-            if (role === 'technician') {
-                div.style.display = 'none';
-                document.getElementById('instSelect').required = false;
-            } else {
-                div.style.display = 'block';
-                document.getElementById('instSelect').required = true;
-            }
+            const isClient = (role === 'client');
+            div.style.display = isClient ? 'block' : 'none';
+            document.getElementById('instSelect').required = isClient;
         }
 
         async function loadInst() {
@@ -97,23 +93,31 @@
 
             // 2. Actualizar Perfil (Rol y Empresa)
             if (data.user) {
+                // Esperamos un segundo para asegurar que el trigger de perfil se ejecute (si existe)
+                // O hacemos upsert directo
                 setTimeout(async () => {
-                    await sb.from('profiles').update({ 
+                    const { error: profileError } = await sb.from('profiles').upsert({ 
+                        id: data.user.id,
+                        email: email, // Aseguramos email
                         institution_id: instId,
                         full_name: name,
                         role: role 
-                    }).eq('id', data.user.id);
+                    });
                     
-                    msg.innerHTML = `<div style="background:#dcfce7; color:#166534; padding:10px; border-radius:8px;">
-                        <strong>¡Usuario Creado!</strong><br>
-                        Rol: ${role.toUpperCase()}<br>
-                        Email: ${email}<br>
-                        Clave: ${password}
-                    </div>`;
+                    if (profileError) {
+                         msg.innerHTML = `<span style="color:orange;">Usuario creado, pero error en perfil: ${profileError.message}</span>`;
+                    } else {
+                        msg.innerHTML = `<div style="background:#dcfce7; color:#166534; padding:10px; border-radius:8px;">
+                            <strong>¡Usuario Creado!</strong><br>
+                            Rol: ${role.toUpperCase()}<br>
+                            Email: ${email}<br>
+                            Clave: ${password}
+                        </div>`;
+                        e.target.reset();
+                    }
                     
-                    e.target.reset();
                     btn.innerHTML = "Crear Otro"; btn.disabled = false;
-                    await sb.auth.signOut(); // Salir para no quedar logueado
+                    await sb.auth.signOut(); // Salir para no quedar logueado con el nuevo usuario
                 }, 1000);
             }
         });
