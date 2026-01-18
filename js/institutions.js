@@ -1,26 +1,25 @@
 const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
 let currentInstId = null;
-
-// VARIABLES PARA CONTROLAR LA EDICIÓN
 let isEditing = false;
 let editId = null;
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadInstitutions();
+    console.log("DOM Cargado. Iniciando script..."); // Debug
     loadTechniciansForSelect();
+    loadInstitutions();
 });
 
-// --- 1. CARGAR TÉCNICOS EN EL SELECT (Para asignar) ---
+// 1. CARGAR TÉCNICOS
 async function loadTechniciansForSelect() {
-    const { data: techs } = await sb.from('profiles')
+    // Solo traemos ID y Nombre
+    const { data: techs, error } = await sb.from('profiles')
         .select('id, full_name')
-        .eq('role', 'technician')
-        .order('full_name');
+        .eq('role', 'technician');
 
     const sel = document.getElementById('techSelect');
     if(sel) {
         sel.innerHTML = '<option value="">-- Sin Técnico Fijo --</option>';
-        if (techs) {
+        if(techs) {
             techs.forEach(t => {
                 sel.innerHTML += `<option value="${t.id}">🔧 ${t.full_name}</option>`;
             });
@@ -28,68 +27,67 @@ async function loadTechniciansForSelect() {
     }
 }
 
-// --- 2. CARGAR LISTA DE CLIENTES (TABLA) ---
+// 2. CARGAR CLIENTES (MODO SEGURO)
 async function loadInstitutions() {
-    // Traemos los clientes y el nombre del técnico asignado (si existe)
+    console.log("Cargando clientes..."); 
+    
+    // NOTA: Quitamos el JOIN con profiles temporalmente para evitar errores de relación.
+    // Usaremos una segunda consulta para mapear nombres si es necesario, o mostraremos solo ID por ahora.
     const { data: insts, error } = await sb
         .from('institutions')
-        .select('*, profiles(full_name)')
+        .select('*') 
         .order('id', {ascending: false});
-
-    if (error) { 
-        console.error("Error cargando clientes:", error); 
-        return; 
-    }
-
-    // Contar departamentos por institución para mostrar en el botón
-    const { data: depts } = await sb.from('departments').select('institution_id');
-    const deptCounts = {};
-    depts?.forEach(d => deptCounts[d.institution_id] = (deptCounts[d.institution_id] || 0) + 1);
 
     const tb = document.getElementById('instTable');
     tb.innerHTML = '';
 
-    if (!insts || insts.length === 0) {
-        tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">No hay clientes registrados.</td></tr>';
+    if (error) {
+        console.error("Error Supabase:", error);
+        tb.innerHTML = `<tr><td colspan="6" style="color:red; text-align:center;">ERROR: ${error.message}</td></tr>`;
         return;
     }
 
-    insts.forEach(i => {
-        const count = deptCounts[i.id] || 0;
-        const btnColor = count > 0 ? '#e0f2fe' : '#f1f5f9';
-        const btnTextColor = count > 0 ? '#0369a1' : '#64748b';
-        // Mostrar nombre del técnico o "Asignación Manual"
-        const assignedTech = i.profiles?.full_name || '<span style="color:#cbd5e1; font-style:italic;">Asignación Manual</span>';
+    if (!insts || insts.length === 0) {
+        tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">La base de datos está vacía.</td></tr>';
+        return;
+    }
 
-        // Preparamos datos seguros para evitar errores al pasar al onclick (strings vacíos en lugar de null)
+    // Para mostrar el nombre del técnico, necesitamos hacer un truco rápido
+    // Mapeamos los técnicos que ya cargamos en el select
+    const techMap = {};
+    const techOptions = document.getElementById('techSelect').options;
+    for(let i=0; i<techOptions.length; i++) {
+        if(techOptions[i].value) {
+            techMap[techOptions[i].value] = techOptions[i].text.replace('🔧 ', '');
+        }
+    }
+
+    insts.forEach(i => {
         const safePhone = i.phone || '';
-        const safeAddress = i.address || '';
-        const safeTechId = i.default_technician_id || '';
+        
+        // Buscamos el nombre del técnico en nuestro mapa local
+        let techName = '<span style="color:#cbd5e1;">Manual</span>';
+        if (i.default_technician_id && techMap[i.default_technician_id]) {
+            techName = `<b>${techMap[i.default_technician_id]}</b>`;
+        }
 
         tb.innerHTML += `
             <tr style="border-bottom:1px solid #e2e8f0;">
                 <td style="padding:12px;"><b>${i.id}</b></td>
                 <td style="padding:12px; font-weight:600; color:#1e293b;">${i.name}</td>
                 <td style="padding:12px;">${safePhone}</td>
-                <td style="padding:12px; font-size:13px; color:#475569;">
-                    <i class="fas fa-user-cog"></i> ${assignedTech}
-                </td>
+                <td style="padding:12px; font-size:13px; color:#475569;">${techName}</td>
                 <td style="padding:12px;">
-                    <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" 
-                        style="width:auto; background:${btnColor}; color:${btnTextColor}; padding:6px 12px; font-size:12px; border:1px solid #cbd5e1;">
-                        <i class="fas fa-sitemap"></i> Áreas (${count})
+                    <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="background:#e0f2fe; color:#0369a1; padding:5px 10px; font-size:12px;">
+                        <i class="fas fa-sitemap"></i> Áreas
                     </button>
                 </td>
                 <td style="padding:12px; text-align:center;">
-                    <button onclick="startEdit(${i.id}, '${i.name}', '${safePhone}', '${safeAddress}', '${safeTechId}')" 
-                        title="Editar / Reasignar Técnico" style="cursor:pointer; border:none; background:none; color:#f59e0b; margin-right:8px;">
+                    <button onclick="startEdit(${i.id}, '${i.name}', '${safePhone}', '${i.address || ''}', '${i.default_technician_id || ''}')" 
+                        title="Editar" style="cursor:pointer; border:none; background:none; color:#f59e0b; margin-right:10px;">
                         <i class="fas fa-pen"></i>
                     </button>
-
-                    <button onclick="viewUsers(${i.id}, '${i.name}')" title="Ver Usuarios" style="cursor:pointer; border:none; background:none; color:#3b82f6; margin-right:8px;">
-                        <i class="fas fa-users"></i>
-                    </button>
-                    <button onclick="delInst(${i.id})" title="Eliminar Cliente" style="cursor:pointer; border:none; background:none; color:#ef4444;">
+                    <button onclick="delInst(${i.id})" title="Eliminar" style="cursor:pointer; border:none; background:none; color:#ef4444;">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -97,170 +95,75 @@ async function loadInstitutions() {
     });
 }
 
-// --- 3. FUNCIÓN PARA INICIAR EDICIÓN (Llena el formulario) ---
+// 3. EDITAR / GUARDAR
 window.startEdit = (id, name, phone, address, techId) => {
     isEditing = true;
     editId = id;
-    
-    // Rellenar campos del formulario
     document.getElementById('name').value = name;
     document.getElementById('phone').value = phone;
     document.getElementById('address').value = address;
-    
-    // Seleccionar el técnico actual en el dropdown
-    // Verificamos que techId sea válido, si no, ponemos vacío
-    document.getElementById('techSelect').value = (techId && techId !== 'null' && techId !== 'undefined') ? techId : "";
+    document.getElementById('techSelect').value = (techId && techId !== 'null') ? techId : "";
 
-    // Cambiar visualmente el botón para indicar actualización
     const btn = document.querySelector('#instForm button');
-    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar';
-    btn.style.background = '#f59e0b'; // Color Ámbar
-    
-    // Subir el scroll para que el usuario vea el formulario
+    btn.innerHTML = 'ACTUALIZAR';
+    btn.style.background = '#f59e0b';
     document.querySelector('.scroll-area').scrollTop = 0;
 };
 
-// --- 4. GUARDAR O ACTUALIZAR (Lógica Principal) ---
 document.getElementById('instForm').addEventListener('submit', async(e) => {
     e.preventDefault();
     const btn = e.target.querySelector('button');
-    // Guardamos el estado original del botón por si hay error
-    const originalText = btn.innerHTML;
-    
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...'; 
     btn.disabled = true;
 
-    const techId = document.getElementById('techSelect').value || null;
-    
     const formData = {
         name: document.getElementById('name').value, 
         phone: document.getElementById('phone').value, 
         address: document.getElementById('address').value,
-        default_technician_id: techId // Guardamos o actualizamos el técnico
+        default_technician_id: document.getElementById('techSelect').value || null
     };
 
     try {
         if (isEditing) {
-            // --- MODO ACTUALIZAR (UPDATE) ---
-            const { error } = await sb.from('institutions')
-                .update(formData)
-                .eq('id', editId);
-            if(error) throw error;
-            alert("✅ Cliente actualizado correctamente.");
+            await sb.from('institutions').update(formData).eq('id', editId);
+            alert("✅ Actualizado");
         } else {
-            // --- MODO CREAR (INSERT) ---
-            const { error } = await sb.from('institutions').insert([formData]);
-            if(error) throw error;
+            await sb.from('institutions').insert([formData]);
+            alert("✅ Creado");
         }
-        
-        // Resetear formulario y variables
         e.target.reset();
         isEditing = false;
-        editId = null;
-        
-        // Restaurar botón a estado "Guardar"
         btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
-        btn.style.background = 'var(--sidebar-active)'; // O el color azul/verde original
-        
-        // Recargar la tabla
-        await loadInstitutions();
-        
+        btn.style.background = 'var(--sidebar-active)';
+        loadInstitutions();
     } catch (err) {
         alert("Error: " + err.message);
-        // Si hubo error, restaurar botón pero mantener datos para que corrija
-        btn.innerHTML = originalText;
     } finally {
         btn.disabled = false;
-        // Asegurar que si terminó la edición, el botón vuelva a la normalidad
-        if(!isEditing) {
-             btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
-             btn.style.background = 'var(--sidebar-active)';
-        }
     }
 });
 
-// --- 5. FUNCIONES AUXILIARES (Áreas, Usuarios, Borrar) ---
-
+// 4. FUNCIONES AUXILIARES
 window.openDeptModal = async (id, name) => {
     currentInstId = id; 
     document.getElementById('modalInstName').innerText = name;
     document.getElementById('deptModal').style.display = 'flex'; 
     loadDepartmentsInternal(id);
 }
-
-window.closeDeptModal = () => { 
-    document.getElementById('deptModal').style.display = 'none'; 
-    loadInstitutions();
-}
+window.closeDeptModal = () => { document.getElementById('deptModal').style.display = 'none'; }
 
 async function loadDepartmentsInternal(instId) {
-    const list = document.getElementById('deptList'); 
-    list.innerHTML = '<li style="padding:15px; text-align:center;">Cargando...</li>';
-    const { data } = await sb.from('departments').select('*').eq('institution_id', instId).order('name');
-    
+    const list = document.getElementById('deptList'); list.innerHTML = '<li>Cargando...</li>';
+    const { data } = await sb.from('departments').select('*').eq('institution_id', instId);
     list.innerHTML = '';
-    if(!data || !data.length) {
-        list.innerHTML = '<li style="padding:15px; text-align:center; color:#94a3b8; font-style:italic;">No hay áreas registradas.</li>';
-        return;
-    }
-    data.forEach(d => { 
-        list.innerHTML += `
-            <li class="dept-item">
-                <span style="font-weight:500;">${d.name}</span> 
-                <button onclick="deleteDept(${d.id})" class="btn-mini-del" title="Borrar Área"><i class="fas fa-times"></i></button>
-            </li>`; 
+    data?.forEach(d => { 
+        list.innerHTML += `<li class="dept-item"><span>${d.name}</span> <button onclick="deleteDept(${d.id})" class="btn-mini-del"><i class="fas fa-times"></i></button></li>`; 
     });
 }
-
 window.addDepartment = async () => {
-    const input = document.getElementById('newDeptName');
-    const val = input.value.trim();
+    const val = document.getElementById('newDeptName').value.trim();
     if(!val) return;
-    
-    const { error } = await sb.from('departments').insert([{ name: val, institution_id: currentInstId }]);
-    
-    if(error) alert("Error: " + error.message);
-    else {
-        input.value = ''; 
-        loadDepartmentsInternal(currentInstId);
-    }
+    await sb.from('departments').insert([{ name: val, institution_id: currentInstId }]);
+    document.getElementById('newDeptName').value = ''; loadDepartmentsInternal(currentInstId);
 }
-
-window.deleteDept = async (id) => { 
-    if(confirm('¿Seguro que deseas borrar este departamento?')) { 
-        const { error } = await sb.from('departments').delete().eq('id', id);
-        if(error) alert("No se puede borrar: Probablemente hay equipos asignados a esta área.");
-        else loadDepartmentsInternal(currentInstId); 
-    } 
-}
-
-window.viewUsers = async (id, name) => {
-    document.getElementById('modalUserInstName').innerText = name; 
-    document.getElementById('usersModal').style.display = 'flex';
-    const list = document.getElementById('usersList'); 
-    list.innerHTML = 'Cargando...';
-    
-    const { data } = await sb.from('profiles').select('email, full_name, role').eq('institution_id', id);
-    
-    if(data && data.length > 0) {
-        list.innerHTML = data.map(u => `
-            <div style="padding:10px; border-bottom:1px solid #eee;">
-                <div style="font-weight:bold;">${u.full_name || 'Sin nombre'}</div>
-                <div style="font-size:12px; color:#64748b;">${u.email} (${u.role})</div>
-            </div>
-        `).join('');
-    } else {
-        list.innerHTML = '<div style="padding:10px; color:#94a3b8;">No hay usuarios vinculados.</div>';
-    }
-}
-
-window.delInst = async(id) => { 
-    if(confirm('⛔ ¡ADVERTENCIA! \n\nEliminar este cliente borrará también:\n- Todos sus departamentos\n- Historial de tickets\n\n¿Estás realmente seguro?')) { 
-        const { error } = await sb.from('institutions').delete().eq('id', id);
-        if (error) {
-            alert("Error al eliminar: " + error.message);
-        } else {
-            loadInstitutions(); 
-        }
-    } 
-};
+window.deleteDept = async (id) => { if(confirm('¿Borrar?')) { await sb.from('departments').delete().eq('id', id); loadDepartmentsInternal(currentInstId); } }
+window.delInst = async(id) => { if(confirm('¿Eliminar?')) { await sb.from('institutions').delete().eq('id', id); loadInstitutions(); } };
