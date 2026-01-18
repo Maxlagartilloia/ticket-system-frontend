@@ -16,7 +16,10 @@
 </head>
 <body>
     <aside class="sidebar">
-        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
+        <div class="sidebar-brand">
+            <img src="assets/logo.png" alt="CopierMaster">
+        </div>
+        
         <ul class="sidebar-menu">
             <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
             <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
@@ -37,10 +40,15 @@
             <div class="card">
                 <h3 style="margin-top:0; color:var(--text-main);"><i class="fas fa-plus-circle"></i> Nuevo Cliente</h3>
                 <form id="instForm">
-                    <div class="actions-grid" style="grid-template-columns: 1fr 1fr 1fr auto;">
-                        <input id="name" type="text" placeholder="Nombre Comercial / Razón Social" required style="margin-bottom:0;">
-                        <input id="phone" type="text" placeholder="Teléfono de Contacto" style="margin-bottom:0;">
-                        <input id="address" type="text" placeholder="Dirección / Ciudad" style="margin-bottom:0;">
+                    <div class="actions-grid" style="grid-template-columns: 1fr 1fr 1fr 1fr auto;">
+                        <input id="name" type="text" placeholder="Nombre Comercial" required style="margin-bottom:0;">
+                        <input id="phone" type="text" placeholder="Teléfono" style="margin-bottom:0;">
+                        <input id="address" type="text" placeholder="Dirección" style="margin-bottom:0;">
+                        
+                        <select id="techSelect" style="margin-bottom:0; background:white;">
+                            <option value="">Cargando técnicos...</option>
+                        </select>
+
                         <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:100%;">
                             <i class="fas fa-save"></i> Guardar
                         </button>
@@ -62,12 +70,12 @@
                                 <th style="padding:12px; width:50px;">ID</th>
                                 <th style="padding:12px;">Empresa</th>
                                 <th style="padding:12px;">Contacto</th>
-                                <th style="padding:12px;">Estructura (Departamentos)</th>
+                                <th style="padding:12px;">Técnico Asignado</th> <th style="padding:12px;">Estructura</th>
                                 <th style="padding:12px; text-align:center;">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="instTable">
-                            <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando cartera...</td></tr>
+                            <tr><td colspan="6" style="text-align:center; padding:20px;">Cargando cartera...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -79,15 +87,11 @@
         <div class="modal-box">
             <h3 class="modal-title">📂 Estructura: <span id="modalInstName" style="color:#3b82f6;">...</span></h3>
             <p style="font-size:12px; color:#64748b; margin-bottom:15px;">Define las áreas donde se instalarán equipos (Ej: RRHH, Gerencia).</p>
-            
             <div style="display:flex; gap:10px; margin-bottom:20px; background:#f1f5f9; padding:15px; border-radius:8px;">
                 <input id="newDeptName" type="text" placeholder="Nombre del Área" style="margin:0; background:white; flex:1;">
                 <button onclick="addDepartment()" class="btn" style="width:auto; background:#0f172a; color:white;"><i class="fas fa-plus"></i></button>
             </div>
-            
-            <ul id="deptList" class="dept-list">
-                </ul>
-            
+            <ul id="deptList" class="dept-list"></ul>
             <div style="margin-top:20px; text-align:right;">
                 <button class="btn-cancel" onclick="closeDeptModal()">Cerrar y Actualizar</button>
             </div>
@@ -104,5 +108,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/security.js"></script>
-    <script src="js/institutions.js"></script> </body>
+    <script src="js/institutions.js"></script>
+</body>
 </html>
