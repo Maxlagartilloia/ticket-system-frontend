@@ -1,156 +1,199 @@
 const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await loadReports();
+// Variables para gráficas (para poder destruirlas y redibujarlas al filtrar)
+let techChartInstance = null;
+let typeChartInstance = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Poner fecha de hoy en el filtro por defecto
+    // document.getElementById('filterDate').valueAsDate = new Date(); // Descomentar si quieres filtrar por hoy al inicio
+    loadReports();
 });
 
 async function loadReports() {
-    // 1. Traer TODOS los tickets con sus relaciones
-    const { data: tickets, error } = await sb
-        .from('tickets')
+    const dateInput = document.getElementById('filterDate').value;
+    
+    // Consulta base
+    let query = sb.from('tickets')
         .select(`
             *,
-            institutions (name),
-            profiles:technician_id (full_name)
+            institutions(name),
+            equipment(brand, model, serial_number),
+            profiles(full_name)
         `)
         .order('created_at', { ascending: false });
 
+    // Si hay fecha seleccionada, filtrar
+    if (dateInput) {
+        // Rango de todo el día seleccionado
+        query = query.gte('created_at', `${dateInput}T00:00:00`)
+                     .lte('created_at', `${dateInput}T23:59:59`);
+    }
+
+    const { data: tickets, error } = await query;
+
     if (error) {
-        console.error("Error cargando reportes:", error);
+        console.error("Error:", error);
         return;
     }
 
-    // ==========================================
-    // 2. CÁLCULOS KPI (INDICADORES)
-    // ==========================================
+    // 1. CALCULAR Y MOSTRAR KPIs
+    calculateKPIs(tickets);
+
+    // 2. DIBUJAR GRÁFICAS
+    drawCharts(tickets);
+
+    // 3. LLENAR TABLA DE AUDITORÍA
+    fillAuditTable(tickets);
+}
+
+// --- LÓGICA DE KPIs ---
+function calculateKPIs(tickets) {
     const total = tickets.length;
-    const closedTickets = tickets.filter(t => t.status === 'closed');
-    const closedCount = closedTickets.length;
+    const closed = tickets.filter(t => t.status === 'closed').length;
     const high = tickets.filter(t => t.priority === 'Alta').length;
     
-    // A. Tasa de éxito
-    const rate = total > 0 ? Math.round((closedCount / total) * 100) : 0;
+    // Tasa de éxito
+    const rate = total > 0 ? Math.round((closed / total) * 100) : 0;
 
-    // B. TIEMPO PROMEDIO REAL (Requisito de Contrato)
-    let avgTimeText = "0h";
-    
-    if (closedCount > 0) {
-        let totalDurationMs = 0;
-        let validDatesCount = 0;
-
-        closedTickets.forEach(t => {
-            if (t.created_at && t.closed_at) {
-                const start = new Date(t.created_at);
-                const end = new Date(t.closed_at);
-                const duration = end - start; 
-                
-                if (duration > 0) {
-                    totalDurationMs += duration;
-                    validDatesCount++;
-                }
-            }
-        });
-
-        if (validDatesCount > 0) {
-            const avgMs = totalDurationMs / validDatesCount;
-            const avgHours = avgMs / (1000 * 60 * 60);
-
-            if (avgHours < 1) {
-                avgTimeText = Math.round(avgMs / (1000 * 60)) + " min"; 
-            } else if (avgHours > 24) {
-                avgTimeText = (avgHours / 24).toFixed(1) + " días"; 
-            } else {
-                avgTimeText = Math.round(avgHours) + " horas"; 
+    // Tiempo Promedio (Solo de tickets cerrados con tiempos válidos)
+    let totalMins = 0;
+    let countValid = 0;
+    tickets.forEach(t => {
+        if (t.arrival_time && t.created_at) {
+            const diff = new Date(t.arrival_time) - new Date(t.created_at);
+            if (diff > 0) {
+                totalMins += diff / 60000;
+                countValid++;
             }
         }
+    });
+    
+    let avgText = "0h";
+    if (countValid > 0) {
+        const avg = Math.floor(totalMins / countValid);
+        const h = Math.floor(avg / 60);
+        const m = avg % 60;
+        avgText = `${h}h ${m}m`;
     }
 
-    // C. Actualizar Pantalla
     document.getElementById('totalTickets').innerText = total;
     document.getElementById('successRate').innerText = `${rate}%`;
+    document.getElementById('avgTime').innerText = avgText;
     document.getElementById('highPriority').innerText = high;
-    document.getElementById('avgTime').innerText = avgTimeText;
+}
 
-    // ==========================================
-    // 3. GRÁFICAS VISUALES
-    // ==========================================
-
-    // --- GRÁFICA 1: TICKETS POR TÉCNICO ---
+// --- LÓGICA DE GRÁFICAS (Chart.js) ---
+function drawCharts(tickets) {
+    // A. Datos por Técnico
     const techCount = {};
     tickets.forEach(t => {
         const name = t.profiles?.full_name || 'Sin Asignar';
         techCount[name] = (techCount[name] || 0) + 1;
     });
 
-    const ctxTech = document.getElementById('techChart');
-    if (window.techChartInstance) window.techChartInstance.destroy();
+    const ctxTech = document.getElementById('techChart').getContext('2d');
+    if (techChartInstance) techChartInstance.destroy(); // Limpiar anterior
 
-    window.techChartInstance = new Chart(ctxTech, {
+    techChartInstance = new Chart(ctxTech, {
         type: 'bar',
         data: {
             labels: Object.keys(techCount),
             datasets: [{
-                label: 'Tickets Asignados',
+                label: 'Tickets Atendidos',
                 data: Object.values(techCount),
                 backgroundColor: '#3b82f6',
-                borderWidth: 1
+                borderRadius: 4
             }]
         },
-        options: { 
-            responsive: true,
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
+        options: { responsive: true, maintainAspectRatio: false }
     });
 
-    // --- GRÁFICA 2: TIPOS DE INCIDENTES (Corrección: Usar incident_type, NO prioridad) ---
+    // B. Datos por Tipo de Incidente
     const typeCount = {};
     tickets.forEach(t => {
-        // Usamos el campo incident_type. Si no existe, ponemos 'General'
-        const type = t.incident_type || 'General'; 
+        const type = t.incident_type || 'General';
         typeCount[type] = (typeCount[type] || 0) + 1;
     });
 
-    const ctxType = document.getElementById('typeChart');
-    if (window.typeChartInstance) window.typeChartInstance.destroy();
+    const ctxType = document.getElementById('typeChart').getContext('2d');
+    if (typeChartInstance) typeChartInstance.destroy();
 
-    window.typeChartInstance = new Chart(ctxType, {
+    typeChartInstance = new Chart(ctxType, {
         type: 'doughnut',
         data: {
-            labels: Object.keys(typeCount), // Ej: Hardware, Software, Toner
+            labels: Object.keys(typeCount),
             datasets: [{
                 data: Object.values(typeCount),
-                backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
-                hoverOffset: 4
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6']
             }]
         },
-        options: { responsive: true }
+        options: { responsive: true, maintainAspectRatio: false }
     });
+}
 
-    // ==========================================
-    // 4. TABLA DETALLE (Con columna TIPO)
-    // ==========================================
+// --- LÓGICA DE TABLA DE AUDITORÍA ---
+function fillAuditTable(tickets) {
     const tbody = document.getElementById('reportTableBody');
     tbody.innerHTML = '';
-    
-    tickets.slice(0, 10).forEach(t => {
-        const date = new Date(t.created_at).toLocaleDateString();
-        let badgeColor = '#64748b'; 
-        let statusText = 'Desconocido';
 
-        if (t.status === 'open') { badgeColor = '#ef4444'; statusText = 'Abierto'; } 
-        else if (t.status === 'in_progress') { badgeColor = '#f59e0b'; statusText = 'En Proceso'; } 
-        else if (t.status === 'closed') { badgeColor = '#16a34a'; statusText = 'Cerrado'; }
+    if (tickets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">No hay datos para mostrar.</td></tr>';
+        return;
+    }
 
-        tbody.innerHTML += `
-            <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:10px;">${date}</td>
-                <td style="padding:10px; font-weight:bold;">${t.institutions?.name || 'N/A'}</td>
-                <td style="padding:10px;">${t.description ? t.description.substring(0, 30) + '...' : '-'}</td>
-                <td style="padding:10px;">${t.profiles?.full_name || '<span style="color:#94a3b8;">Sin Asignar</span>'}</td>
-                <td style="padding:10px;"><span style="background:#f1f5f9; padding:2px 6px; border-radius:4px; font-size:11px;">${t.incident_type || 'General'}</span></td>
-                <td style="padding:10px;"><span style="color:${badgeColor}; font-weight:bold;">${statusText}</span></td>
-                <td style="padding:10px;">${t.priority || 'Media'}</td>
+    tickets.forEach(t => {
+        // Formato de Fechas y Duración
+        let arrivalTime = '--:--';
+        let departTime = '--:--';
+        let durationTag = '';
+
+        if (t.arrival_time) arrivalTime = new Date(t.arrival_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        if (t.departure_time) departTime = new Date(t.departure_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        if (t.arrival_time && t.departure_time) {
+            const diff = new Date(t.departure_time) - new Date(t.arrival_time);
+            const mins = Math.floor(diff / 60000);
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            durationTag = `<span class="tag-sla">Sitio: ${h}h ${m}m</span>`;
+        }
+
+        // Estado Visual
+        const statusColor = t.status === 'closed' ? '#15803d' : '#b91c1c';
+        const statusText = t.status === 'closed' ? 'CERRADO' : 'ABIERTO';
+
+        const row = `
+            <tr>
+                <td style="padding:12px;">
+                    <div style="font-weight:bold; color:#1e293b;">${new Date(t.created_at).toLocaleDateString()}</div>
+                    <div style="font-size:11px; color:#64748b;">#${t.id.split('-')[0]}</div>
+                    <div style="font-size:10px; font-weight:bold; color:${statusColor}; margin-top:2px;">${statusText}</div>
+                </td>
+                <td style="padding:12px;">
+                    <div style="font-weight:600; font-size:13px;">${t.institutions?.name || '---'}</div>
+                    <div style="font-size:11px; color:#475569;">${t.equipment?.model || ''}</div>
+                    <div style="font-size:10px; background:#f1f5f9; padding:1px 4px; border-radius:3px; display:inline-block;">SN: ${t.equipment?.serial_number || '-'}</div>
+                </td>
+                <td style="padding:12px;">
+                    <div style="font-style:italic; font-size:12px; color:#334155; margin-bottom:5px;">
+                        "${t.technical_report || t.description || 'Sin informe'}"
+                    </div>
+                    <div style="font-size:11px; color:#64748b;">
+                        <i class="fas fa-user-check"></i> ${t.profiles?.full_name || 'Sin Asignar'}
+                    </div>
+                </td>
+                <td style="padding:12px;">
+                    <div class="tag-parts">${t.spare_parts || 'Ninguno'}</div>
+                    ${t.final_meter_count ? `<div style="font-size:10px; font-weight:bold; margin-top:3px;">Contador: ${t.final_meter_count}</div>` : ''}
+                </td>
+                <td style="padding:12px;" class="audit-cell">
+                    <div>IN: <b>${arrivalTime}</b></div>
+                    <div>OUT: <b>${departTime}</b></div>
+                    ${durationTag}
+                </td>
             </tr>
         `;
+        tbody.innerHTML += row;
     });
 }
