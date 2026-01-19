@@ -61,7 +61,7 @@ async function loadTickets() {
             </div>
             <div style="font-size:12px; margin-bottom:5px;">${typeLabel}</div>
             <div style="font-size:13px; color:#334155; margin-bottom:8px;">
-                ${t.description.substring(0, 60)}${t.description.length > 60 ? '...' : ''}
+                ${t.description ? t.description.substring(0, 60) + (t.description.length > 60 ? '...' : '') : 'Sin descripción'}
             </div>
             <div class="ticket-meta">
                 <span><i class="fas fa-print"></i> ${t.equipment?.model || 'General'}</span>
@@ -112,7 +112,8 @@ window.loadClientEquipment = async (clientId) => {
 
     eqSel.innerHTML = '<option value="">-- Seleccione Equipo --</option>';
     data?.forEach(e => {
-        eqSel.innerHTML += `<option value="${e.id}">${e.brand} ${e.model} (${e.serial_number})</option>`;
+        const brand = e.brand ? e.brand + ' ' : ''; // Manejo seguro de marca
+        eqSel.innerHTML += `<option value="${e.id}">${brand}${e.model} (${e.serial_number})</option>`;
     });
     eqSel.disabled = false;
 };
@@ -121,6 +122,7 @@ window.loadClientEquipment = async (clientId) => {
 document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('.btn-confirm');
+    const originalText = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
     btn.disabled = true;
 
@@ -168,7 +170,7 @@ document.getElementById('createTicketForm').addEventListener('submit', async (e)
     } catch (err) {
         alert('Error: ' + err.message);
     } finally {
-        btn.innerHTML = 'Crear Ticket';
+        btn.innerHTML = originalText;
         btn.disabled = false;
     }
 });
@@ -195,9 +197,9 @@ window.openViewModal = async (ticketId) => {
     if(!t) return;
 
     // Llenar campos
-    document.getElementById('viewClient').innerText = t.institutions?.name;
-    document.getElementById('viewEquip').innerText = `${t.equipment?.brand} ${t.equipment?.model}`;
-    // Continuamos donde se quedó tu código...
+    document.getElementById('viewClient').innerText = t.institutions?.name || '---';
+    const brand = t.equipment?.brand ? t.equipment.brand + ' ' : '';
+    document.getElementById('viewEquip').innerText = `${brand}${t.equipment?.model || '---'}`;
     document.getElementById('viewDate').innerText = new Date(t.created_at).toLocaleString();
     document.getElementById('viewDesc').innerText = t.description;
 
@@ -227,7 +229,7 @@ window.openViewModal = async (ticketId) => {
     modal.style.display = 'flex';
 };
 
-// [RECUPERADO] Cargar Lista de Técnicos para asignar (Faltaba en tu código pegado)
+// [RECUPERADO] Cargar Lista de Técnicos para asignar
 async function loadTechnicians() {
     const { data } = await sb.from('profiles')
         .select('id, full_name')
@@ -260,10 +262,18 @@ window.saveAssignment = async () => {
 window.updateTicketStatus = async () => {
     const newStatus = document.getElementById('changeStatusSelect').value;
     
-    // Si cierran el ticket, guardamos la fecha de cierre para cumplir el contrato (tiempos de respuesta)
+    // [CRÍTICO] Si cierran el ticket, guardamos la fecha de cierre para cumplir el contrato (SLA)
     const updateData = { status: newStatus };
+    
+    // Si se marca como cerrado, grabamos el 'departure_time' (hora de cierre real)
+    // para que el Dashboard pueda calcular el tiempo de respuesta.
     if (newStatus === 'closed') {
-        updateData.closed_at = new Date(); 
+        const now = new Date();
+        updateData.departure_time = now.toISOString(); // Hora de salida = Hora de cierre del sistema
+        
+        // Opcional: Si no había hora de llegada, la ponemos igual a la de creación 
+        // para no romper el cálculo, o la dejamos nula si prefieres que el técnico la edite después.
+        // Por ahora, asumimos cierre simple.
     }
 
     const { error } = await sb.from('tickets')
@@ -279,4 +289,4 @@ window.updateTicketStatus = async () => {
 
 // Utilitarios de Ventana
 window.openNewTicketModal = () => document.getElementById('newTicketModal').style.display = 'flex';
-window.closeModal = (id) => document.getElementById(id).style.display = 'none';.
+window.closeModal = (id) => document.getElementById(id).style.display = 'none';
