@@ -8,6 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <style>
+        /* TUS ESTILOS ORIGINALES (KANBAN) */
         .kanban-board {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -214,17 +215,64 @@
             </div>
 
             <div style="margin-top:15px; display:flex; justify-content:space-between; align-items:center;">
-                <label>Estado Actual:</label>
-                <select id="changeStatusSelect" onchange="updateTicketStatus()">
-                    <option value="open">Abierto</option>
-                    <option value="in_progress">En Proceso</option>
-                    <option value="closed">Cerrado</option>
-                </select>
+                <label>Estado / Acción:</label>
+                <div style="display:flex; gap:10px;">
+                    <select id="changeStatusSelect" onchange="updateTicketStatus()" style="padding:5px;">
+                        <option value="open">Abierto</option>
+                        <option value="in_progress">En Proceso</option>
+                    </select>
+                    
+                    <button id="btnAuditClose" type="button" class="btn-confirm" style="background:#16a34a;" onclick="openAuditModal()">
+                        <i class="fas fa-check-circle"></i> Finalizar Trabajo
+                    </button>
+                </div>
             </div>
 
             <div class="modal-actions" style="margin-top:20px;">
-                <button type="button" class="btn-cancel" onclick="closeModal('viewTicketModal')">Cerrar</button>
+                <button type="button" class="btn-cancel" onclick="closeModal('viewTicketModal')">Cerrar Ventana</button>
             </div>
+        </div>
+    </div>
+
+    <div id="auditModal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 600px;">
+            <h3 class="modal-title" style="color:#16a34a;">✅ Informe de Cierre Técnico</h3>
+            <p style="color:#64748b; font-size:12px; margin-bottom:15px;">Datos obligatorios para SLA y Reporte al Cliente.</p>
+            
+            <form id="auditForm">
+                <input type="hidden" id="auditTicketId">
+                
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+                    <div>
+                        <label style="font-size:12px; font-weight:bold;">Hora Llegada</label>
+                        <input type="datetime-local" id="auditArrival" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    </div>
+                    <div>
+                        <label style="font-size:12px; font-weight:bold;">Hora Salida</label>
+                        <input type="datetime-local" id="auditDepart" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                    </div>
+                </div>
+                
+                <div style="margin-top:10px;">
+                    <label style="font-size:12px; font-weight:bold;">Contador Total (Opcional)</label>
+                    <input type="number" id="auditMeter" placeholder="Ej: 15200" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;">
+                </div>
+
+                <div style="margin-top:10px;">
+                    <label style="font-size:12px; font-weight:bold;">Informe Técnico (Trabajo Realizado)</label>
+                    <textarea id="auditReport" rows="3" placeholder="Detalle el procedimiento..." required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;"></textarea>
+                </div>
+
+                <div style="margin-top:10px;">
+                    <label style="font-size:12px; font-weight:bold;">Repuestos / Suministros Utilizados</label>
+                    <textarea id="auditParts" rows="2" placeholder="Ej: 1 Toner Negro, 1 Rodillo... (O poner 'Ninguno')" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;"></textarea>
+                </div>
+
+                <div class="modal-actions" style="margin-top:20px;">
+                    <button type="button" class="btn-cancel" onclick="closeModal('auditModal')">Cancelar</button>
+                    <button type="submit" class="btn-confirm" style="background:#16a34a;">Guardar y Cerrar Ticket</button>
+                </div>
+            </form>
         </div>
     </div>
 
