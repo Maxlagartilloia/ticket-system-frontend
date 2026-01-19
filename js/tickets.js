@@ -2,26 +2,52 @@ const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb
 
 // Variables globales para control
 let currentTicketId = null;
+let currentUserRole = null;
+let currentUserInstitution = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
-    await loadTickets();     // Cargar el tablero
-    await loadClients();     // Cargar lista para el formulario
-    await loadTechnicians(); // Cargar lista para asignar
+    await checkUserSession(); // 1. Ver quién soy (Supervisor o Cliente)
+    await loadTickets();      // 2. Cargar el tablero
+    await loadClients();      // 3. Cargar lista (filtrada si soy cliente)
+    await loadTechnicians();  // 4. Cargar lista para asignar
 });
+
+// =========================================================
+// 0. SEGURIDAD Y CONTEXTO
+// =========================================================
+async function checkUserSession() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+        const { data: profile } = await sb.from('profiles')
+            .select('role, institution_id') // Asumiendo que agregamos institution_id al perfil
+            .eq('id', user.id)
+            .single();
+        
+        currentUserRole = profile?.role;
+        currentUserInstitution = profile?.institution_id;
+
+        // Ajustes visuales si es Cliente
+        if (currentUserRole === 'client') {
+            // Ocultar elementos que el cliente no debe ver (ej: borrar tickets)
+            // Aquí puedes agregar lógica extra si es necesario
+        }
+    }
+}
 
 // =========================================================
 // 1. CARGA DE TICKETS (TABLERO KANBAN)
 // =========================================================
 async function loadTickets() {
-    // Traemos tickets con datos de Cliente y Equipo
-    const { data: tickets, error } = await sb
-        .from('tickets')
-        .select(`
-            *,
-            institutions (name),
-            equipment (brand, model, serial_number)
-        `)
+    let query = sb.from('tickets')
+        .select(`*, institutions (name), equipment (brand, model, serial_number)`)
         .order('created_at', { ascending: false });
+
+    // FILTRO DE SEGURIDAD: Si soy cliente, solo veo mis tickets
+    if (currentUserRole === 'client' && currentUserInstitution) {
+        query = query.eq('institution_id', currentUserInstitution);
+    }
+
+    const { data: tickets, error } = await query;
 
     if (error) {
         console.error("Error cargando tickets:", error);
@@ -33,35 +59,34 @@ async function loadTickets() {
     const colProg = document.getElementById('col-progress');
     const colClosed = document.getElementById('col-closed');
     
-    colOpen.innerHTML = ''; colProg.innerHTML = ''; colClosed.innerHTML = '';
+    if(colOpen) colOpen.innerHTML = ''; 
+    if(colProg) colProg.innerHTML = ''; 
+    if(colClosed) colClosed.innerHTML = '';
     
     let countOpen = 0, countProg = 0, countClosed = 0;
 
     tickets.forEach(t => {
         // Definir color de prioridad
-        let prioColor = '#64748b'; // Gris (Baja)
-        if(t.priority === 'Media') prioColor = '#f59e0b'; // Naranja
-        if(t.priority === 'Alta') prioColor = '#ef4444'; // Rojo
+        let prioColor = '#64748b'; 
+        if(t.priority === 'Media') prioColor = '#f59e0b'; 
+        if(t.priority === 'Alta') prioColor = '#ef4444'; 
 
-        // Crear la tarjeta HTML
+        // Crear tarjeta
         const card = document.createElement('div');
         card.className = 'ticket-card';
-        card.onclick = () => openViewModal(t.id); // Al hacer clic, abre el detalle
-        
-        // Borde izquierdo según prioridad
+        card.onclick = () => openViewModal(t.id); 
         card.style.borderLeft = `4px solid ${prioColor}`;
 
-        // [MODIFICACIÓN] Agregamos el Badge de TIPO (Hardware/Software) para cumplir contrato
         const typeLabel = t.incident_type ? `<span class="badge-type" style="background:#e2e8f0; padding:2px 5px; border-radius:4px; font-size:10px; color:#475569; margin-left:5px;">${t.incident_type}</span>` : '';
 
         card.innerHTML = `
             <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <span style="font-weight:bold; color:#1e293b;">${t.institutions?.name || 'Cliente Desconocido'}</span>
+                <span style="font-weight:bold; color:#1e293b;">${t.institutions?.name || 'Cliente'}</span>
                 <span class="badge-prio" style="background:${prioColor};">${t.priority || 'Media'}</span>
             </div>
             <div style="font-size:12px; margin-bottom:5px;">${typeLabel}</div>
             <div style="font-size:13px; color:#334155; margin-bottom:8px;">
-                ${t.description ? t.description.substring(0, 60) + (t.description.length > 60 ? '...' : '') : 'Sin descripción'}
+                ${t.description ? t.description.substring(0, 60) + '...' : 'Sin descripción'}
             </div>
             <div class="ticket-meta">
                 <span><i class="fas fa-print"></i> ${t.equipment?.model || 'General'}</span>
@@ -69,33 +94,42 @@ async function loadTickets() {
             </div>
         `;
 
-        // Distribuir en columnas
         if (t.status === 'open') { colOpen.appendChild(card); countOpen++; }
         else if (t.status === 'in_progress') { colProg.appendChild(card); countProg++; }
         else if (t.status === 'closed') { colClosed.appendChild(card); countClosed++; }
     });
 
-    // Actualizar contadores
     document.getElementById('count-open').innerText = countOpen;
     document.getElementById('count-progress').innerText = countProg;
     document.getElementById('count-closed').innerText = countClosed;
 }
 
 // =========================================================
-// 2. FORMULARIO NUEVO TICKET
+// 2. FORMULARIO NUEVO TICKET (Con Auto-Asignación)
 // =========================================================
 
-// Cargar Clientes en el Select
 async function loadClients() {
-    const { data } = await sb.from('institutions').select('id, name').order('name');
     const sel = document.getElementById('clientSelect');
     sel.innerHTML = '<option value="">-- Seleccione Cliente --</option>';
-    data?.forEach(i => {
-        sel.innerHTML += `<option value="${i.id}">${i.name}</option>`;
-    });
+
+    // Si soy CLIENTE, solo me cargo a mí mismo
+    if (currentUserRole === 'client' && currentUserInstitution) {
+        const { data } = await sb.from('institutions').select('id, name').eq('id', currentUserInstitution);
+        data?.forEach(i => {
+            sel.innerHTML += `<option value="${i.id}" selected>${i.name}</option>`;
+        });
+        sel.disabled = true; // Bloquear selección
+        loadClientEquipment(currentUserInstitution); // Cargar mis equipos de una vez
+    } else {
+        // Si soy SUPERVISOR, cargo todos
+        const { data } = await sb.from('institutions').select('id, name').order('name');
+        data?.forEach(i => {
+            sel.innerHTML += `<option value="${i.id}">${i.name}</option>`;
+        });
+        sel.disabled = false;
+    }
 }
 
-// Cargar Equipos cuando cambian el cliente
 window.loadClientEquipment = async (clientId) => {
     const eqSel = document.getElementById('equipSelect');
     if(!clientId) {
@@ -112,60 +146,75 @@ window.loadClientEquipment = async (clientId) => {
 
     eqSel.innerHTML = '<option value="">-- Seleccione Equipo --</option>';
     data?.forEach(e => {
-        const brand = e.brand ? e.brand + ' ' : ''; // Manejo seguro de marca
+        const brand = e.brand ? e.brand + ' ' : ''; 
         eqSel.innerHTML += `<option value="${e.id}">${brand}${e.model} (${e.serial_number})</option>`;
     });
     eqSel.disabled = false;
 };
 
-// --- GUARDAR NUEVO TICKET ---
+// --- GUARDAR TICKET (Lógica Inteligente) ---
 document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btn = e.target.querySelector('.btn-confirm');
     const originalText = btn.innerHTML;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
     btn.disabled = true;
 
     try {
+        const clientId = document.getElementById('clientSelect').value;
         const fileInput = document.getElementById('ticketFile');
         let publicUrl = null;
 
-        // 1. Subir Foto (Si existe)
+        // 1. Subir Foto
         if (fileInput.files.length > 0) {
             const file = fileInput.files[0];
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}.${fileExt}`;
-            
-            const { error: uploadError } = await sb.storage
-                .from('evidence')
-                .upload(fileName, file);
-
+            const { error: uploadError } = await sb.storage.from('evidence').upload(fileName, file);
             if (uploadError) throw uploadError;
-            
             const { data: urlData } = sb.storage.from('evidence').getPublicUrl(fileName);
             publicUrl = urlData.publicUrl;
         }
 
-        // 2. Insertar Ticket en Base de Datos
-        // [AUDITORÍA] Agregamos incident_type para cumplir el requisito de clasificación
+        // 2. AUTO-ASIGNACIÓN: Buscar Técnico por Defecto del Cliente
+        // Nota: Asegúrate de tener una columna 'default_technician_id' en la tabla 'institutions'
+        // Si no existe, esta parte simplemente no asignará a nadie y quedará 'open'.
+        let assignedTech = null;
+        let initialStatus = 'open';
+
+        const { data: clientData } = await sb.from('institutions')
+            .select('default_technician_id') 
+            .eq('id', clientId)
+            .single();
+
+        if (clientData && clientData.default_technician_id) {
+            assignedTech = clientData.default_technician_id;
+            initialStatus = 'in_progress'; // ¡Pasa directo a proceso!
+        }
+
+        // 3. Insertar Ticket
         const { error } = await sb.from('tickets').insert([{
-            institution_id: document.getElementById('clientSelect').value,
+            institution_id: clientId,
             equipment_id: document.getElementById('equipSelect').value,
             description: document.getElementById('ticketDesc').value,
             priority: document.getElementById('ticketPriority').value,
-            incident_type: document.getElementById('ticketType').value, // <--- CAMPO NUEVO
-            status: 'open',
+            incident_type: document.getElementById('ticketType').value,
+            status: initialStatus, // 'open' o 'in_progress'
+            technician_id: assignedTech, // Se asigna solo si hay default
             image_url: publicUrl,
             created_at: new Date()
         }]);
 
         if (error) throw error;
 
-        // 3. Éxito
-        alert('✅ Ticket creado exitosamente');
+        // Mensaje personalizado
+        let msg = '✅ Ticket creado exitosamente.';
+        if (assignedTech) msg += ' Asignado automáticamente al técnico de zona.';
+        
+        alert(msg);
         closeModal('newTicketModal');
         e.target.reset();
-        loadTickets(); // Recargar tablero
+        loadTickets();
 
     } catch (err) {
         alert('Error: ' + err.message);
@@ -177,18 +226,15 @@ document.getElementById('createTicketForm').addEventListener('submit', async (e)
 
 
 // =========================================================
-// 3. VER DETALLE Y GESTIÓN (MODAL)
+// 3. VER DETALLE Y GESTIÓN
 // =========================================================
 
-// Abrir Modal con datos reales
 window.openViewModal = async (ticketId) => {
     currentTicketId = ticketId;
     const modal = document.getElementById('viewTicketModal');
     
-    // Resetear textos
     document.getElementById('viewTitle').innerText = `Ticket #${ticketId.substring(0,8)}...`;
     
-    // Traer datos frescos
     const { data: t } = await sb.from('tickets')
         .select('*, institutions(name), equipment(brand, model), profiles(id, full_name)')
         .eq('id', ticketId)
@@ -196,14 +242,12 @@ window.openViewModal = async (ticketId) => {
 
     if(!t) return;
 
-    // Llenar campos
     document.getElementById('viewClient').innerText = t.institutions?.name || '---';
     const brand = t.equipment?.brand ? t.equipment.brand + ' ' : '';
     document.getElementById('viewEquip').innerText = `${brand}${t.equipment?.model || '---'}`;
     document.getElementById('viewDate').innerText = new Date(t.created_at).toLocaleString();
     document.getElementById('viewDesc').innerText = t.description;
 
-    // [NUEVO] Llenar Badges de Tipo y Prioridad
     const typeBadge = document.getElementById('viewTypeBadge');
     if(typeBadge) typeBadge.innerText = t.incident_type || 'General';
 
@@ -213,7 +257,6 @@ window.openViewModal = async (ticketId) => {
         prioBadge.style.background = t.priority === 'Alta' ? '#ef4444' : (t.priority === 'Baja' ? '#22c55e' : '#f59e0b');
     }
 
-    // Imagen
     const imgCont = document.getElementById('viewImageContainer');
     if (t.image_url) {
         document.getElementById('viewImage').src = t.image_url;
@@ -222,58 +265,45 @@ window.openViewModal = async (ticketId) => {
         imgCont.style.display = 'none';
     }
 
-    // Configurar Selectores de Gestión
     document.getElementById('changeStatusSelect').value = t.status;
     document.getElementById('assignTechSelect').value = t.technician_id || "";
 
     modal.style.display = 'flex';
 };
 
-// [RECUPERADO] Cargar Lista de Técnicos para asignar
 async function loadTechnicians() {
-    const { data } = await sb.from('profiles')
-        .select('id, full_name')
-        .eq('role', 'technician'); 
-    
+    const { data } = await sb.from('profiles').select('id, full_name').eq('role', 'technician'); 
     const sel = document.getElementById('assignTechSelect');
-    // Mantenemos la opción default de "Sin Asignar" y agregamos los técnicos
     sel.innerHTML = '<option value="">Sin Asignar</option>';
     data?.forEach(tech => {
         sel.innerHTML += `<option value="${tech.id}">${tech.full_name}</option>`;
     });
 }
 
-// [RECUPERADO] Guardar Asignación de Técnico
 window.saveAssignment = async () => {
     const techId = document.getElementById('assignTechSelect').value;
+    // Si asigno manualmente, cambia a in_progress
+    const status = techId ? 'in_progress' : 'open';
     
     const { error } = await sb.from('tickets')
-        .update({ technician_id: techId || null })
+        .update({ technician_id: techId || null, status: status })
         .eq('id', currentTicketId);
 
     if(error) alert("Error al asignar: " + error.message);
     else {
         alert("✅ Técnico asignado correctamente");
-        loadTickets(); // Refrescar tablero
+        loadTickets();
+        closeModal('viewTicketModal');
     }
 };
 
-// [RECUPERADO] Actualizar Estado y Fecha de Cierre (Vital para el Reporte de Tiempos)
 window.updateTicketStatus = async () => {
     const newStatus = document.getElementById('changeStatusSelect').value;
-    
-    // [CRÍTICO] Si cierran el ticket, guardamos la fecha de cierre para cumplir el contrato (SLA)
     const updateData = { status: newStatus };
     
-    // Si se marca como cerrado, grabamos el 'departure_time' (hora de cierre real)
-    // para que el Dashboard pueda calcular el tiempo de respuesta.
     if (newStatus === 'closed') {
         const now = new Date();
-        updateData.departure_time = now.toISOString(); // Hora de salida = Hora de cierre del sistema
-        
-        // Opcional: Si no había hora de llegada, la ponemos igual a la de creación 
-        // para no romper el cálculo, o la dejamos nula si prefieres que el técnico la edite después.
-        // Por ahora, asumimos cierre simple.
+        updateData.departure_time = now.toISOString(); 
     }
 
     const { error } = await sb.from('tickets')
@@ -282,11 +312,10 @@ window.updateTicketStatus = async () => {
 
     if(error) alert("Error: " + error.message);
     else {
-        loadTickets(); // Se moverá de columna automáticamente
+        loadTickets(); 
         closeModal('viewTicketModal'); 
     }
 };
 
-// Utilitarios de Ventana
 window.openNewTicketModal = () => document.getElementById('newTicketModal').style.display = 'flex';
 window.closeModal = (id) => document.getElementById(id).style.display = 'none';
