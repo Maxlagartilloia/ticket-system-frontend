@@ -1,87 +1,103 @@
 const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
+let currentUserRole = null;
 
-document.addEventListener("DOMContentLoaded", loadTechnicians);
+document.addEventListener("DOMContentLoaded", async () => {
+    await checkMyRole(); // Para saber si puedo editar a otros
+    loadTechnicians();
+});
 
+// 1. VERIFICAR MI PROPIO ROL (Seguridad Visual)
+async function checkMyRole() {
+    const { data: { user } } = await sb.auth.getUser();
+    if(user) {
+        const { data } = await sb.from('profiles').select('role').eq('id', user.id).single();
+        currentUserRole = data?.role;
+    }
+}
+
+// 2. CARGAR PERSONAL Y SUS ESTADÍSTICAS
 async function loadTechnicians() {
-    // 1. Filtrar usuarios que sean Técnicos, Admins o Supervisores
-    const { data, error } = await sb
-        .from('profiles')
-        .select('*')
-        .in('role', ['technician', 'admin', 'supervisor'])
-        .order('full_name', { ascending: true });
+    const grid = document.getElementById('techGrid');
+    
+    // A. Traer perfiles
+    const { data: profiles, error } = await sb.from('profiles').select('*').order('full_name');
+    if(error) return console.error(error);
 
-    const tb = document.getElementById('techTable');
-    tb.innerHTML = '';
+    // B. Traer Tickets para calcular carga de trabajo
+    const { data: tickets } = await sb.from('tickets').select('technician_id, status');
 
-    if (error) {
-        console.error(error);
-        tb.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error al cargar datos.</td></tr>';
-        return;
-    }
+    grid.innerHTML = '';
+    
+    profiles.forEach(p => {
+        // Calcular Stats
+        const myTickets = tickets.filter(t => t.technician_id === p.id);
+        const active = myTickets.filter(t => t.status !== 'closed').length;
+        const closed = myTickets.filter(t => t.status === 'closed').length;
 
-    if (!data || data.length === 0) {
-        tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">No hay personal técnico registrado.</td></tr>';
-        return;
-    }
+        // Estilos según rol
+        const isSup = p.role === 'supervisor';
+        const roleClass = isSup ? 'role-supervisor' : 'role-technician';
+        const roleLabel = isSup ? 'SUPERVISOR' : 'TÉCNICO';
+        const icon = isSup ? 'fa-user-tie' : 'fa-screwdriver-wrench';
 
-    data.forEach(u => {
-        // Estética de Badges
-        let badgeColor = '#3b82f6'; // Azul por defecto (Técnico)
-        let roleName = 'Técnico';
-
-        if (u.role === 'admin' || u.role === 'supervisor') {
-            badgeColor = '#ef4444'; // Rojo (Jefe)
-            roleName = 'Supervisor';
-        }
-
-        // Botón de acción: No permitir borrar al propio admin/supervisor fácilmente desde aquí para evitar auto-bloqueo
-        // (En un sistema real validaríamos el ID del usuario actual, aquí lo simplificamos)
+        // Botón de cambio de rol (Solo si soy Supervisor)
         let actionBtn = '';
-        if (u.role === 'technician') {
+        if (currentUserRole === 'supervisor') {
+            const nextRole = isSup ? 'technician' : 'supervisor';
+            const tooltip = isSup ? 'Degradar a Técnico' : 'Ascender a Supervisor';
+            const btnIcon = isSup ? 'fa-arrow-down' : 'fa-arrow-up';
+            
             actionBtn = `
-                <button onclick="revokeAccess('${u.id}', '${u.full_name}')" 
-                        title="Revocar acceso (Convertir en usuario normal)"
-                        style="cursor:pointer; border:1px solid #fee2e2; background:#fef2f2; color:#ef4444; padding:5px 10px; border-radius:6px; font-size:12px;">
-                    <i class="fas fa-user-times"></i> Dar de Baja
-                </button>`;
-        } else {
-            actionBtn = `<span style="color:#cbd5e1; font-size:12px; font-style:italic;">Admin</span>`;
+                <div class="card-actions">
+                    <button class="btn-mini" title="${tooltip}" onclick="toggleRole('${p.id}', '${nextRole}')">
+                        <i class="fas ${btnIcon}"></i>
+                    </button>
+                </div>`;
         }
 
-        tb.innerHTML += `
-            <tr style="border-bottom:1px solid #eee;">
-                <td style="padding:15px; font-weight:600; color:#1e293b;">
-                    ${u.full_name || 'Sin Nombre'}
-                </td>
-                <td style="padding:15px; color:#64748b;">
-                    ${u.email}
-                </td>
-                <td style="padding:15px;">
-                    <span style="background:${badgeColor}; color:white; padding:4px 10px; border-radius:12px; font-size:11px; font-weight:bold; text-transform:uppercase;">
-                        ${roleName}
-                    </span>
-                </td>
-                <td style="padding:15px; text-align:center;">
-                    ${actionBtn}
-                </td>
-            </tr>`;
+        // Renderizar Tarjeta
+        grid.innerHTML += `
+            <div class="tech-card">
+                ${actionBtn}
+                <div class="avatar-circle">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div style="font-weight:700; font-size:16px; color:#1e293b; margin-bottom:5px;">
+                    ${p.full_name || 'Sin Nombre'}
+                </div>
+                <div style="font-size:12px; color:#64748b; margin-bottom:10px;">
+                    ${p.email}
+                </div>
+                <span class="role-badge ${roleClass}">${roleLabel}</span>
+
+                <div class="tech-stats">
+                    <div class="stat-item">
+                        <div class="stat-val" style="color:#ef4444;">${active}</div>
+                        <div class="stat-lbl">Activos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-val" style="color:#10b981;">${closed}</div>
+                        <div class="stat-lbl">Cerrados</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-val">${myTickets.length}</div>
+                        <div class="stat-lbl">Total</div>
+                    </div>
+                </div>
+            </div>
+        `;
     });
 }
 
-// Función para "Despedir" al técnico (Le quita el rol, pero no borra el usuario para mantener historial de tickets)
-window.revokeAccess = async (userId, userName) => {
-    if (confirm(`¿Estás seguro de quitar los permisos de técnico a ${userName}?\n\nPasará a ser un usuario normal y no podrá ver tickets asignados.`)) {
-        
-        const { error } = await sb
-            .from('profiles')
-            .update({ role: 'user' }) // Lo bajamos de rango
-            .eq('id', userId);
+// 3. CAMBIAR ROL (Ascender/Degradar)
+window.toggleRole = async (userId, newRole) => {
+    if(!confirm(`¿Estás seguro de cambiar el rol a ${newRole.toUpperCase()}?`)) return;
 
-        if (error) {
-            alert("Error al actualizar: " + error.message);
-        } else {
-            alert("✅ Accesos revocados correctamente.");
-            loadTechnicians();
-        }
+    const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', userId);
+    
+    if(error) alert("Error: " + error.message);
+    else {
+        // alert("Rol actualizado.");
+        loadTechnicians(); // Recargar visualmente
     }
-};
+}
