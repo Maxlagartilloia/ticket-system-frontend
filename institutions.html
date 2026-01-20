@@ -6,20 +6,49 @@
     <title>Clientes | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
-        /* ESTILOS DE LIMPIEZA VISUAL */
+        /* Estilos específicos para listas internas (Modales) */
         .modal-box { max-width: 600px; width: 90%; }
-        .list-container { max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 15px; }
-        .list-item { padding: 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fff; }
-        .list-item:hover { background: #f8fafc; }
-        .tag-dept { font-size: 11px; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; color: #64748b; font-weight: 600; }
-        .btn-icon-del { color: #ef4444; background: none; border: none; cursor: pointer; padding: 5px; }
-        .btn-icon-del:hover { background: #fee2e2; border-radius: 4px; }
+        .list-container { 
+            max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; 
+            border-radius: 8px; margin-bottom: 15px; background: #f8fafc;
+        }
+        .list-item { 
+            padding: 10px 15px; border-bottom: 1px solid #e2e8f0; 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #fff; transition: background 0.2s;
+        }
+        .list-item:last-child { border-bottom: none; }
+        .list-item:hover { background: #f1f5f9; }
+        
+        .tag-dept { 
+            font-size: 10px; background: #e0f2fe; padding: 3px 8px; 
+            border-radius: 10px; color: #0284c7; font-weight: 700; text-transform: uppercase;
+        }
+        
+        .btn-icon-del { 
+            color: #94a3b8; background: none; border: none; cursor: pointer; padding: 5px; 
+        }
+        .btn-icon-del:hover { color: #ef4444; background: #fee2e2; border-radius: 4px; }
+
+        /* Formulario Inline */
+        .form-grid { display: grid; grid-template-columns: 2fr 1fr 2fr 1fr auto; gap: 10px; align-items: center; }
+        .form-grid input, .form-grid select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; }
+        
+        @media (max-width: 1000px) {
+            .form-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
+    
     <aside class="sidebar">
-        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
+        <div class="sidebar-brand">
+            <div style="font-weight:800; font-size:20px; color:var(--text-main); display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-layer-group" style="color:#3b82f6;"></i> CopierMaster
+            </div>
+        </div>
         <ul class="sidebar-menu">
             <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
             <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
@@ -32,20 +61,28 @@
 
     <main class="main-content">
         <header class="top-bar">
-            <div class="page-title">Gestión de Clientes</div>
-            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
+            <div class="page-title">Cartera de Clientes</div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span id="userInfo" style="font-size:13px; font-weight:600;">Cargando...</span>
+                <button class="btn-logout" onclick="logout()" title="Salir"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
         </header>
 
         <div class="scroll-area">
-            <div class="card">
-                <h3><i class="fas fa-plus-circle"></i> Nuevo / Editar Cliente</h3>
+            
+            <div class="card" style="margin-bottom: 25px;">
+                <h3 style="margin-top:0; color:#0f172a; font-size:16px; border-bottom:1px solid #f1f5f9; padding-bottom:10px; margin-bottom:15px;">
+                    <i class="fas fa-plus-circle" style="color:#3b82f6;"></i> Registrar Empresa / Institución
+                </h3>
                 <form id="instForm">
-                    <div class="actions-grid" style="grid-template-columns: 1.5fr 1fr 1.5fr 1fr auto; gap: 10px;">
-                        <input id="name" type="text" placeholder="Nombre Empresa (Ej: GAD XXX)" required>
-                        <input id="phone" type="text" placeholder="Teléfono">
-                        <input id="address" type="text" placeholder="Dirección">
-                        <select id="techSelect"><option value="">Cargando técnicos...</option></select>
-                        <button type="submit" class="btn" style="background:var(--sidebar-active); color:white; height:42px;">
+                    <div class="form-grid">
+                        <input id="name" type="text" placeholder="Nombre Empresa (Ej: Hospital Básico)" required>
+                        <input id="phone" type="text" placeholder="Teléfono / Celular">
+                        <input id="address" type="text" placeholder="Dirección / Ubicación">
+                        <select id="techSelect">
+                            <option value="">Cargando técnicos...</option>
+                        </select>
+                        <button type="submit" class="btn-confirm" style="height:40px;">
                             <i class="fas fa-save"></i> Guardar
                         </button>
                     </div>
@@ -54,25 +91,26 @@
 
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3 style="margin:0;">Cartera de Clientes</h3>
-                    <button onclick="window.open('register.html', '_blank')" class="btn" style="width:auto; background:#16a34a; color:white; font-size:13px; padding:8px 15px;">
-                        <i class="fas fa-user-plus"></i> Crear Accesos
+                    <h3 style="margin:0; font-size:16px;">Directorio de Clientes</h3>
+                    <button onclick="location.href='technicians.html'" class="btn-confirm" style="background:#10b981;">
+                        <i class="fas fa-user-shield"></i> Gestionar Accesos Web
                     </button>
                 </div>
+                
                 <div style="overflow-x:auto;">
                     <table style="width:100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background:#f8fafc; text-align:left; color:#475569;">
+                            <tr style="background:#f8fafc; text-align:left; color:#64748b; font-size:12px; text-transform:uppercase;">
                                 <th style="padding:12px;">Empresa</th>
-                                <th style="padding:12px;">Teléfono</th>
+                                <th style="padding:12px;">Contacto</th>
                                 <th style="padding:12px;">Técnico Asignado</th>
-                                <th style="padding:12px;">Gestión Inventario</th>
-                                <th style="padding:12px;">Estructura</th>
+                                <th style="padding:12px; text-align:center;">Inventario</th>
+                                <th style="padding:12px; text-align:center;">Áreas</th>
                                 <th style="padding:12px; text-align:center;">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="instTable">
-                            <tr><td colspan="6" style="padding:20px; text-align:center;">Cargando base de datos...</td></tr>
+                        <tbody id="instTable" style="font-size:13px;">
+                            <tr><td colspan="6" style="padding:30px; text-align:center; color:#94a3b8;">Cargando base de datos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -82,48 +120,50 @@
 
     <div id="equipModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 style="border-bottom:1px solid #eee; padding-bottom:10px; margin-top:0;">🖨️ Inventario: <span id="lblEquipClient" style="color:#2563eb;">...</span></h3>
-            
-            <div style="background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px;">
-                <div style="font-size:12px; font-weight:bold; color:#64748b; margin-bottom:5px;">AÑADIR EQUIPO:</div>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="margin:0; color:#0f172a;">🖨️ Inventario: <span id="lblEquipClient" style="color:#3b82f6;">...</span></h3>
+                <button onclick="document.getElementById('equipModal').style.display='none'" style="border:none; background:none; cursor:pointer;">&times;</button>
+            </div>
+
+            <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <div style="font-size:11px; font-weight:bold; color:#64748b; margin-bottom:8px;">AGREGAR EQUIPO RÁPIDO:</div>
                 <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:8px;">
-                    <input id="newEquipModel" type="text" placeholder="Modelo" style="margin:0; background:#fff;">
-                    <input id="newEquipSerial" type="text" placeholder="Serie" style="margin:0; background:#fff;">
-                    <select id="newEquipDept" style="margin:0; background:#fff;"><option value="">- Área -</option></select>
-                    <button onclick="addEquipmentDirect()" class="btn" style="width:auto; background:#16a34a; color:white;"><i class="fas fa-plus"></i></button>
+                    <input id="newEquipModel" type="text" placeholder="Modelo" style="padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <input id="newEquipSerial" type="text" placeholder="Serie" style="padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+                    <select id="newEquipDept" style="padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+                        <option value="">- Sin Área -</option>
+                    </select>
+                    <button onclick="addEquipmentDirect()" class="btn-confirm" style="padding:8px 15px;"><i class="fas fa-plus"></i></button>
                 </div>
             </div>
 
-            <div class="list-container" id="equipList">Cargando...</div>
-            <div style="text-align:right;"><button class="btn-cancel" onclick="document.getElementById('equipModal').style.display='none'">Cerrar</button></div>
+            <div class="list-container" id="equipList">
+                <div style="padding:15px; text-align:center; color:#94a3b8;">Cargando equipos...</div>
+            </div>
         </div>
     </div>
 
     <div id="deptModal" class="modal-overlay">
         <div class="modal-box" style="max-width:500px;">
-            <h3>📂 Estructura: <span id="lblDeptClient" style="color:#2563eb;">...</span></h3>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <input id="newDeptName" type="text" placeholder="Nombre del Área / Oficina" style="flex:1;">
-                <button onclick="addDepartment()" class="btn" style="width:auto; background:#0f172a; color:white;"><i class="fas fa-plus"></i></button>
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:15px;">
+                <h3 style="margin:0;">📂 Estructura: <span id="lblDeptClient" style="color:#3b82f6;">...</span></h3>
+                <button onclick="document.getElementById('deptModal').style.display='none'" style="border:none; background:none; cursor:pointer;">&times;</button>
             </div>
-            <div class="list-container" id="deptList">Cargando...</div>
-            <div style="text-align:right;"><button class="btn-cancel" onclick="document.getElementById('deptModal').style.display='none'">Cerrar</button></div>
-        </div>
-    </div>
-
-    <div id="usersModal" class="modal-overlay">
-        <div class="modal-box" style="max-width:400px;">
-            <h3>Usuarios Vinculados</h3>
-            <div class="list-container" id="usersList">Cargando...</div>
-            <div style="text-align:right;"><button class="btn-cancel" onclick="document.getElementById('usersModal').style.display='none'">Cerrar</button></div>
+            
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <input id="newDeptName" type="text" placeholder="Nombre del Área / Oficina (Ej: Contabilidad)" style="flex:1; padding:10px; border:1px solid #cbd5e1; border-radius:6px;">
+                <button onclick="addDepartment()" class="btn-confirm" style="background:#0f172a;"><i class="fas fa-plus"></i> Agregar</button>
+            </div>
+            
+            <div class="list-container" id="deptList">
+                <div style="padding:15px; text-align:center; color:#94a3b8;">Cargando áreas...</div>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
+    <script src="js/security.js"></script>
     <script src="js/institutions.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
-<script src="js/security.js"></script>
-<script src="js/institutions.js"></script>
 </body>
 </html>
