@@ -1,202 +1,226 @@
-const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
-let currentInstId = null;
-let isEditing = false;
-let editId = null;
+// js/institutions.js - Gestión de Clientes v4.0
 
-// INICIO AUTOMÁTICO
-document.addEventListener("DOMContentLoaded", () => {
-    loadTechnicians();
+let currentClientId = null; // Para saber qué cliente estamos editando en los modales
+
+document.addEventListener('DOMContentLoaded', async () => {
+    // Info Usuario
+    const { data: { session } } = await sb.auth.getSession();
+    if(session) { /* Security.js maneja el nombre */ }
+
+    // Cargas Iniciales
+    loadTechniciansForSelect();
     loadInstitutions();
 });
 
-// 1. CARGAR TÉCNICOS (DROPDOWN)
-async function loadTechnicians() {
-    // Gracias al SQL, ahora cualquiera puede leer esta lista
-    const { data } = await sb.from('profiles').select('id, full_name').eq('role', 'technician');
-    const sel = document.getElementById('techSelect');
-    if(sel && data) {
-        sel.innerHTML = '<option value="">-- Sin Asignar --</option>';
-        data.forEach(t => sel.innerHTML += `<option value="${t.id}">${t.full_name}</option>`);
+// 1. CARGAR TÉCNICOS EN EL SELECT
+async function loadTechniciansForSelect() {
+    const select = document.getElementById('techSelect');
+    const { data: techs } = await sb.from('profiles').select('*').eq('role', 'technician');
+    
+    select.innerHTML = '<option value="">-- Sin Asignar --</option>';
+    if (techs) {
+        techs.forEach(t => {
+            select.innerHTML += `<option value="${t.id}">${t.full_name}</option>`;
+        });
     }
 }
 
-// 2. CARGAR CLIENTES (TABLA PRINCIPAL)
+// 2. CARGAR INSTITUCIONES (TABLA PRINCIPAL)
 async function loadInstitutions() {
-    const { data: insts } = await sb.from('institutions').select('*').order('id', {ascending: false});
-    const tb = document.getElementById('instTable');
-    tb.innerHTML = '';
+    const tbody = document.getElementById('instTable');
+    
+    // Traemos instituciones y unimos con el nombre del técnico
+    // Nota: Esto asume que tienes una tabla 'institutions'. Si usas 'profiles' para clientes, ajusta la query.
+    // Asumiré tabla 'institutions' separada o 'profiles' con role='client'.
+    // PLAN MAESTRO: Usamos tabla 'institutions' para las EMPRESAS y 'profiles' para los USUARIOS.
+    
+    const { data: clients, error } = await sb
+        .from('institutions')
+        .select(`
+            *,
+            technician:technician_id(full_name)
+        `)
+        .order('name');
 
-    if (!insts || insts.length === 0) {
-        tb.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No hay clientes. Usa el formulario de arriba.</td></tr>';
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">Error: ${error.message}</td></tr>`;
         return;
     }
 
-    // Mapa auxiliar para nombres de técnicos
-    const techMap = {};
-    const opts = document.getElementById('techSelect').options;
-    for(let i=0; i<opts.length; i++) techMap[opts[i].value] = opts[i].text;
+    tbody.innerHTML = '';
+    if (clients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px;">No hay clientes registrados.</td></tr>`;
+        return;
+    }
 
-    // Contar equipos para el botón
-    const { data: equips } = await sb.from('equipment').select('institution_id');
-    const counts = {};
-    equips?.forEach(e => counts[e.institution_id] = (counts[e.institution_id] || 0) + 1);
-
-    insts.forEach(i => {
-        const techName = (i.default_technician_id && techMap[i.default_technician_id]) 
-            ? `<b>${techMap[i.default_technician_id]}</b>` 
-            : '<span style="color:#ccc;">--</span>';
+    clients.forEach(c => {
+        const techName = c.technician ? c.technician.full_name : '<span style="color:#ef4444; font-size:11px;">SIN ASIGNAR</span>';
         
-        const count = counts[i.id] || 0;
-
-        tb.innerHTML += `
+        const row = `
             <tr>
-                <td style="font-weight:600; color:#1e293b;">${i.name}</td>
-                <td>${i.phone || ''}</td>
-                <td>${techName}</td>
+                <td style="font-weight:600; color:#0f172a;">${c.name}</td>
                 <td>
-                    <button onclick="openEquipModal(${i.id}, '${i.name}')" class="btn" style="background:#fff7ed; color:#c2410c; border:1px solid #ffedd5; font-size:12px; padding:5px 10px;">
-                        <i class="fas fa-print"></i> Inventario (${count})
-                    </button>
+                    <div style="font-size:12px;">${c.phone || '-'}</div>
+                    <div style="font-size:11px; color:#64748b;">${c.address || ''}</div>
                 </td>
-                <td>
-                    <button onclick="openDeptModal(${i.id}, '${i.name}')" class="btn" style="background:#f1f5f9; color:#475569; border:1px solid #e2e8f0; font-size:12px; padding:5px 10px;">
-                        <i class="fas fa-sitemap"></i> Áreas
+                <td><i class="fas fa-user-hard-hat" style="color:#cbd5e1;"></i> ${techName}</td>
+                <td style="text-align:center;">
+                    <button class="btn-icon-del" onclick="openEquipModal('${c.id}', '${c.name}')" style="color:#3b82f6;">
+                        <i class="fas fa-print"></i> Ver Equipos
                     </button>
                 </td>
                 <td style="text-align:center;">
-                    <button onclick="editInst(${i.id}, '${i.name}', '${i.phone||''}', '${i.address||''}', '${i.default_technician_id||''}')" style="cursor:pointer; border:none; background:none; color:#f59e0b; margin-right:5px;"><i class="fas fa-pen"></i></button>
-                    <button onclick="delInst(${i.id})" style="cursor:pointer; border:none; background:none; color:#ef4444;"><i class="fas fa-trash"></i></button>
+                    <button class="btn-icon-del" onclick="openDeptModal('${c.id}', '${c.name}')" style="color:#10b981;">
+                        <i class="fas fa-sitemap"></i> Ver Áreas
+                    </button>
                 </td>
-            </tr>`;
+                <td style="text-align:center;">
+                    <button class="btn-icon-del" onclick="deleteInstitution('${c.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
     });
 }
 
-// 3. GESTIÓN DE EQUIPOS (MODAL)
+// 3. CREAR INSTITUCIÓN
+document.getElementById('instForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const newClient = {
+        name: document.getElementById('name').value,
+        phone: document.getElementById('phone').value,
+        address: document.getElementById('address').value,
+        technician_id: document.getElementById('techSelect').value || null
+    };
+
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.innerText = "Guardando...";
+    btn.disabled = true;
+
+    const { error } = await sb.from('institutions').insert([newClient]);
+
+    if (error) {
+        alert("Error: " + error.message);
+    } else {
+        alert("✅ Cliente registrado.");
+        e.target.reset();
+        loadInstitutions();
+    }
+    btn.innerHTML = '<i class="fas fa-save"></i> Guardar';
+    btn.disabled = false;
+});
+
+// 4. GESTIÓN DE EQUIPOS (MODAL)
 window.openEquipModal = async (id, name) => {
-    currentInstId = id;
+    currentClientId = id;
     document.getElementById('lblEquipClient').innerText = name;
     document.getElementById('equipModal').style.display = 'flex';
-    
-    // Cargar Áreas en el Select
-    const sel = document.getElementById('newEquipDept');
-    sel.innerHTML = '<option>Cargando...</option>';
-    const { data: depts } = await sb.from('departments').select('*').eq('institution_id', id);
-    sel.innerHTML = '<option value="">- Seleccionar Área -</option>';
-    depts?.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
-
     loadEquipList(id);
-}
+    loadDeptSelect(id); // Para el combo de agregar equipo
+};
 
-async function loadEquipList(id) {
-    const list = document.getElementById('equipList');
-    list.innerHTML = '<div style="padding:10px;">Cargando...</div>';
-    
-    // JOIN manual: traemos equipos y luego cruzamos con departamentos si es necesario
-    const { data: equips, error } = await sb.from('equipment')
-        .select('*, departments(name)')
-        .eq('institution_id', id)
-        .order('department_id');
-    
-    list.innerHTML = '';
-    if(!equips || !equips.length) {
-        list.innerHTML = '<div style="padding:20px; text-align:center; color:#94a3b8;">Sin equipos registrados.</div>';
+async function loadEquipList(clientId) {
+    const div = document.getElementById('equipList');
+    div.innerHTML = '<div style="padding:10px; text-align:center;">Cargando...</div>';
+
+    const { data: equips } = await sb
+        .from('equipment')
+        .select('*, departments(name)') // Join con departamentos
+        .eq('institution_id', clientId);
+
+    div.innerHTML = '';
+    if (!equips || equips.length === 0) {
+        div.innerHTML = '<div style="padding:15px; text-align:center; color:#94a3b8;">No hay equipos registrados.</div>';
         return;
     }
 
-    equips.forEach(e => {
-        const deptName = e.departments?.name || 'General';
-        list.innerHTML += `
+    equips.forEach(eq => {
+        const deptName = eq.departments ? eq.departments.name : 'General';
+        div.innerHTML += `
             <div class="list-item">
                 <div>
-                    <div style="font-weight:bold; color:#334155;">${e.model}</div>
-                    <div style="font-size:11px; color:#64748b;">SN: ${e.serial_number}</div>
+                    <strong>${eq.model}</strong> <span style="font-size:12px; color:#64748b;">(S/N: ${eq.serial})</span>
+                    <br><span class="tag-dept">${deptName}</span>
                 </div>
-                <div style="text-align:right;">
-                    <span class="tag-dept">${deptName}</span>
-                    <button onclick="delEquip(${e.id})" class="btn-icon-del" style="margin-left:10px;"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>`;
+                <button class="btn-icon-del" onclick="deleteEquip('${eq.id}')"><i class="fas fa-times"></i></button>
+            </div>
+        `;
     });
 }
 
 window.addEquipmentDirect = async () => {
     const model = document.getElementById('newEquipModel').value;
     const serial = document.getElementById('newEquipSerial').value;
-    const dept = document.getElementById('newEquipDept').value;
-    
-    if(!model || !serial || !dept) return alert("Completa todos los campos");
+    const deptId = document.getElementById('newEquipDept').value;
+
+    if(!model) return alert("Ingrese el modelo");
 
     const { error } = await sb.from('equipment').insert([{
-        model: model, serial_number: serial, institution_id: currentInstId, department_id: dept, status: 'installed'
+        institution_id: currentClientId,
+        model: model,
+        serial: serial,
+        department_id: deptId || null
     }]);
 
-    if(error) alert("Error: " + error.message);
+    if(error) alert(error.message);
     else {
         document.getElementById('newEquipModel').value = '';
         document.getElementById('newEquipSerial').value = '';
-        loadEquipList(currentInstId);
-        loadInstitutions(); // Actualizar contador
+        loadEquipList(currentClientId);
     }
-}
+};
 
-window.delEquip = async (id) => {
-    if(confirm("¿Eliminar equipo?")) {
-        await sb.from('equipment').delete().eq('id', id);
-        loadEquipList(currentInstId);
-        loadInstitutions();
-    }
-}
-
-// 4. FUNCIONES FORMULARIO CLIENTE (CREAR / EDITAR)
-window.editInst = (id, name, phone, address, techId) => {
-    isEditing = true; editId = id;
-    document.getElementById('name').value = name;
-    document.getElementById('phone').value = phone;
-    document.getElementById('address').value = address;
-    document.getElementById('techSelect').value = (techId && techId !== 'null') ? techId : "";
-    
-    const btn = document.querySelector('#instForm button');
-    btn.innerHTML = 'ACTUALIZAR'; btn.style.background = '#f59e0b';
-    document.querySelector('.scroll-area').scrollTop = 0;
-}
-
-document.getElementById('instForm').addEventListener('submit', async(e) => {
-    e.preventDefault();
-    const formData = {
-        name: document.getElementById('name').value,
-        phone: document.getElementById('phone').value,
-        address: document.getElementById('address').value,
-        default_technician_id: document.getElementById('techSelect').value || null
-    };
-
-    if(isEditing) await sb.from('institutions').update(formData).eq('id', editId);
-    else await sb.from('institutions').insert([formData]);
-
-    e.target.reset();
-    isEditing = false;
-    document.querySelector('#instForm button').innerHTML = '<i class="fas fa-save"></i> Guardar';
-    document.querySelector('#instForm button').style.background = 'var(--sidebar-active)';
-    loadInstitutions();
-});
-
-// 5. FUNCIONES AUXILIARES (Borrar Cliente, Áreas, Usuarios)
-window.delInst = async(id) => { if(confirm("¿Eliminar cliente y TODO su historial?")) { await sb.from('institutions').delete().eq('id', id); loadInstitutions(); } }
-
-window.openDeptModal = async(id, name) => {
-    currentInstId = id;
+// 5. GESTIÓN DE DEPARTAMENTOS (MODAL)
+window.openDeptModal = (id, name) => {
+    currentClientId = id;
     document.getElementById('lblDeptClient').innerText = name;
     document.getElementById('deptModal').style.display = 'flex';
-    loadDepts(id);
+    loadDeptList(id);
+};
+
+async function loadDeptList(clientId) {
+    const div = document.getElementById('deptList');
+    div.innerHTML = 'Cargando...';
+    
+    const { data: depts } = await sb.from('departments').select('*').eq('institution_id', clientId);
+    
+    div.innerHTML = '';
+    if(!depts || depts.length === 0) div.innerHTML = '<div style="padding:15px; color:#cbd5e1;">Sin áreas registradas.</div>';
+    
+    depts.forEach(d => {
+        div.innerHTML += `
+            <div class="list-item">
+                <span><i class="fas fa-folder" style="color:#fbbf24; margin-right:10px;"></i> ${d.name}</span>
+                <button class="btn-icon-del" onclick="deleteDept('${d.id}')"><i class="fas fa-trash"></i></button>
+            </div>
+        `;
+    });
 }
-async function loadDepts(id) {
-    const list = document.getElementById('deptList'); list.innerHTML = '...';
-    const { data } = await sb.from('departments').select('*').eq('institution_id', id);
-    list.innerHTML = '';
-    data?.forEach(d => list.innerHTML += `<div class="list-item"><span>${d.name}</span><button onclick="delDept(${d.id})" class="btn-icon-del"><i class="fas fa-trash"></i></button></div>`);
+
+window.addDepartment = async () => {
+    const name = document.getElementById('newDeptName').value;
+    if(!name) return;
+
+    const { error } = await sb.from('departments').insert([{ institution_id: currentClientId, name: name }]);
+    
+    if(error) alert(error.message);
+    else {
+        document.getElementById('newDeptName').value = '';
+        loadDeptList(currentClientId);
+    }
+};
+
+// Helper: Cargar Departamentos en el Select de Equipos
+async function loadDeptSelect(clientId) {
+    const sel = document.getElementById('newEquipDept');
+    const { data: depts } = await sb.from('departments').select('*').eq('institution_id', clientId);
+    sel.innerHTML = '<option value="">- Sin Área -</option>';
+    if(depts) depts.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
 }
-window.addDepartment = async() => {
-    const name = document.getElementById('newDeptName').value; if(!name) return;
-    await sb.from('departments').insert([{ name, institution_id: currentInstId }]);
-    document.getElementById('newDeptName').value = ''; loadDepts(currentInstId);
-}
-window.delDept = async(id) => { if(confirm("¿Borrar área?")) { await sb.from('departments').delete().eq('id', id); loadDepts(currentInstId); } }
+
+// Utilitarios de Borrado (Simples)
+window.deleteInstitution = async (id) => { if(confirm("¿Eliminar cliente?")) { await sb.from('institutions').delete().eq('id', id); loadInstitutions(); } };
+window.deleteEquip = async (id) => { if(confirm("¿Borrar equipo?")) { await sb.from('equipment').delete().eq('id', id); loadEquipList(currentClientId); } };
+window.deleteDept = async (id) => { if(confirm("¿Borrar área?")) { await sb.from('departments').delete().eq('id', id); loadDeptList(currentClientId); } };
+window.logout = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
