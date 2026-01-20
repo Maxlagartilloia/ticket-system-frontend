@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilos específicos del Login para no ensuciar el CSS global */
+        /* Estilos específicos del Login */
         body.login-bg {
             background-color: #f1f5f9;
             display: flex;
@@ -32,7 +32,7 @@
             margin-bottom: 20px;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
-            box-sizing: border-box; /* Vital para que no se desborde */
+            box-sizing: border-box;
         }
         .btn-login {
             width: 100%;
@@ -51,10 +51,8 @@
 </head>
 <body class="login-bg">
     <div class="login-box">
-        <img src="assets/logo.png" alt="CM Logo" style="width: 180px; margin-bottom: 20px;">
-        
-        <h2 style="margin: 0; color: #0f172a; font-weight: 800;">Bienvenido</h2>
-        <p style="color: #64748b; margin: 10px 0 30px; font-size: 14px;">Plataforma de Gestión v3.0</p>
+        <h2 style="margin: 0; color: #0f172a; font-weight: 800; font-size: 28px;">CopierMaster</h2>
+        <p style="color: #64748b; margin: 5px 0 30px; font-size: 14px;">Plataforma de Gestión v4.5</p>
 
         <div id="errorMsg" style="background:#fee2e2; color:#b91c1c; padding:10px; border-radius:6px; font-size:13px; margin-bottom:20px; display:none; text-align: left; border: 1px solid #fca5a5;"></div>
 
@@ -76,9 +74,7 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/login.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
-<script src="js/login.js"></script>
 </body>
 </html>
