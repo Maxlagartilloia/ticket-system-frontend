@@ -1,4 +1,4 @@
-// js/institutions.js - Gestión de Clientes v4.1 (Restaurado)
+// js/institutions.js - Gestión de Clientes v4.2 (Corrección RLS)
 
 let currentClientId = null; // Variable global para saber qué cliente estamos editando en los modales
 
@@ -43,12 +43,13 @@ async function loadInstitutions() {
     const tbody = document.getElementById('instTable');
     tbody.innerHTML = '<tr><td colspan="6" style="padding:20px; text-align:center; color:#94a3b8;">Cargando cartera de clientes...</td></tr>';
     
-    // Consulta con relación a la tabla profiles para sacar el nombre del técnico
+    // CORRECCIÓN CRÍTICA: Especificamos la Foreign Key exacta (!institutions_technician_id_fkey)
+    // Esto elimina la ambigüedad si existen múltiples relaciones entre las tablas.
     const { data: clients, error } = await sb
         .from('institutions')
         .select(`
             *,
-            technician:profiles(full_name)
+            technician:profiles!institutions_technician_id_fkey(full_name)
         `)
         .order('name');
 
