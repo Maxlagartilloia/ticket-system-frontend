@@ -1,302 +1,278 @@
 // ==========================================
-// CONFIGURACIÓN E INICIALIZACIÓN
+// js/dashboard.js - Lógica del Centro de Mando v4.5
 // ==========================================
-const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
 
-// Variables Globales
-let allTickets = []; // Aquí guardaremos todos los datos crudos de Supabase
-let currentUser = null;
-let currentRole = null;
-let charts = {}; // Para guardar las instancias de los gráficos y poder actualizarlos
+let allTickets = []; // Almacén local de datos
+let charts = {}; // Instancias de gráficos
 
-document.addEventListener('DOMContentLoaded', initDashboard);
-
-async function initDashboard() {
+document.addEventListener('DOMContentLoaded', async () => {
     // 1. Verificar Sesión
     const { data: { session } } = await sb.auth.getSession();
     if (!session) {
         window.location.href = "index.html";
         return;
     }
-    currentUser = session.user;
 
-    // 2. Cargar Perfil y Rol
-    await loadUserProfile();
+    // 2. Cargar Perfil
+    loadUserProfile(session.user.id);
 
-    // 3. Configurar Fechas por Defecto (Mes Actual)
+    // 3. Configurar Fechas (Mes Actual por defecto)
     setupDateFilters();
 
-    // 4. Cargar Datos Reales de Supabase
+    // 4. Cargar Datos
     await fetchData();
-}
+});
 
-// ==========================================
-// LÓGICA DE DATOS Y PERFIL
-// ==========================================
-
-async function loadUserProfile() {
-    try {
-        const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-        
-        if (profile) {
-            document.getElementById('userName').textContent = profile.full_name;
-            currentRole = profile.role;
-            
-            // UI Específica por Rol
-            const badge = document.getElementById('userRoleBadge');
-            if(badge) badge.innerText = (profile.role || 'usuario').toUpperCase();
-
-            // Mostrar botón de "Nuevo Ticket" solo si es Cliente
-            if (currentRole === 'client') {
-                const btn = document.getElementById('btnNewTicket');
-                if(btn) btn.style.display = 'inline-flex';
-            }
+// --- GESTIÓN DE PERFIL ---
+async function loadUserProfile(userId) {
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', userId).single();
+    if (profile) {
+        document.getElementById('userInfo').innerText = profile.full_name || 'Usuario';
+        // Mostrar botón de crear solo si es cliente
+        if (profile.role === 'client') {
+            document.getElementById('btnNewTicket').style.display = 'flex';
         }
-    } catch (err) {
-        console.error("Error cargando perfil:", err);
     }
 }
 
 function setupDateFilters() {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    
-    // Formatear a YYYY-MM-DD para los inputs HTML
-    document.getElementById('dateTo').value = today.toISOString().split('T')[0];
-    document.getElementById('dateFrom').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('dateTo').valueAsDate = today;
+    document.getElementById('dateFrom').valueAsDate = firstDay;
 }
 
+// --- CARGA DE DATOS (SUPABASE) ---
 async function fetchData() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">Actualizando tablero...</td></tr>';
+
     try {
-        // Traemos TODO para filtrar en cliente (Más rápido para < 1000 registros)
-        // Nota: Asegúrate de que los nombres de columnas coincidan con tu BD
-        let { data, error } = await sb
+        // Traemos tickets con relaciones (Cliente y Técnico)
+        // Nota: Ajusta los nombres de tablas si usas 'institutions' o 'profiles'
+        const { data, error } = await sb
             .from('tickets')
             .select(`
-                id, 
-                created_at, 
-                status, 
-                issue_description, 
-                device_model, 
-                solution,
-                technician_id,
-                client_id,
-                arrival_time
+                *,
+                client:client_id(full_name), 
+                tech:technician_id(full_name)
             `)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        
-        // Si no hay datos (BD vacía), usamos datos dummy para que veas el diseño
-        if (!data || data.length === 0) {
-            console.warn("Base de datos vacía, usando datos de prueba...");
-            data = generateDummyData(); 
-        }
 
-        allTickets = data;
-        
-        // Renderizar por primera vez
-        aplicarFiltros();
+        allTickets = data || [];
+        aplicarFiltros(); // Renderizar todo
 
     } catch (err) {
-        console.error("Error cargando tickets:", err);
-        document.getElementById('tableBody').innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Error de conexión: ${err.message}</td></tr>`;
+        console.error(err);
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color:red;">Error: ${err.message}</td></tr>`;
     }
 }
 
-// ==========================================
-// LÓGICA DE FILTRADO Y RENDERIZADO
-// ==========================================
-
+// --- FILTROS Y RENDERIZADO ---
 window.aplicarFiltros = function() {
-    const fromDate = document.getElementById('dateFrom').value;
-    const toDate = document.getElementById('dateTo').value;
+    const from = document.getElementById('dateFrom').value;
+    const to = document.getElementById('dateTo').value;
 
-    // 1. Filtrar Array
+    // Filtrar por fecha
     const filtered = allTickets.filter(t => {
-        const tDate = t.created_at.split('T')[0]; // Asumiendo formato ISO
-        return tDate >= fromDate && tDate <= toDate;
+        const tDate = t.created_at.split('T')[0];
+        return tDate >= from && tDate <= to;
     });
 
-    // 2. Actualizar Tabla
+    renderKPIs(filtered);
+    renderCharts(filtered);
     renderTable(filtered);
-
-    // 3. Actualizar KPIs y Gráficos
-    updateKPIs(filtered);
-    updateCharts(filtered);
 };
+
+function renderKPIs(data) {
+    const open = data.filter(t => t.status === 'open').length;
+    const progress = data.filter(t => t.status === 'in_progress').length;
+    const closed = data.filter(t => t.status === 'closed').length;
+
+    // Actualizar números grandes
+    document.getElementById('openTickets').innerText = open;
+    document.getElementById('inProgress').innerText = progress;
+    document.getElementById('closedMonth').innerText = closed;
+    
+    // Cálculo simple de SLA (Ejemplo)
+    document.getElementById('slaRate').innerText = closed > 0 ? "98%" : "--";
+}
 
 function renderTable(data) {
     const tbody = document.getElementById('tableBody');
-    const counter = document.getElementById('recordCount');
-    
+    const count = document.getElementById('recordCount');
     tbody.innerHTML = '';
-    if(counter) counter.innerText = `Mostrando ${data.length} registros`;
+    count.innerText = `${data.length} registros`;
 
     if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No se encontraron registros en este periodo.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;">No hay datos en este rango.</td></tr>';
         return;
     }
 
     data.forEach(t => {
-        // Definir estilos según estado
-        let badgeClass = 'st-open';
-        let statusText = 'Abierto';
-        if (t.status === 'in_progress') { badgeClass = 'st-process'; statusText = 'En Proceso'; }
-        if (t.status === 'closed') { badgeClass = 'st-closed'; statusText = 'Cerrado'; }
+        // Estilos de estado
+        let stClass = 'st-open';
+        let stText = 'Abierto';
+        if (t.status === 'in_progress') { stClass = 'st-process'; stText = 'En Proceso'; }
+        if (t.status === 'closed') { stClass = 'st-closed'; stText = 'Cerrado'; }
 
-        // Acciones disponibles
-        let actions = '';
-        if (t.status === 'closed') {
-            // Pasamos el objeto completo como string al onclick
-            const ticketString = JSON.stringify(t).replace(/"/g, '&quot;');
-            actions += `<i class="fas fa-file-pdf action-icon pdf-icon" onclick="generarTicketPDF(${ticketString})" title="Ver Reporte PDF"></i>`;
-        } else if (currentRole === 'technician') {
-            actions += `<i class="fas fa-tools action-icon" title="Atender Ticket (Ir a HelpDesk)"></i>`;
+        // Nombres (Manejando posibles nulos)
+        const clientName = t.client?.full_name || 'Cliente General';
+        const techName = t.tech?.full_name || 'Sin Asignar';
+        const date = new Date(t.created_at).toLocaleDateString();
+
+        // Botón PDF solo si está cerrado (o siempre, según prefieras)
+        let actionBtn = '';
+        if (true) { // Mostrar siempre para probar
+            // Convertimos el objeto a string seguro para pasarlo a la función
+            const safeTicket = encodeURIComponent(JSON.stringify(t));
+            actionBtn = `
+                <button class="action-icon pdf-icon" onclick="prepararPDF('${safeTicket}')" title="Ver Reporte">
+                    <i class="fas fa-file-pdf"></i>
+                </button>`;
         }
-
-        const dateFormatted = new Date(t.created_at).toLocaleDateString();
 
         const row = `
             <tr>
-                <td><strong>#${t.id.toString().slice(0, 8)}</strong></td>
-                <td>${dateFormatted}</td>
-                <td>${t.client_id || 'Cliente General'}</td>
-                <td>${t.device_model || 'N/A'}</td>
-                <td>${t.issue_description}</td>
-                <td>${t.technician_id || 'Sin Asignar'}</td>
-                <td><span class="status-badge ${badgeClass}">${statusText}</span></td>
-                <td style="text-align:right;">${actions}</td>
+                <td><strong>#${t.id}</strong></td>
+                <td>${date}</td>
+                <td>${clientName}</td>
+                <td>${t.device_model || '-'}</td>
+                <td>${t.issue_description || '-'}</td>
+                <td>${techName}</td>
+                <td><span class="status-badge ${stClass}">${stText}</span></td>
+                <td style="text-align:right;">${actionBtn}</td>
             </tr>
         `;
         tbody.innerHTML += row;
     });
 }
 
-function updateKPIs(data) {
-    // Conteos
-    const open = data.filter(t => t.status === 'open').length;
-    const process = data.filter(t => t.status === 'in_progress').length;
-    const closed = data.filter(t => t.status === 'closed').length;
+// --- GRÁFICOS (CHART.JS) ---
+function renderCharts(data) {
+    const ctxOpen = document.getElementById('chartOpen');
+    const ctxProg = document.getElementById('chartProgress');
+    const ctxClosed = document.getElementById('chartClosed');
 
-    // Renderizar
-    safeSetText('openTickets', open);
-    safeSetText('inProgress', process);
-    safeSetText('closedMonth', closed);
+    if(!ctxOpen || !ctxProg || !ctxClosed) return; // Protección si no existen
 
-    // Calculo SLA (Ejemplo simple)
-    // En producción, calcularías (arrival_time - created_at)
-    const slaCompliance = closed > 0 ? '98%' : '--'; 
-    safeSetText('slaRate', slaCompliance);
-}
+    // Destruir anteriores
+    if(charts.open) charts.open.destroy();
+    if(charts.prog) charts.prog.destroy();
+    if(charts.closed) charts.closed.destroy();
 
-function safeSetText(id, val) {
-    const el = document.getElementById(id);
-    if(el) el.textContent = val;
-}
+    // Configuración base minimalista
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { display: false }, y: { display: false } }
+    };
 
-// ==========================================
-// GRÁFICOS (CHART.JS)
-// ==========================================
-
-function updateCharts(data) {
-    // Preparar datos
-    const open = data.filter(t => t.status === 'open').length;
-    const closed = data.filter(t => t.status === 'closed').length;
+    // Datos simulados para las mini-gráficas (Sparklines)
+    // En producción usarías datos históricos reales
+    charts.open = new Chart(ctxOpen, { type: 'line', data: { labels:[1,2,3], datasets:[{data:[5, 8, data.filter(t=>t.status==='open').length], borderColor:'#ef4444', borderWidth:2, tension:0.4, pointRadius:0}] }, options: commonOptions });
     
-    // Gráfico 1: SLA (Dona)
-    renderChart('chartSla', 'doughnut', {
-        labels: ['Cumple', 'Fuera de Tiempo'],
-        datasets: [{ data: [closed, open], backgroundColor: ['#10b981', '#ef4444'] }]
-    });
-
-    // Gráfico 2: Volumen (Barras - Simulado por semana)
-    renderChart('chartVol', 'bar', {
-        labels: ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
-        datasets: [{ label: 'Tickets', data: [5, 8, 2, data.length], backgroundColor: '#3b82f6' }]
-    });
-
-    // Gráfico 3: Críticos (Línea)
-    renderChart('chartCritical', 'line', {
-        labels: ['L', 'M', 'X', 'J', 'V'],
-        datasets: [{ label: 'Alta Prioridad', data: [1, 0, 2, 0, 1], borderColor: '#ef4444', tension: 0.4 }]
-    });
+    charts.prog = new Chart(ctxProg, { type: 'line', data: { labels:[1,2,3], datasets:[{data:[2, 4, data.filter(t=>t.status==='in_progress').length], borderColor:'#f59e0b', borderWidth:2, tension:0.4, pointRadius:0}] }, options: commonOptions });
+    
+    charts.closed = new Chart(ctxClosed, { type: 'bar', data: { labels:[1,2,3], datasets:[{data:[10, 15, data.filter(t=>t.status==='closed').length], backgroundColor:'#10b981', borderRadius:2}] }, options: commonOptions });
 }
 
-function renderChart(canvasId, type, dataConfig) {
-    const ctx = document.getElementById(canvasId);
-    if (!ctx) return;
+// ==========================================
+// GENERACIÓN DE PDF "PREMIUM" (EL DELICADO)
+// ==========================================
 
-    // Destruir gráfico anterior si existe para evitar superposiciones
-    if (charts[canvasId]) {
-        charts[canvasId].destroy();
+window.prepararPDF = function(encodedTicket) {
+    const ticket = JSON.parse(decodeURIComponent(encodedTicket));
+    
+    // 1. LLENAR DATOS EN LA PLANTILLA OCULTA
+    document.getElementById('pdf-id').innerText = "#" + ticket.id;
+    document.getElementById('pdf-date').innerText = new Date(ticket.created_at).toLocaleDateString().toUpperCase();
+    
+    document.getElementById('pdf-client').innerText = (ticket.client?.full_name || "CLIENTE GENERAL").toUpperCase();
+    // Podrías agregar RUC si está en la tabla de profiles/institutions
+    
+    document.getElementById('pdf-device').innerText = (ticket.device_model || "EQUIPO GENÉRICO").toUpperCase();
+    // Serie simulada o real
+    document.getElementById('pdf-serial').innerText = ticket.serial_number || "SN-PENDIENTE"; 
+
+    // Evidencia (Imagen)
+    const img = document.getElementById('pdf-photo');
+    if(ticket.evidence_url) {
+        img.src = ticket.evidence_url;
+    } else {
+        // Imagen placeholder limpia
+        img.src = "https://via.placeholder.com/600x300/f1f5f9/94a3b8?text=SIN+EVIDENCIA+ADJUNTA";
     }
+    document.getElementById('pdf-issue').innerText = `"${ticket.issue_description || 'Sin descripción del problema.'}"`;
 
-    charts[canvasId] = new Chart(ctx, {
-        type: type,
-        data: dataConfig,
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false, 
-            plugins: { legend: { display: false } } 
-        }
-    });
-}
+    // Datos del Técnico (Banner Azul)
+    const techName = ticket.tech?.full_name || "Sin Asignar";
+    document.getElementById('pdf-tech').innerText = techName;
+    document.getElementById('tech-initial').innerText = techName.charAt(0).toUpperCase();
 
-// ==========================================
-// GENERACIÓN DE REPORTES PDF
-// ==========================================
-
-window.generarTicketPDF = function(ticket) {
-    // 1. Llenar plantilla oculta con datos del ticket
-    document.getElementById('pdf-id').innerText = "#" + ticket.id.toString().slice(0, 8);
-    document.getElementById('pdf-client').innerText = ticket.client_id || "Cliente";
-    document.getElementById('pdf-device').innerText = ticket.device_model;
-    document.getElementById('pdf-tech').innerText = ticket.technician_id || "Sin Asignar";
-    document.getElementById('pdf-date').innerText = new Date(ticket.created_at).toLocaleDateString();
-    document.getElementById('pdf-issue').innerText = ticket.issue_description;
-    document.getElementById('pdf-solution').innerText = ticket.solution || "Pendiente de cierre técnico.";
-
-    // 2. Generar PDF
-    const element = document.getElementById('pdf-content'); // Asegúrate que este ID exista en tu HTML (en el template oculto)
+    // Tiempos (Formato AM/PM)
+    const fmtTime = (dateStr) => {
+        if(!dateStr) return "--:--";
+        return new Date(dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    };
     
-    // Mostramos temporalmente el div oculto para que html2pdf pueda renderizarlo
-    const container = document.getElementById('pdf-template-container');
-    container.style.display = 'block';
+    document.getElementById('pdf-arrival').innerText = fmtTime(ticket.arrival_time);
+    document.getElementById('pdf-departure').innerText = fmtTime(ticket.departure_time);
+    
+    // Duración (Cálculo)
+    let duration = "--";
+    if(ticket.arrival_time && ticket.departure_time) {
+        const diff = new Date(ticket.departure_time) - new Date(ticket.arrival_time);
+        const hrs = Math.floor(diff / 3600000);
+        const mins = Math.round((diff % 3600000) / 60000);
+        duration = `${hrs}h ${mins}m`;
+    }
+    document.getElementById('pdf-duration').innerText = duration;
+
+    // Solución
+    document.getElementById('pdf-solution').innerText = ticket.solution || "Servicio en proceso o sin reporte de cierre.";
+
+    // 2. MOSTRAR Y GENERAR
+    const element = document.getElementById('pdf-template-container');
+    element.style.display = 'block'; // Hacer visible para el render
 
     const opt = {
-        margin: 10,
-        filename: `Ticket_${ticket.id}.pdf`,
+        margin: 0,
+        filename: `Reporte_Servicio_${ticket.id}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     html2pdf().set(opt).from(element).save().then(() => {
-        container.style.display = 'none'; // Volver a ocultar
+        element.style.display = 'none'; // Volver a ocultar
     });
 };
 
+// Reporte Consolidado (Tabla Visible)
 window.generarReporteConsolidado = function() {
     const element = document.querySelector('.table-wrapper');
-    const opt = { margin: 10, filename: 'Reporte_Consolidado_Mes.pdf', jsPDF: { orientation: 'landscape' } };
+    const opt = {
+        margin: 10,
+        filename: 'Consolidado_Servicios.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
     html2pdf().set(opt).from(element).save();
 };
 
-// ==========================================
-// UTILIDADES Y LOGOUT
-// ==========================================
-
-window.logout = async () => {
-    await sb.auth.signOut();
-    window.location.href = "index.html";
+// Crear Ticket (Cliente)
+window.crearTicket = async function(e) {
+    e.preventDefault();
+    // Lógica de inserción simple para probar
+    alert("Funcionalidad de creación en construcción. Conectar con Supabase INSERT.");
+    document.getElementById('newTicketModal').style.display = 'none';
 };
 
-// Datos de prueba por si la BD está vacía (Para que no veas la pantalla en blanco)
-function generateDummyData() {
-    return [
-        {id: '1001-TEST', created_at: '2026-01-15T10:00:00', status: 'closed', client_id: 'RRHH', device_model: 'Ricoh MP 501', issue_description: 'Atasco de papel', solution: 'Limpieza rodillos'},
-        {id: '1002-TEST', created_at: '2026-01-18T14:30:00', status: 'in_progress', client_id: 'Contabilidad', device_model: 'Epson WF', issue_description: 'Error de Tinta', solution: ''},
-        {id: '1003-TEST', created_at: new Date().toISOString(), status: 'open', client_id: 'Gerencia', device_model: 'Canon IR', issue_description: 'No escanea a carpeta', solution: ''}
-    ];
-}
+// Utilidades
+window.abrirModalTicket = () => document.getElementById('newTicketModal').style.display = 'flex';
+window.logout = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
