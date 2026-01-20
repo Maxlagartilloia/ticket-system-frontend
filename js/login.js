@@ -1,35 +1,33 @@
 // ==========================================
-// LÓGICA DE LOGIN (Corregida y Limpia)
+// LÓGICA DE LOGIN (VINCULADA AL MAESTRO)
 // ==========================================
 
-// Nota: 'sb' viene cargado desde js/supabase.js. No lo redeclaramos aquí.
+// IMPORTANTE: Este archivo asume que 'sb' ya existe (cargado desde js/supabase.js)
 
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
-    // 1. UI: Feedback de carga visual
+    // 1. Elementos de la interfaz
     const btn = document.getElementById('btnLog');
     const errorMsg = document.getElementById('errorMsg');
-    const originalText = btn.innerText; // Guardamos texto original "Iniciar Sesión"
     
-    // Bloquear botón y mostrar spinner
+    // 2. Estado de "Cargando"
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando...';
+    const textoOriginal = btn.innerText;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
     errorMsg.style.display = 'none';
 
-    // 2. CAPTURAR DATOS (¡Con .trim() para borrar espacios!)
-    const email = document.getElementById('email').value.trim(); 
+    // 3. Capturar datos (Limpiando espacios accidentales)
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value.trim();
 
     try {
-        // Validación básica antes de enviar
-        if (!email || !password) {
-            throw new Error("Por favor, completa todos los campos.");
-        }
+        // Validación rápida
+        if (!email || !password) throw new Error("Por favor completa ambos campos.");
 
-        console.log("Intentando login en:", sb.supabaseUrl); // Para depurar en consola
+        // 4. LOGIN (Usando la conexión 'sb' del archivo maestro)
+        console.log("🔐 Intentando entrar en BD:", sb.supabaseUrl); // Debe salir la URL ...kkuz
 
-        // 3. AUTENTICACIÓN (Login)
         const { data: authData, error: authError } = await sb.auth.signInWithPassword({
             email: email,
             password: password
@@ -37,45 +35,40 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 
         if (authError) throw authError;
 
-        // 4. VERIFICACIÓN DE ROL (Seguridad)
+        // 5. VERIFICAR ROL (Seguridad)
         const { data: profile, error: profileError } = await sb
             .from('profiles')
             .select('role')
             .eq('id', authData.user.id)
             .single();
 
-        // Si no hay perfil, lanzamos error aunque el login haya funcionado
         if (profileError || !profile) {
-            throw new Error("Usuario autenticado pero sin perfil asignado.");
+            throw new Error("Usuario validado pero sin perfil de sistema.");
         }
 
-        // 5. ENRUTAMIENTO (Router)
-        const role = profile.role; 
-        console.log("✅ Acceso concedido. Rol detectado:", role);
+        // 6. REDIRECCIONAR SEGÚN RANGO
+        console.log("✅ Acceso permitido. Rol:", profile.role);
 
-        if (role === 'supervisor') {
+        if (profile.role === 'supervisor') {
             window.location.href = 'dashboard.html';
-        } else if (role === 'technician' || role === 'client') {
-            window.location.href = 'tickets.html';
         } else {
-            throw new Error("Rol de usuario no reconocido.");
+            // Técnicos y Clientes van al Help Desk
+            window.location.href = 'tickets.html';
         }
 
     } catch (error) {
-        console.error("❌ Login Error:", error);
+        console.error("❌ Error de Login:", error);
         
         // Restaurar botón
         btn.disabled = false;
-        btn.innerText = "Iniciar Sesión"; // Texto manual para asegurar
+        btn.innerText = textoOriginal;
         
-        // Mensajes amigables para el humano
-        let msg = "Credenciales incorrectas.";
+        // Mostrar mensaje amigable
+        let mensaje = "Credenciales incorrectas.";
+        if (error.message.includes("network")) mensaje = "Error de conexión con el servidor.";
+        if (error.message.includes("sin perfil")) mensaje = "Tu usuario no tiene perfil asignado.";
         
-        if(error.message.includes("Invalid login")) msg = "Usuario o contraseña incorrectos.";
-        if(error.message.includes("Email not confirmed")) msg = "El correo no ha sido confirmado.";
-        if(error.message.includes("network")) msg = "Error de conexión. Revisa tu internet.";
-        
-        errorMsg.innerText = `⚠️ ${msg}`;
+        errorMsg.innerText = `⚠️ ${mensaje}`;
         errorMsg.style.display = 'block';
     }
 });
