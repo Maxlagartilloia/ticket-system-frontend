@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Técnicos | CopierMaster</title>
+    <title>Personal Técnico | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
     <style>
-        /* Estilos Enterprise para Tarjetas de Personal (TU ESTILO ORIGINAL) */
+        /* Estilos Específicos para Tarjetas de Técnicos */
         .tech-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -22,62 +23,52 @@
             text-align: center;
             transition: all 0.2s;
             position: relative;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .tech-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-color: #3b82f6;
         }
         .avatar-circle {
-            width: 70px;
-            height: 70px;
+            width: 70px; height: 70px;
             background: #f1f5f9;
             border-radius: 50%;
             margin: 0 auto 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            color: #64748b;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; color: #64748b;
             border: 2px solid white;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .role-badge {
-            font-size: 11px;
-            padding: 4px 10px;
-            border-radius: 12px;
-            text-transform: uppercase;
-            font-weight: 700;
-            display: inline-block;
-            margin-bottom: 10px;
+            font-size: 10px; padding: 4px 10px; border-radius: 12px;
+            text-transform: uppercase; font-weight: 700; display: inline-block; margin-bottom: 10px;
         }
         .role-supervisor { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
         .role-technician { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        .role-client { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
         
         .tech-stats {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 15px;
-            padding-top: 15px;
+            display: flex; justify-content: space-around; margin-top: 15px; padding-top: 15px;
             border-top: 1px solid #f1f5f9;
         }
         .stat-item { text-align: center; }
         .stat-val { font-weight: 700; font-size: 16px; color: #1e293b; }
         .stat-lbl { font-size: 10px; color: #64748b; text-transform: uppercase; }
         
-        .card-actions {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
-        .btn-mini {
-            background: none; border: none; cursor: pointer; color: #94a3b8; padding: 5px;
-        }
-        .btn-mini:hover { color: #1e293b; }
+        .card-actions { position: absolute; top: 10px; right: 10px; }
+        .btn-mini { background: none; border: none; cursor: pointer; color: #94a3b8; padding: 5px; }
+        .btn-mini:hover { color: #ef4444; }
     </style>
 </head>
 <body>
+    
     <aside class="sidebar">
-        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
+        <div class="sidebar-brand">
+            <div style="font-weight:800; font-size:20px; color:var(--text-main); display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-layer-group" style="color:#3b82f6;"></i> CopierMaster
+            </div>
+        </div>
         <ul class="sidebar-menu">
             <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
             <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
@@ -90,24 +81,27 @@
 
     <main class="main-content">
         <header class="top-bar">
-            <div class="page-title">Personal Técnico</div>
-            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
+            <div class="page-title">Gestión de Personal</div>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span id="userInfo" style="font-size:13px; font-weight:600;">Cargando...</span>
+                <button class="btn-logout" onclick="logout()" title="Salir"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
         </header>
 
         <div class="scroll-area">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <div>
-                    <h3 style="margin:0;">Equipo de Trabajo</h3>
-                    <p style="margin:5px 0 0; font-size:13px; color:#64748b;">Gestión de roles y monitoreo de carga laboral.</p>
+                    <h2 style="margin:0; color:#0f172a; font-size:20px;">Equipo de Trabajo</h2>
+                    <p style="margin:5px 0 0; font-size:13px; color:#64748b;">Administra cuentas y monitorea la carga laboral.</p>
                 </div>
-                <button onclick="openRegisterModal()" class="btn-confirm" style="width:auto;">
+                <button onclick="openRegisterModal()" class="btn-confirm">
                     <i class="fas fa-user-plus"></i> Registrar Nuevo
                 </button>
             </div>
             
             <div id="techGrid" class="tech-grid">
                 <div style="grid-column: 1/-1; text-align:center; padding:40px; color:#94a3b8;">
-                    <i class="fas fa-spinner fa-spin"></i> Cargando staff...
+                    <i class="fas fa-spinner fa-spin fa-2x"></i><br>Cargando staff...
                 </div>
             </div>
         </div>
@@ -115,23 +109,26 @@
 
     <div id="registerModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 class="modal-title">👤 Registrar Nuevo Usuario</h3>
-            <p style="color:#64748b; font-size:13px; margin-bottom:15px;">Crea credenciales para un nuevo miembro del equipo.</p>
+            <div style="border-bottom:1px solid #e2e8f0; padding-bottom:10px; margin-bottom:20px; display:flex; justify-content:space-between;">
+                <h3 class="modal-title">👤 Nuevo Usuario</h3>
+                <button onclick="closeRegisterModal()" style="border:none; background:none; cursor:pointer;">&times;</button>
+            </div>
             
             <form id="registerForm">
-                <label>Nombre Completo</label>
-                <input type="text" id="regName" placeholder="Ej: Saúl Quevedo" required>
+                <label style="font-size:12px; font-weight:bold; color:#64748b;">Nombre Completo</label>
+                <input type="text" id="regName" placeholder="Ej: Saúl Quevedo" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:15px;">
 
-                <label>Correo Electrónico</label>
-                <input type="email" id="regEmail" placeholder="Ej: saul@empresa.com" required>
+                <label style="font-size:12px; font-weight:bold; color:#64748b;">Correo Electrónico</label>
+                <input type="email" id="regEmail" placeholder="Ej: saul@empresa.com" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:15px;">
 
-                <label>Contraseña</label>
-                <input type="password" id="regPass" placeholder="Mínimo 6 caracteres" required>
+                <label style="font-size:12px; font-weight:bold; color:#64748b;">Contraseña Temporal</label>
+                <input type="password" id="regPass" placeholder="Mínimo 6 caracteres" required style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:15px;">
 
-                <label>Rol Asignado</label>
-                <select id="regRole">
+                <label style="font-size:12px; font-weight:bold; color:#64748b;">Rol Asignado</label>
+                <select id="regRole" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px; margin-bottom:20px;">
                     <option value="technician">Técnico</option>
                     <option value="supervisor">Supervisor</option>
+                    <option value="client">Cliente (Auditor)</option>
                 </select>
 
                 <div class="modal-actions">
@@ -143,11 +140,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/security.js"></script>
     <script src="js/technicians.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
-<script src="js/security.js"></script>
-<script src="js/technicians.js"></script>
 </body>
 </html>
