@@ -3,13 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Equipos | CopierMaster</title>
+    <title>Inventario | CopierMaster</title>
     <link rel="stylesheet" href="css/styles.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Filtros Superiores */
+        .filter-card {
+            background: white; border-radius: 12px; padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px;
+            display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;
+        }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 200px; }
+        .filter-group label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+        .filter-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; }
+
+        /* Badges de Estado */
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .st-active { background: #dcfce7; color: #166534; }
+        .st-workshop { background: #fef3c7; color: #92400e; }
+        .st-retired { background: #f1f5f9; color: #64748b; text-decoration: line-through; }
+
+        /* Tabla */
+        .table-responsive { overflow-x: auto; background: white; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8fafc; padding: 15px; text-align: left; font-size: 11px; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
+        td { padding: 15px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; }
+        tr:hover { background: #f8fafc; }
+
+        /* Botones Acción */
+        .btn-icon { background: none; border: none; cursor: pointer; padding: 5px; font-size: 14px; color: #94a3b8; transition: color 0.2s; }
+        .btn-icon:hover { color: #3b82f6; }
+        .btn-history:hover { color: #8b5cf6; }
+        .btn-swap:hover { color: #f59e0b; }
+    </style>
 </head>
 <body>
+    
     <aside class="sidebar">
-        <div class="sidebar-brand"><img src="assets/logo.png" alt="CM"></div>
+        <div class="sidebar-brand">
+            <div style="font-weight:800; font-size:20px; color:var(--text-main); display:flex; align-items:center; gap:10px;">
+                <i class="fas fa-layer-group" style="color:#3b82f6;"></i> CopierMaster
+            </div>
+        </div>
         <ul class="sidebar-menu">
             <li class="menu-item" onclick="location.href='dashboard.html'"><i class="fas fa-chart-pie"></i> Dashboard</li>
             <li class="menu-item" onclick="location.href='tickets.html'"><i class="fas fa-ticket-alt"></i> Help Desk</li>
@@ -23,142 +59,123 @@
     <main class="main-content">
         <header class="top-bar">
             <div class="page-title">Inventario de Activos</div>
-            <button class="btn-logout" onclick="location.href='index.html'">Salir</button>
+            <div style="display:flex; align-items:center; gap:15px;">
+                <span id="userInfo" style="font-size:13px; font-weight:600;">Cargando...</span>
+                <button class="btn-logout" onclick="logout()" title="Salir"><i class="fas fa-sign-out-alt"></i></button>
+            </div>
         </header>
 
         <div class="scroll-area">
             
-            <div class="card" style="background:#f8fafc; border:1px solid #cbd5e1; margin-bottom:20px;">
-                <h4 style="margin-top:0; color:#475569; margin-bottom:10px;"><i class="fas fa-filter"></i> Filtrar Equipos</h4>
-                <div class="actions-grid" style="grid-template-columns: 1fr 1fr auto; gap:15px;">
-                    <div>
-                        <select id="filterClient" onchange="filterByClient()" style="margin-bottom:0; background:white;">
-                            <option value="">-- Cargando Clientes... --</option>
-                        </select>
-                    </div>
-                    <div>
-                        <select id="filterDept" onchange="filterByDept()" disabled style="margin-bottom:0; background:white;">
-                            <option value="">-- Todas las Áreas --</option>
-                        </select>
-                    </div>
-                    <button onclick="openNewModal()" class="btn" style="width:auto; background:#16a34a; color:white; height:100%;">
-                        <i class="fas fa-plus-circle"></i> Nuevo Equipo
-                    </button>
+            <div class="filter-card">
+                <div class="filter-group">
+                    <label>Filtrar por Cliente</label>
+                    <select id="filterClient" onchange="filterEquipment()">
+                        <option value="">-- Todos los Clientes --</option>
+                    </select>
                 </div>
+                <div class="filter-group">
+                    <label>Estado</label>
+                    <select id="filterStatus" onchange="filterEquipment()">
+                        <option value="active">Activos (En Sitio)</option>
+                        <option value="workshop">En Taller</option>
+                        <option value="retired">Dados de Baja</option>
+                        <option value="">-- Ver Todo --</option>
+                    </select>
+                </div>
+                <button onclick="openNewModal()" class="btn-confirm" style="height: 42px;">
+                    <i class="fas fa-plus-circle"></i> Nuevo Equipo
+                </button>
             </div>
 
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                    <h3 style="margin:0;">Listado de Equipos</h3>
-                    <span id="resultCount" style="font-size:12px; color:#64748b; font-weight:bold;">Cargando...</span>
+            <div class="table-responsive">
+                <div style="padding:15px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between;">
+                    <h3 style="margin:0; font-size:16px; color:#0f172a;">Parque Instalado</h3>
+                    <span id="countBadge" style="font-size:12px; color:#64748b;">0 equipos</span>
                 </div>
-
-                <div style="overflow-x:auto;">
-                    <table style="width:100%;">
-                        <thead>
-                            <tr>
-                                <th>Ubicación</th>
-                                <th>Marca / Modelo</th>
-                                <th>Serie / IP</th>
-                                <th>Estado</th>
-                                <th style="text-align:center;">Gestión</th>
-                            </tr>
-                        </thead>
-                        <tbody id="equipTable">
-                            <tr><td colspan="5" style="text-align:center; padding:20px;">Cargando inventario...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                <table id="equipTable">
+                    <thead>
+                        <tr>
+                            <th>Equipo / Serie</th>
+                            <th>Ubicación Actual</th>
+                            <th>IP / Conexión</th>
+                            <th>Estado</th>
+                            <th style="text-align:center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8;">Cargando inventario...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </main>
 
     <div id="newModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 class="modal-title">📦 Registrar Equipo Nuevo</h3>
-            <form id="equipForm">
-                <div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:15px; border:1px solid #e2e8f0;">
-                    <label style="color:#3b82f6;">📍 Ubicación Inicial</label>
-                    <select id="instSelect" onchange="loadDepts(this.value)" required>
-                        <option value="">Cargando...</option>
+            <h3 class="modal-title">📦 Registrar Activo</h3>
+            <form id="newEquipForm">
+                <div style="background:#f1f5f9; padding:15px; border-radius:8px; margin-bottom:15px;">
+                    <label style="font-size:11px; font-weight:bold; color:#64748b;">UBICACIÓN INICIAL</label>
+                    <select id="newClientSelect" style="width:100%; margin-bottom:10px; padding:8px;" onchange="loadDeptsForNew(this.value)" required>
+                        <option value="">-- Seleccione Cliente --</option>
                     </select>
-                    <select id="deptSelect" required disabled>
-                        <option value="">-- Seleccione Cliente Primero --</option>
+                    <select id="newDeptSelect" style="width:100%; padding:8px;" disabled>
+                        <option value="">-- Seleccione Área --</option>
                     </select>
                 </div>
 
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                    <div><label>Marca</label><input id="brand" placeholder="Ej: Ricoh" required></div>
-                    <div><label>Modelo</label><input id="model" placeholder="Ej: MPC 305" required></div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-bottom:10px;">
+                    <div><label>Marca</label><input id="newBrand" placeholder="Ej: Ricoh" required style="width:100%; padding:8px;"></div>
+                    <div><label>Modelo</label><input id="newModel" placeholder="Ej: MP 501" required style="width:100%; padding:8px;"></div>
                 </div>
                 
-                <label>Número de Serie</label>
-                <input id="serial" placeholder="Ej: E334M..." required>
+                <div style="margin-bottom:10px;">
+                    <label>Número de Serie</label>
+                    <input id="newSerial" placeholder="S/N..." required style="width:100%; padding:8px;">
+                </div>
 
-                <label>Dirección IP (Opcional)</label>
-                <input id="ip" placeholder="Ej: 192.168.1.50">
-
-                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                    <div><label>Fecha Instalación</label><input type="date" id="installDate" required></div>
-                    <div><label>Contador Inicial</label><input type="number" id="initMeter" value="0" required></div>
+                <div style="margin-bottom:20px;">
+                    <label>Dirección IP (Opcional)</label>
+                    <input id="newIp" placeholder="Ej: 192.168.1.200" style="width:100%; padding:8px;">
                 </div>
 
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" onclick="closeModal('newModal')">Cancelar</button>
-                    <button type="submit" class="btn-confirm" style="background:#16a34a;">Guardar</button>
+                    <button type="submit" class="btn-confirm">Guardar Equipo</button>
                 </div>
             </form>
         </div>
     </div>
-    
+
     <div id="swapModal" class="modal-overlay">
         <div class="modal-box">
-            <h3 class="modal-title"><i class="fas fa-sync-alt" style="color:#f59e0b;"></i> Retiro de Equipo</h3>
-            <p style="font-size:13px; color:#64748b;">Equipo: <strong id="swapModel">...</strong></p>
+            <h3 class="modal-title"><i class="fas fa-exchange-alt" style="color:#f59e0b;"></i> Movimiento de Equipo</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:15px;">Equipo: <strong id="swapEquipName">...</strong></p>
+            
             <form id="swapForm">
                 <input type="hidden" id="swapEquipId">
-                
-                <label>Motivo del Retiro</label>
-                <textarea id="swapReason" rows="2" placeholder="Ej: Falla mecánica grave, fin de contrato..." required></textarea>
-                
-                <label>Contador Final (Al retirar)</label>
-                <input type="number" id="swapMeter" required>
-                
-                <div style="background:#fff7ed; padding:10px; margin-top:10px; border-radius:6px; border:1px solid #fed7aa;">
-                    <label style="color:#c2410c; font-weight:bold;">Destino del Equipo</label>
-                    <select id="swapDestination" required>
-                        <option value="workshop">🛠️ Taller (Reparación)</option>
-                        <option value="retired">🗑️ Baja Definitiva (Chatarra)</option>
-                        <option value="inventory">📦 Bodega (Disponible)</option>
-                    </select>
-                </div>
-                
-                <div class="modal-actions">
+                <label>Acción a realizar</label>
+                <select id="swapAction" required style="width:100%; padding:10px; margin-bottom:15px;">
+                    <option value="workshop">🛠️ Enviar a Taller (Reparación)</option>
+                    <option value="retired">🗑️ Dar de Baja (Chatarra)</option>
+                    <option value="active">✅ Re-activar (En Cliente)</option>
+                </select>
+
+                <label>Notas / Motivo</label>
+                <textarea id="swapNotes" rows="3" placeholder="Describa el motivo..." style="width:100%; padding:10px;" required></textarea>
+
+                <div class="modal-actions" style="margin-top:20px;">
                     <button type="button" class="btn-cancel" onclick="closeModal('swapModal')">Cancelar</button>
-                    <button type="submit" class="btn-confirm" style="background:#ea580c;">Confirmar Retiro</button>
+                    <button type="submit" class="btn-confirm" style="background:#0f172a;">Confirmar Movimiento</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <div id="historyModal" class="modal-overlay">
-        <div class="modal-box" style="max-width:500px;">
-            <h3 class="modal-title">📜 Historial de Fallas</h3>
-            <div id="historyList" style="max-height:300px; overflow-y:auto; padding-right:5px;">
-                Cargando...
-            </div>
-            <div class="modal-actions">
-                <button class="btn-cancel" onclick="closeModal('historyModal')">Cerrar</button>
-            </div>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/security.js"></script>
     <script src="js/equipment.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
-<script src="js/security.js"></script>
-<script src="js/equipment.js"></script>
 </body>
 </html>
