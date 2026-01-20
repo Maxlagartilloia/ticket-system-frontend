@@ -1,216 +1,175 @@
-const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
+// js/equipment.js - Gestión de Inventario v4.0
 
-let allEquipment = []; // Cache local
+let allEquipment = []; // Cache local para filtros rápidos
 
-document.addEventListener("DOMContentLoaded", async () => {
-    await loadFilterOptions();
-    await loadEquipment(); 
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Cargar Combos
+    await loadClientsCombo();
+    // 2. Cargar Datos
+    loadEquipment();
 });
 
-// 1. CARGA INICIAL
-async function loadFilterOptions() {
-    const { data } = await sb.from('institutions').select('*').order('name');
-    const sel = document.getElementById('filterClient');
-    sel.innerHTML = '<option value="">-- Todos los Clientes --</option>';
-    data.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.name}</option>`);
-}
-
+// 1. CARGAR DATOS
 async function loadEquipment() {
-    // Solo mostramos 'installed' (activos en clientes)
-    const { data, error } = await sb.from('equipment')
-        .select('*, institutions(name), departments(name)')
-        .eq('status', 'installed') 
-        .order('id', { ascending: false });
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;">Actualizando inventario...</td></tr>';
 
-    if(error) console.error(error);
-    allEquipment = data || [];
-    renderTable(allEquipment);
-}
+    const { data, error } = await sb
+        .from('equipment')
+        .select(`
+            *,
+            institutions(name),
+            departments(name)
+        `)
+        .order('model');
 
-// 2. FILTRADO
-window.filterByClient = async () => {
-    const clientId = document.getElementById('filterClient').value;
-    const deptSel = document.getElementById('filterDept');
-    
-    // Reset Deptos
-    deptSel.innerHTML = '<option value="">-- Todas las Áreas --</option>';
-    deptSel.disabled = true;
-
-    if (!clientId) {
-        renderTable(allEquipment);
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">Error: ${error.message}</td></tr>`;
         return;
     }
 
-    const filtered = allEquipment.filter(e => e.institution_id == clientId);
-    renderTable(filtered);
-
-    // Cargar Deptos del cliente seleccionado
-    deptSel.disabled = false;
-    const { data: depts } = await sb.from('departments').select('*').eq('institution_id', clientId).order('name');
-    depts.forEach(d => deptSel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    allEquipment = data;
+    filterEquipment(); // Renderizar con filtros aplicados
 }
 
-window.filterByDept = () => {
-    const clientId = document.getElementById('filterClient').value;
-    const deptId = document.getElementById('filterDept').value;
+// 2. FILTRADO Y RENDERIZADO
+window.filterEquipment = function() {
+    const clientFilter = document.getElementById('filterClient').value;
+    const statusFilter = document.getElementById('filterStatus').value;
+    const tbody = document.getElementById('tableBody');
 
-    let filtered = allEquipment.filter(e => e.institution_id == clientId);
-    
-    if (deptId) {
-        filtered = filtered.filter(e => e.department_id == deptId);
-    }
-    renderTable(filtered);
-}
-
-// 3. RENDER TABLA
-function renderTable(data) {
-    const tb = document.getElementById('equipTable');
-    const countLabel = document.getElementById('resultCount');
-    tb.innerHTML = '';
-    countLabel.innerText = `${data.length} equipos activos`;
-
-    if (data.length === 0) {
-        tb.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron equipos.</td></tr>';
-        return;
-    }
-
-    data.forEach(e => {
-        tb.innerHTML += `
-            <tr style="border-bottom:1px solid #e2e8f0;">
-                <td style="padding:12px;">
-                    <div style="font-weight:700; color:#1e293b;">${e.institutions?.name || 'Sin Cliente'}</div>
-                    <div style="font-size:13px; color:#3b82f6;"><i class="fas fa-map-marker-alt"></i> ${e.departments?.name || 'Sin Área'}</div>
-                </td>
-                <td style="padding:12px;">
-                    <div style="font-weight:600;">${e.brand} ${e.model}</div>
-                </td>
-                <td style="padding:12px;">
-                    <div style="font-family:monospace; font-weight:bold;">SN: ${e.serial_number}</div>
-                    <div style="font-size:11px; color:#64748b;">IP: ${e.ip_address || '-'}</div>
-                </td>
-                <td style="padding:12px;">
-                     <span style="background:#dcfce7; color:#166534; padding:3px 8px; border-radius:12px; font-size:11px; font-weight:bold;">🟢 INSTALADO</span>
-                     <div style="font-size:10px; margin-top:2px;">Cont: ${e.initial_meter_reading}</div>
-                </td>
-                <td style="padding:12px; text-align:center;">
-                    <button onclick="openSwapModal(${e.id}, '${e.model}')" title="Retirar/Rotar" class="btn" style="width:auto; display:inline-block; padding:8px; background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; margin-right:5px;">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </button>
-                    <button onclick="showHistory(${e.id})" title="Historial Fallas" class="btn" style="width:auto; display:inline-block; padding:8px; background:#f1f5f9; color:#475569; border:1px solid #cbd5e1;">
-                        <i class="fas fa-history"></i>
-                    </button>
-                </td>
-            </tr>`;
+    // Filtrar en memoria
+    const filtered = allEquipment.filter(eq => {
+        const matchClient = clientFilter === "" || eq.institution_id === clientFilter;
+        // Asumimos campo 'status'. Si no existe en DB, trátalo como 'active' por defecto.
+        const eqStatus = eq.status || 'active'; 
+        const matchStatus = statusFilter === "" || eqStatus === statusFilter;
+        return matchClient && matchStatus;
     });
+
+    document.getElementById('countBadge').innerText = `${filtered.length} equipos`;
+    tbody.innerHTML = '';
+
+    if(filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#94a3b8;">No se encontraron equipos.</td></tr>';
+        return;
+    }
+
+    filtered.forEach(eq => {
+        const clientName = eq.institutions?.name || 'Sin Asignar';
+        const deptName = eq.departments?.name ? ` • ${eq.departments.name}` : '';
+        const status = eq.status || 'active';
+        
+        let stClass = 'st-active';
+        let stText = 'En Sitio';
+        if(status === 'workshop') { stClass = 'st-workshop'; stText = 'En Taller'; }
+        if(status === 'retired') { stClass = 'st-retired'; stText = 'Baja'; }
+
+        const row = `
+            <tr>
+                <td>
+                    <div style="font-weight:700; color:#0f172a;">${eq.model}</div>
+                    <div style="font-size:11px; color:#64748b;">S/N: ${eq.serial}</div>
+                </td>
+                <td>
+                    <div style="font-weight:600;">${clientName}</div>
+                    <div style="font-size:11px; color:#64748b;">${deptName}</div>
+                </td>
+                <td style="font-family:monospace;">${eq.ip_address || '--'}</td>
+                <td><span class="status-pill ${stClass}">${stText}</span></td>
+                <td style="text-align:center;">
+                    <button class="btn-icon btn-swap" onclick="openSwapModal('${eq.id}', '${eq.model}')" title="Mover / Dar Baja">
+                        <i class="fas fa-exchange-alt"></i>
+                    </button>
+                    </td>
+            </tr>
+        `;
+        tbody.innerHTML += row;
+    });
+};
+
+// 3. CARGAR COMBOS
+async function loadClientsCombo() {
+    const select = document.getElementById('filterClient');
+    const newSelect = document.getElementById('newClientSelect');
+    
+    const { data: clients } = await sb.from('institutions').select('id, name').order('name');
+    
+    if(clients) {
+        clients.forEach(c => {
+            const opt = `<option value="${c.id}">${c.name}</option>`;
+            select.innerHTML += opt;
+            newSelect.innerHTML += opt;
+        });
+    }
 }
+
+window.loadDeptsForNew = async (clientId) => {
+    const select = document.getElementById('newDeptSelect');
+    select.innerHTML = '<option value="">Cargando...</option>';
+    select.disabled = true;
+
+    if(!clientId) {
+        select.innerHTML = '<option value="">-- Seleccione Cliente --</option>';
+        return;
+    }
+
+    const { data: depts } = await sb.from('departments').select('id, name').eq('institution_id', clientId);
+    
+    select.innerHTML = '<option value="">-- General / Sin Área --</option>';
+    if(depts) {
+        depts.forEach(d => select.innerHTML += `<option value="${d.id}">${d.name}</option>`);
+    }
+    select.disabled = false;
+};
 
 // 4. NUEVO EQUIPO
-window.openNewModal = () => {
-    document.getElementById('newModal').style.display = 'flex';
-    loadInstitutionsModal();
-}
-window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-
-async function loadInstitutionsModal() {
-    const { data } = await sb.from('institutions').select('id, name').order('name');
-    const sel = document.getElementById('instSelect');
-    sel.innerHTML = '<option value="">Seleccione Cliente...</option>';
-    data.forEach(i => sel.innerHTML += `<option value="${i.id}">${i.name}</option>`);
-}
-
-window.loadDepts = async (instId) => {
-    const sel = document.getElementById('deptSelect');
-    sel.disabled = true; sel.innerHTML = '<option>Cargando...</option>';
-    
-    const { data } = await sb.from('departments').select('id, name').eq('institution_id', instId).order('name');
-    sel.innerHTML = '<option value="">Seleccione Área...</option>';
-    data?.forEach(d => sel.innerHTML += `<option value="${d.id}">${d.name}</option>`);
-    sel.disabled = false;
-}
-
-document.getElementById('equipForm').addEventListener('submit', async (e) => {
+document.getElementById('newEquipForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = e.target.querySelector('.btn-confirm');
-    btn.innerHTML = 'Guardando...'; btn.disabled = true;
+    
+    const newEquip = {
+        institution_id: document.getElementById('newClientSelect').value,
+        department_id: document.getElementById('newDeptSelect').value || null,
+        model: `${document.getElementById('newBrand').value} ${document.getElementById('newModel').value}`,
+        serial: document.getElementById('newSerial').value,
+        ip_address: document.getElementById('newIp').value,
+        status: 'active'
+    };
 
-    const { error } = await sb.from('equipment').insert([{
-        institution_id: document.getElementById('instSelect').value,
-        department_id: document.getElementById('deptSelect').value,
-        brand: document.getElementById('brand').value,
-        model: document.getElementById('model').value,
-        serial_number: document.getElementById('serial').value,
-        ip_address: document.getElementById('ip').value,
-        installation_date: document.getElementById('installDate').value,
-        initial_meter_reading: document.getElementById('initMeter').value,
-        status: 'installed',
-        name: `${document.getElementById('brand').value} ${document.getElementById('model').value}` // Campo legacy
-    }]);
+    const { error } = await sb.from('equipment').insert([newEquip]);
 
-    if (error) alert("Error: " + error.message);
+    if(error) alert("Error: " + error.message);
     else {
-        closeModal('newModal'); e.target.reset(); loadEquipment();
+        alert("✅ Equipo registrado exitosamente.");
+        closeModal('newModal');
+        loadEquipment();
     }
-    btn.innerHTML = 'Guardar'; btn.disabled = false;
 });
 
-// 5. ROTACIÓN / RETIRO
+// 5. MOVIMIENTOS
 window.openSwapModal = (id, model) => {
     document.getElementById('swapEquipId').value = id;
-    document.getElementById('swapModel').innerText = model;
+    document.getElementById('swapEquipName').innerText = model;
     document.getElementById('swapModal').style.display = 'flex';
-}
+};
 
 document.getElementById('swapForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('swapEquipId').value;
-    const newStatus = document.getElementById('swapDestination').value;
-    const reason = document.getElementById('swapReason').value;
-
-    const { error } = await sb.from('equipment')
-        .update({ 
-            status: newStatus, 
-            // Podríamos guardar el motivo en un log aparte, pero por ahora cambiamos estado
-            // Idealmente: Crear registro en tabla 'movements' (no implementada aún en este scope simple)
-        })
-        .eq('id', id);
+    const status = document.getElementById('swapAction').value;
+    // Aquí podrías guardar un log en una tabla 'equipment_history' si quisieras auditoría
+    
+    const { error } = await sb.from('equipment').update({ status: status }).eq('id', id);
 
     if(error) alert("Error: " + error.message);
     else {
-        alert("✅ Equipo retirado del inventario activo.");
-        closeModal('swapModal'); e.target.reset(); loadEquipment();
+        alert("✅ Estado actualizado.");
+        closeModal('swapModal');
+        loadEquipment();
     }
 });
 
-// 6. HISTORIAL DE FALLAS (Desde Tickets)
-window.showHistory = async (equipId) => {
-    const list = document.getElementById('historyList');
-    list.innerHTML = '<div style="text-align:center; padding:20px;">Cargando historial...</div>';
-    document.getElementById('historyModal').style.display = 'flex';
-
-    // Buscamos tickets asociados a este equipo
-    const { data: tickets } = await sb.from('tickets')
-        .select('created_at, description, status, priority')
-        .eq('equipment_id', equipId)
-        .order('created_at', { ascending: false });
-
-    if (!tickets || tickets.length === 0) {
-        list.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8;">Sin reportes de falla registrados.</div>';
-        return;
-    }
-
-    list.innerHTML = '';
-    tickets.forEach(t => {
-        const date = new Date(t.created_at).toLocaleDateString();
-        let color = t.status === 'open' ? 'red' : (t.status === 'closed' ? 'green' : 'orange');
-        
-        list.innerHTML += `
-            <div style="border-bottom:1px solid #eee; padding:10px;">
-                <div style="display:flex; justify-content:space-between; font-size:12px; color:#64748b;">
-                    <span>${date}</span>
-                    <span style="color:${color}; font-weight:bold;">${t.status.toUpperCase()}</span>
-                </div>
-                <div style="margin-top:5px; font-weight:500;">${t.description}</div>
-                <div style="font-size:11px; margin-top:2px;">Prioridad: ${t.priority}</div>
-            </div>`;
-    });
-}
+// UTILIDADES
+window.openNewModal = () => document.getElementById('newModal').style.display = 'flex';
+window.closeModal = (id) => document.getElementById(id).style.display = 'none';
+window.logout = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
