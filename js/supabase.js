@@ -1,13 +1,10 @@
 // ==========================================
-// CONEXIÓN MAESTRA A SUPABASE (NUEVA)
+// CONEXIÓN MAESTRA A SUPABASE (PROYECTO NUEVO)
 // ==========================================
 
-// ⚠️ IMPORTANTE: Como creaste un proyecto nuevo, tu URL también cambió.
-// Ve a Supabase -> Project Settings -> API -> URL y pégala aquí abajo.
-const SUPABASE_URL = 'AQUÍ_VA_TU_NUEVA_URL_DE_SUPABASE'; // Ej: https://xyzxyzxyz.supabase.co
-
-// ✅ Esta es tu llave pública (Anon Key). Es seguro ponerla aquí.
-const SUPABASE_KEY = 'sb_publishable_TOOKrJsEhCvp7GGbxzuKrg_ulABKga_';
+// 1. Credenciales del Proyecto (Actualizadas)
+const SUPABASE_URL = 'https://nyjfxoeqrineniitkkuz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_TOOKrJsEhCvp7GGbxzuKrg_ulABKga_'; // Tu Anon Key pública
 
 // 2. Verificar que la librería existe (Evita pantalla blanca)
 if (typeof supabase === 'undefined') {
