@@ -95,17 +95,21 @@ function createTicketCard(t) {
     div.className = `ticket-card ${statusClass}`;
     
     let actionBtn = '';
+    
+    // LÓGICA DE BOTONES:
     if (userRole === 'technician' && t.status !== 'closed') {
+        // TÉCNICO -> ATENDER
         actionBtn = `<button onclick="openAttendModal('${t.id}', '${t.ticket_number}', '${t.equipment?.model}')" class="btn-card" style="background:#dbeafe; color:#1e40af; border:1px solid #bfdbfe;">
                         <i class="fas fa-tools"></i> Atender / Diagnosticar
                      </button>`;
     } else if (t.status === 'closed') {
-        // AQUÍ ES DONDE CONECTAREMOS CON TU ARCHIVO DE IMPRESIÓN
-        // Por ahora dejamos el botón visual
-        actionBtn = `<div style="text-align:center; margin-top:10px; font-size:12px; color:#10b981; font-weight:bold;">
-                        <i class="fas fa-check-circle"></i> Finalizado
-                     </div>`;
+        // TICKET CERRADO -> IR A IMPRIMIR (Aquí está la magia)
+        actionBtn = `<button onclick="window.open('print_ticket.html?id=${t.id}', '_blank')" 
+                        class="btn-card" style="background:#ecfdf5; color:#059669; border:1px solid #6ee7b7;">
+                        <i class="fas fa-print"></i> Ver Reporte / Imprimir
+                     </button>`;
     } else {
+        // CLIENTE ESPERANDO
         actionBtn = `<div style="text-align:center; margin-top:10px; font-size:12px; color:#f59e0b;">
                         <i class="fas fa-clock"></i> Esperando atención
                      </div>`;
@@ -127,8 +131,6 @@ function createTicketCard(t) {
 
 // 5. LÓGICA MODALES (Cliente y Técnico)
 async function loadClientEquipments() {
-    // Busca equipos del cliente. TRUCO: Si no aparecen, verifica que el institution_id coincida.
-    // Por ahora traemos todos para que la prueba no falle.
     const { data } = await sb.from('equipment').select('id, model, serial, physical_location, institution_id');
     
     const select = document.getElementById('selectEquipment');
@@ -138,7 +140,7 @@ async function loadClientEquipments() {
         data.forEach(eq => {
             const opt = document.createElement('option');
             opt.value = eq.id;
-            opt.dataset.institution = eq.institution_id; // Guardamos ID oculto
+            opt.dataset.institution = eq.institution_id; 
             opt.innerText = `${eq.model} (${eq.physical_location}) - ${eq.serial}`;
             select.appendChild(opt);
         });
@@ -151,13 +153,13 @@ document.getElementById('formCreate').addEventListener('submit', async (e) => {
     e.preventDefault();
     const select = document.getElementById('selectEquipment');
     const equipId = select.value;
-    const instId = select.options[select.selectedIndex].dataset.institution; // Recuperamos ID Institución
+    const instId = select.options[select.selectedIndex].dataset.institution; 
     const desc = document.getElementById('txtDescription').value;
 
     const { error } = await sb.from('tickets').insert({
         client_id: currentUser.id,
         equipment_id: equipId,
-        institution_id: instId, // Vital para que el Supervisor sepa de quién es
+        institution_id: instId, 
         description: desc,
         status: 'open',
         ticket_number: Math.floor(Math.random() * 9000) + 1000
