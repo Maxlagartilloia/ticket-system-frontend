@@ -1,192 +1,300 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Help Desk | CopierMaster</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        /* ESTILOS GENERALES Y DEL DASHBOARD (Mantenidos) */
-        body { background-color: #f1f5f9; font-family: 'Inter', sans-serif; margin: 0; }
-        .navbar { background: #0f172a; color: white; padding: 0 20px; height: 60px; display: flex; justify-content: space-between; align-items: center; }
-        .user-info { font-size: 14px; color: #cbd5e1; display: flex; align-items: center; gap: 10px; }
-        .main-container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-        .header-actions { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .page-title { margin: 0; font-size: 24px; color: #1e293b; font-weight: 700; }
-        .tickets-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .ticket-card { background: white; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .status-open { border-left: 5px solid #ef4444; }
-        .status-in_progress { border-left: 5px solid #f59e0b; }
-        .status-closed { border-left: 5px solid #10b981; }
-        .btn-card { border: none; border-radius: 6px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; transition: background 0.2s; }
+// ==========================================
+// CONTROLADOR DE TICKETS (V8.0 - GAD ENTERPRISE)
+// ==========================================
 
-        /* --- NUEVOS ESTILOS PARA EL MODAL PROFESIONAL --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(2px); }
-        .modal-box-pro { background: white; border-radius: 16px; width: 95%; max-width: 600px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; }
-        .modal-header-pro { background: #0f172a; color: white; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        .modal-header-pro h3 { margin: 0; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
-        .modal-body-pro { padding: 25px; max-height: 70vh; overflow-y: auto; }
+let currentUser = null;
+let userRole = null;
+let selectedFile = null; // Variable para retener la foto antes de subir
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        await verifySession();
+        await loadDashboard();
+        setupImagePreview(); // Inicializar listener de fotos
+    } catch (e) {
+        console.error("Critical Error:", e);
+    }
+});
+
+// 1. CONFIGURACIÓN DE PREVISUALIZACIÓN DE FOTOS
+function setupImagePreview() {
+    const fileInput = document.getElementById('fileEvidence');
+    if(!fileInput) return;
+
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validar tipo y tamaño
+        if (!file.type.startsWith('image/')) { alert('Solo se permiten imágenes (JPG, PNG).'); return; }
+        if (file.size > 5 * 1024 * 1024) { alert('La imagen no puede superar los 5MB.'); return; }
+
+        selectedFile = file; // Guardar en memoria
         
-        .form-section { margin-bottom: 20px; }
-        .form-label-pro { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 8px; }
-        .form-control-pro { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: 'Inter', sans-serif; transition: border-color 0.2s; }
-        .form-control-pro:focus { border-color: #2563eb; outline: none; }
-
-        /* Radio buttons de Prioridad */
-        .priority-group { display: flex; gap: 15px; flex-wrap: wrap; }
-        .priority-radio { display: none; }
-        .priority-label {
-            padding: 8px 15px; border: 1px solid #cbd5e1; border-radius: 20px; font-size: 12px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 5px;
-        }
-        .priority-radio:checked + .priority-label.low { background: #ecfdf5; color: #059669; border-color: #6ee7b7; }
-        .priority-radio:checked + .priority-label.medium { background: #fff7ed; color: #ea580c; border-color: #fdba74; }
-        .priority-radio:checked + .priority-label.high { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
-
-        /* Área de Subida de Fotos */
-        .upload-container { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 20px; text-align: center; background: #f8fafc; transition: border-color 0.2s; position: relative; }
-        .upload-container:hover { border-color: #2563eb; background: #eff6ff; }
-        .upload-icon { font-size: 32px; color: #64748b; margin-bottom: 10px; }
-        .upload-text { font-size: 13px; color: #475569; margin-bottom: 5px; }
-        .upload-subtext { font-size: 11px; color: #94a3b8; }
-        #fileEvidence { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
-        
-        /* Previsualización */
-        #previewContainer { margin-top: 15px; display: none; position: relative; width: fit-content; }
-        #imagePreview { max-width: 100%; height: auto; max-height: 200px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        .remove-image-btn { position: absolute; top: -10px; right: -10px; background: #ef4444; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-
-        .modal-footer-pro { padding: 20px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; border-radius: 0 0 16px 16px; }
-        .btn-cancel { background: white; border: 1px solid #cbd5e1; color: #475569; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; }
-        .btn-submit { background: #2563eb; border: none; color: white; padding: 10px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; }
-        .btn-submit:hover { background: #1d4ed8; }
-        .loading-spinner { display: none; }
-    </style>
-</head>
-<body>
-
-    <nav class="navbar">
-        <div style="font-weight: 800; font-size: 18px;">CopierMaster <span style="font-weight:400; opacity:0.8;">HelpDesk</span></div>
-        <div class="user-info">
-            <span id="userDisplay">Cargando...</span>
-            <button onclick="logoutSystem()" style="background:#334155; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer;"><i class="fas fa-sign-out-alt"></i></button>
-        </div>
-    </nav>
-
-    <div class="main-container">
-        <div class="header-actions">
-            <h1 class="page-title" id="dashboardTitle">Mis Asignaciones</h1>
-            <button id="btnCreateTicket" style="display:none; background:#2563eb; color:white; padding:12px 24px; border:none; border-radius:8px; font-weight:600; cursor:pointer; align-items:center; gap:8px; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);" onclick="showCreateModal()">
-                <i class="fas fa-plus-circle"></i> Nuevo Reporte de Servicio
-            </button>
-        </div>
-
-        <div id="loadingMsg" style="text-align:center; margin-top:50px; color:#64748b;">
-            <i class="fas fa-spinner fa-spin"></i> Conectando...
-        </div>
-
-        <div id="ticketsGrid" class="tickets-grid"></div>
-    </div>
-
-    <div id="modalCreate" class="modal-overlay">
-        <div class="modal-box-pro">
-            <div class="modal-header-pro">
-                <h3><i class="fas fa-file-medical-alt"></i> Nuevo Reporte de Servicio</h3>
-                <button onclick="closeModals()" style="background:none; border:none; color:white; font-size:20px; cursor:pointer;"><i class="fas fa-times"></i></button>
-            </div>
+        // Mostrar preview
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            const img = document.getElementById('imagePreview');
+            const container = document.getElementById('previewContainer');
+            const dropzone = document.getElementById('uploadDropZone');
             
-            <form id="formCreate">
-                <div class="modal-body-pro">
-                    <div class="form-section">
-                        <label class="form-label-pro"><i class="fas fa-print" style="color:#3b82f6;"></i> Equipo Afectado</label>
-                        <select id="selectEquipment" class="form-control-pro" required>
-                            <option value="">Cargando inventario...</option>
-                        </select>
-                    </div>
+            img.src = ev.target.result;
+            container.style.display = 'block';
+            dropzone.style.display = 'none'; // Ocultar zona de carga
+        }
+        reader.readAsDataURL(file);
+    });
+}
 
-                    <div class="form-section">
-                        <label class="form-label-pro"><i class="fas fa-tachometer-alt" style="color:#f59e0b;"></i> Nivel de Urgencia / Impacto</label>
-                        <div class="priority-group">
-                            <input type="radio" id="prioLow" name="priority" value="Baja" class="priority-radio">
-                            <label for="prioLow" class="priority-label low"><i class="fas fa-arrow-down"></i> Baja (Consultas)</label>
-                            
-                            <input type="radio" id="prioMedium" name="priority" value="Media" class="priority-radio" checked>
-                            <label for="prioMedium" class="priority-label medium"><i class="fas fa-minus"></i> Media (Falla parcial)</label>
-                            
-                            <input type="radio" id="prioHigh" name="priority" value="Alta" class="priority-radio">
-                            <label for="prioHigh" class="priority-label high"><i class="fas fa-arrow-up"></i> Alta (Equipo detenido)</label>
-                        </div>
-                    </div>
+window.removeImage = () => {
+    document.getElementById('fileEvidence').value = '';
+    document.getElementById('previewContainer').style.display = 'none';
+    document.getElementById('uploadDropZone').style.display = 'block';
+    selectedFile = null;
+};
 
-                    <div class="form-section">
-                        <label class="form-label-pro"><i class="fas fa-align-left" style="color:#64748b;"></i> Descripción Detallada del Problema</label>
-                        <textarea id="txtDescription" class="form-control-pro" rows="4" placeholder="Por favor, describa la falla, códigos de error en pantalla, o ruidos inusuales..." required></textarea>
-                    </div>
+// 2. SESIÓN Y ROL
+async function verifySession() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { window.location.href = 'index.html'; return; }
+    currentUser = user;
 
-                    <div class="form-section">
-                        <label class="form-label-pro"><i class="fas fa-camera" style="color:#64748b;"></i> Evidencia Fotográfica (Opcional)</label>
-                        
-                        <div class="upload-container" id="uploadDropZone">
-                            <i class="fas fa-cloud-upload-alt upload-icon"></i>
-                            <div class="upload-text">Toque aquí para seleccionar una foto</div>
-                            <div class="upload-subtext">Formatos: JPG, PNG. Máx 5MB.</div>
-                            <input type="file" id="fileEvidence" accept="image/png, image/jpeg, image/jpg">
-                        </div>
-                        
-                        <div id="previewContainer">
-                            <img id="imagePreview" src="" alt="Previsualización">
-                            <button type="button" class="remove-image-btn" onclick="removeImage()"><i class="fas fa-times"></i></button>
-                        </div>
-                    </div>
-                </div>
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+    userRole = profile.role; 
 
-                <div class="modal-footer-pro">
-                    <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
-                    <button type="submit" class="btn-submit" id="btnSubmitReport">
-                        <span class="btn-text">Enviar Reporte Oficial</span>
-                        <i class="fas fa-paper-plane btn-icon"></i>
-                        <i class="fas fa-spinner fa-spin loading-spinner"></i>
-                    </button>
-                </div>
-            </form>
+    // UI Header
+    const roleMap = { 'technician': 'Técnico', 'client': 'Cliente', 'supervisor': 'Supervisor' };
+    document.getElementById('userDisplay').innerHTML = `<b>${profile.first_name || 'Usuario'}</b> (${roleMap[userRole]})`;
+
+    // Configuración Vistas
+    if (userRole === 'client') {
+        document.getElementById('btnCreateTicket').style.display = 'flex';
+        document.getElementById('dashboardTitle').innerText = 'Mis Reportes de Servicio';
+        loadClientEquipments();
+    } else if (userRole === 'technician') {
+        document.getElementById('dashboardTitle').innerText = 'Mis Asignaciones';
+    } else {
+        document.getElementById('dashboardTitle').innerText = 'Supervisión Global';
+    }
+}
+
+// 3. CARGAR DASHBOARD (Tickets)
+async function loadDashboard() {
+    const container = document.getElementById('ticketsGrid');
+    const loading = document.getElementById('loadingMsg');
+    
+    // Consulta Enterprise: Tickets + Equipos + Instituciones
+    let query = sb.from('tickets')
+        .select(`
+            *, 
+            equipment ( model, brand, serial, physical_location ), 
+            institutions ( name )
+        `)
+        .order('created_at', { ascending: false });
+
+    // Filtros RLS Lógicos
+    if (userRole === 'client') query = query.eq('client_id', currentUser.id);
+    else if (userRole === 'technician') query = query.eq('technician_id', currentUser.id);
+
+    const { data: tickets, error } = await query;
+    if(loading) loading.style.display = 'none';
+
+    if (error) { container.innerHTML = `<p style="color:red">Error DB: ${error.message}</p>`; return; }
+
+    container.innerHTML = '';
+    if (!tickets || tickets.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:50px; border:2px dashed #cbd5e1; border-radius:12px; color:#64748b;">
+                <i class="fas fa-clipboard-check" style="font-size:32px; margin-bottom:10px;"></i>
+                <p>No hay tickets pendientes.</p>
+            </div>`;
+        return;
+    }
+
+    tickets.forEach(t => container.appendChild(createTicketCard(t)));
+}
+
+// 4. RENDERIZADO VISUAL (Cards)
+function createTicketCard(t) {
+    const div = document.createElement('div');
+    const statusClass = `status-${t.status}`; 
+    const labels = { 'open': 'PENDIENTE', 'in_progress': 'EN PROCESO', 'closed': 'CERRADO' };
+    
+    // Datos seguros
+    const clientName = t.institutions?.name || 'Cliente';
+    const model = t.equipment ? `${t.equipment.brand || ''} ${t.equipment.model || ''}` : 'Equipo General';
+    const location = t.equipment?.physical_location || 'Ubicación no especificada';
+    const priority = t.priority || 'Media';
+    
+    // Iconos
+    const photoBadge = t.photo_url ? `<i class="fas fa-camera" title="Ver Evidencia" style="color:#3b82f6; margin-left:5px;"></i>` : '';
+    const priorityColor = priority === 'Alta' ? '#dc2626' : (priority === 'Baja' ? '#059669' : '#ea580c');
+
+    div.className = `ticket-card ${statusClass}`;
+    
+    let actionBtn = '';
+    // Lógica Botones
+    if (userRole === 'technician' && t.status !== 'closed') {
+        actionBtn = `<button onclick="openAttendModal('${t.id}', '${t.ticket_number}', '${model}')" class="btn-card" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; margin-top:15px; width:100%; padding:10px; cursor:pointer;">
+                        <i class="fas fa-tools"></i> Atender Ticket
+                     </button>`;
+    } else if (t.status === 'closed') {
+        actionBtn = `<button onclick="window.open('print_ticket.html?id=${t.id}', '_blank')" class="btn-card" style="background:#f0fdf4; color:#059669; border:1px solid #bbf7d0; margin-top:15px; width:100%; padding:10px; cursor:pointer;">
+                        <i class="fas fa-print"></i> Ver Reporte Oficial
+                     </button>`;
+    } else {
+        actionBtn = `<div style="text-align:center; margin-top:15px; font-size:12px; color:#f59e0b; background:#fffbeb; padding:8px; border-radius:6px;">
+                        <i class="fas fa-clock"></i> Asignado al técnico
+                     </div>`;
+    }
+
+    div.innerHTML = `
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#64748b;">
+            <span>#${t.ticket_number} ${photoBadge}</span>
+            <span style="font-weight:bold;">${labels[t.status]}</span>
         </div>
-    </div>
-    <div id="modalAttend" class="modal-overlay">
-        <div class="modal-box-pro" style="max-width:500px;">
-            <div class="modal-header-pro" style="background:#1e40af; padding:15px;">
-                <h3 style="font-size:16px;"><i class="fas fa-tools"></i> Reporte de Servicio Técnico</h3>
-            </div>
-            <div class="modal-body-pro">
-                <p id="attendTicketInfo" style="color:#64748b; font-size:14px; margin-bottom:15px; font-weight:600;"></p>
-                <form id="formAttend">
-                    <input type="hidden" id="attendId">
-                    <div class="form-section">
-                        <label class="form-label-pro">Diagnóstico Técnico</label>
-                        <textarea id="txtDiagnosis" class="form-control-pro" rows="3" required></textarea>
-                    </div>
-                    <div class="form-section">
-                        <label class="form-label-pro">Solución Aplicada / Repuestos</label>
-                        <textarea id="txtSolution" class="form-control-pro" rows="3" required></textarea>
-                    </div>
-                    <div class="form-section">
-                        <label class="form-label-pro">Estado Final</label>
-                        <select id="selStatus" class="form-control-pro">
-                            <option value="in_progress">En Proceso (Pendiente repuesto/visita)</option>
-                            <option value="closed">Finalizado (Equipo operativo)</option>
-                        </select>
-                    </div>
-                    <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-                        <button type="button" class="btn-cancel" onclick="closeModals()">Cancelar</button>
-                        <button type="submit" class="btn-submit" style="background:#10b981;">Registrar Servicio</button>
-                    </div>
-                </form>
-            </div>
+        <h3 style="margin:0 0 5px 0; font-size:16px; color:#1e293b;">${clientName}</h3>
+        <div style="font-weight:600; color:#2563eb; font-size:14px;">${model}</div>
+        <div style="font-size:12px; color:#64748b; margin-bottom:8px;">${location}</div>
+        
+        <div style="font-size:12px; margin-bottom:10px;">
+            <span style="color:#64748b;">Prioridad: </span> 
+            <span style="font-weight:bold; color:${priorityColor}">${priority}</span>
         </div>
-    </div>
 
+        <p style="font-size:13px; color:#334155; font-style:italic; background:#f8fafc; padding:10px; border-radius:8px; border-left:3px solid #cbd5e1;">
+            "${t.description}"
+        </p>
+        ${actionBtn}
+    `;
+    return div;
+}
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/supabase.js"></script>
-    <script src="js/tickets.js"></script>
-</body>
-</html>
+// 5. LÓGICA DE CLIENTE: CARGAR EQUIPOS + AUTO-ASIGNACIÓN (CRÍTICO)
+async function loadClientEquipments() {
+    // CORRECCIÓN V8.0: Usamos 'technician_id' (según radiografía), NO 'default_technician_id'
+    const { data } = await sb.from('equipment')
+        .select(`
+            id, model, brand, serial, physical_location, institution_id,
+            institutions ( technician_id ) 
+        `);
+    
+    const select = document.getElementById('selectEquipment');
+    if(!select) return;
+    select.innerHTML = '<option value="">Seleccione el equipo afectado...</option>';
+    
+    if(data) {
+        data.forEach(eq => {
+            const opt = document.createElement('option');
+            opt.value = eq.id;
+            // Guardamos datos para usarlos al guardar
+            opt.dataset.institution = eq.institution_id;
+            opt.dataset.tech = eq.institutions?.technician_id || ''; // <--- AQUÍ ESTÁ LA MAGIA CORREGIDA
+            opt.innerText = `${eq.brand} ${eq.model} - ${eq.physical_location}`;
+            select.appendChild(opt);
+        });
+    }
+}
+
+// 6. CREAR TICKET (SUBMIT)
+const formCreate = document.getElementById('formCreate');
+if(formCreate) {
+    formCreate.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // UI Loading
+        const btn = document.getElementById('btnSubmitReport');
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+        try {
+            const select = document.getElementById('selectEquipment');
+            const equipId = select.value;
+            const instId = select.options[select.selectedIndex].dataset.institution;
+            const techId = select.options[select.selectedIndex].dataset.tech; // Auto-Asignación
+            const desc = document.getElementById('txtDescription').value;
+            
+            // Obtener Prioridad
+            const priorityInput = document.querySelector('input[name="priority"]:checked');
+            const priority = priorityInput ? priorityInput.value : 'Media';
+
+            let photoUrl = null;
+
+            // A. SUBIR FOTO (Si existe)
+            if (selectedFile) {
+                const fileName = `${Date.now()}_${Math.floor(Math.random()*1000)}`;
+                // Subir al bucket 'evidence'
+                const { error: uploadError } = await sb.storage
+                    .from('evidence')
+                    .upload(fileName, selectedFile);
+
+                if (uploadError) throw new Error("Error subiendo foto: " + uploadError.message);
+
+                const { data: urlData } = sb.storage.from('evidence').getPublicUrl(fileName);
+                photoUrl = urlData.publicUrl;
+            }
+
+            // B. CREAR TICKET
+            const { error } = await sb.from('tickets').insert({
+                client_id: currentUser.id,
+                equipment_id: equipId,
+                institution_id: instId,
+                technician_id: techId || null, // Se asigna aquí
+                description: desc,
+                priority: priority,
+                photo_url: photoUrl,
+                status: 'open',
+                ticket_number: Math.floor(Math.random() * 90000) + 10000
+            });
+
+            if (error) throw error;
+
+            closeModals();
+            loadDashboard();
+            alert("✅ Reporte enviado exitosamente.");
+            
+            // Reset
+            formCreate.reset();
+            removeImage();
+
+        } catch (err) {
+            alert("Error: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalContent;
+        }
+    });
+}
+
+// 7. ATENDER TICKET (TÉCNICO)
+window.openAttendModal = (id, num, model) => {
+    document.getElementById('attendId').value = id;
+    document.getElementById('attendTicketInfo').innerText = `Ticket #${num} - ${model}`;
+    document.getElementById('modalAttend').style.display = 'flex';
+};
+
+document.getElementById('formAttend').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('attendId').value;
+    
+    const { error } = await sb.from('tickets').update({
+        diagnosis: document.getElementById('txtDiagnosis').value,
+        solution: document.getElementById('txtSolution').value,
+        status: document.getElementById('selStatus').value,
+        updated_at: new Date()
+    }).eq('id', id);
+
+    if (!error) {
+        closeModals();
+        loadDashboard();
+        alert("✅ Servicio registrado.");
+    } else {
+        alert("Error: " + error.message);
+    }
+});
+
+// UTILIDADES
+window.showCreateModal = () => { document.getElementById('modalCreate').style.display = 'flex'; };
+window.closeModals = () => { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); };
+window.logoutSystem = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
