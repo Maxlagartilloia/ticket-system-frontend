@@ -1,122 +1,161 @@
-// js/technicians.js - Gestión de Personal v4.0
+// js/technicians.js - Gestión de Perfiles y Roles v1.0
+
+let allUsers = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Cargar información del usuario actual en la barra superior
+    // 1. Seguridad: Solo supervisores deberían ver esto (Opcional, por ahora abierto a staff)
     const { data: { session } } = await sb.auth.getSession();
-    if(session) {
-        // Cargar nombre si es necesario, o dejar que security.js lo maneje
-    }
-    loadTechnicians();
+    if (!session) window.location.href = 'index.html';
+    
+    // Mostrar info usuario actual
+    if(session.user.email) document.getElementById('userDisplay').innerText = session.user.email;
+
+    // 2. Cargar Usuarios
+    loadUsers();
 });
 
-async function loadTechnicians() {
-    const grid = document.getElementById('techGrid');
-    
-    // 1. Obtener Perfiles
-    const { data: users, error } = await sb
+// ==========================================
+// 1. CARGA DE USUARIOS
+// ==========================================
+async function loadUsers() {
+    const tbody = document.getElementById('usersTable');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando perfiles...</td></tr>';
+
+    // Traemos todos los perfiles
+    const { data, error } = await sb
         .from('profiles')
         .select('*')
-        .order('role');
+        .order('created_at', { ascending: false });
 
     if (error) {
-        grid.innerHTML = `<div style="color:red; text-align:center;">Error cargando personal: ${error.message}</div>`;
+        tbody.innerHTML = `<tr><td colspan="5" style="color:red; text-align:center;">Error: ${error.message}</td></tr>`;
         return;
     }
 
-    grid.innerHTML = '';
+    allUsers = data;
+    renderTable(allUsers);
+}
 
-    // 2. Renderizar Tarjetas
+function renderTable(users) {
+    const tbody = document.getElementById('usersTable');
+    tbody.innerHTML = '';
+
+    if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#94a3b8;">No hay usuarios registrados.</td></tr>';
+        return;
+    }
+
     users.forEach(u => {
-        let roleClass = 'role-technician';
-        let roleText = 'Técnico';
-        let icon = 'fa-user-cog';
+        // Iniciales para Avatar
+        const initials = u.full_name ? u.full_name.substring(0,2).toUpperCase() : 'US';
+        
+        // Estilos de Badge
+        let badgeClass = 'role-client';
+        let icon = 'fa-user';
+        let roleName = 'Cliente';
 
-        if (u.role === 'supervisor') { roleClass = 'role-supervisor'; roleText = 'Supervisor'; icon = 'fa-user-tie'; }
-        if (u.role === 'client') { roleClass = 'role-client'; roleText = 'Cliente'; icon = 'fa-building'; }
+        if(u.role === 'technician') { badgeClass = 'role-technician'; icon = 'fa-tools'; roleName = 'Técnico'; }
+        if(u.role === 'supervisor') { badgeClass = 'role-supervisor'; icon = 'fa-user-shield'; roleName = 'Supervisor'; }
 
-        // Simulación de carga laboral (esto vendría de contar tickets reales)
-        const activeTickets = Math.floor(Math.random() * 5); 
+        // Fecha
+        const date = u.created_at ? new Date(u.created_at).toLocaleDateString() : '-';
 
-        const card = `
-            <div class="tech-card">
-                <div class="card-actions">
-                    <button class="btn-mini" onclick="deleteUser('${u.id}')" title="Eliminar"><i class="fas fa-trash"></i></button>
-                </div>
-                <div class="avatar-circle">
-                    <i class="fas ${icon}"></i>
-                </div>
-                <h3 style="margin:0; font-size:16px; color:#1e293b;">${u.full_name || 'Sin Nombre'}</h3>
-                <div style="font-size:12px; color:#64748b; margin-bottom:10px;">${u.email}</div>
-                <span class="role-badge ${roleClass}">${roleText}</span>
-
-                <div class="tech-stats">
-                    <div class="stat-item">
-                        <div class="stat-val" style="color:#3b82f6;">${activeTickets}</div>
-                        <div class="stat-lbl">Tickets Activos</div>
+        const row = `
+            <tr style="border-bottom:1px solid #f1f5f9;">
+                <td style="padding:15px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div class="user-avatar">${initials}</div>
+                        <div>
+                            <div style="font-weight:600; color:#0f172a;">${escapeHTML(u.full_name)}</div>
+                            <div style="font-size:11px; color:#94a3b8;">ID: ${u.id.substring(0,8)}...</div>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-val" style="color:#10b981;">98%</div>
-                        <div class="stat-lbl">SLA</div>
+                </td>
+                <td style="padding:15px; color:#475569;">
+                    ${escapeHTML(u.email)}
+                </td>
+                <td style="padding:15px;">
+                    <span class="role-badge ${badgeClass}"><i class="fas ${icon}"></i> ${roleName}</span>
+                </td>
+                <td style="padding:15px; color:#64748b;">${date}</td>
+                <td style="padding:15px; text-align:center;">
+                    <div class="action-row">
+                        <button onclick="openEditRole('${u.id}', '${u.full_name}', '${u.role}')" class="btn-mini" title="Cambiar Rol">
+                            <i class="fas fa-user-tag"></i> Editar
+                        </button>
+                        <button onclick="deleteUser('${u.id}')" class="btn-mini btn-danger" title="Eliminar Acceso">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
-                </div>
-            </div>
+                </td>
+            </tr>
         `;
-        grid.innerHTML += card;
+        tbody.innerHTML += row;
     });
 }
 
-// GESTIÓN DE MODALES
-window.openRegisterModal = () => document.getElementById('registerModal').style.display = 'flex';
-window.closeRegisterModal = () => document.getElementById('registerModal').style.display = 'none';
+// ==========================================
+// 2. EDICIÓN DE ROLES
+// ==========================================
+window.openEditRole = (id, name, currentRole) => {
+    document.getElementById('editUserId').value = id;
+    document.getElementById('editUserName').innerText = name;
+    document.getElementById('selectNewRole').value = currentRole;
+    document.getElementById('modalEditRole').style.display = 'flex';
+};
 
-// CREAR USUARIO (Usando la API Admin de Supabase o función RPC idealmente)
-// Nota: En frontend puro, solo puedes crear usuarios si 'Allow Signups' está activo,
-// o si usas un segundo cliente temporal para no cerrar tu sesión.
-document.getElementById('registerForm').addEventListener('submit', async (e) => {
+document.getElementById('formEditRole').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    const name = document.getElementById('regName').value;
-    const email = document.getElementById('regEmail').value;
-    const pass = document.getElementById('regPass').value;
-    const role = document.getElementById('regRole').value;
-    
+    const id = document.getElementById('editUserId').value;
+    const newRole = document.getElementById('selectNewRole').value;
     const btn = e.target.querySelector('button[type="submit"]');
-    const originalText = btn.innerText;
-    btn.innerText = "Creando...";
-    btn.disabled = true;
 
-    try {
-        // TRUCO: Usamos signUp normal. Si Supabase tiene "Confirm Email" desactivado, 
-        // esto crea el usuario y lo loguea (cerrando tu sesión actual). 
-        // Para evitar cerrar sesión, necesitamos una Edge Function.
-        // PERO, para este prototipo rápido, usaremos el método simple:
-        // Advertimos al usuario que se cerrará sesión o usamos un cliente secundario.
-        
-        // OPCIÓN A (Simple): Crear y avisar que inicie sesión el nuevo.
-        const { data, error } = await sb.auth.signUp({
-            email: email,
-            password: pass,
-            options: {
-                data: { full_name: name, role: role } // Metadata para el trigger de profiles
-            }
-        });
+    btn.disabled = true; btn.innerText = "Guardando...";
 
-        if (error) throw error;
+    const { error } = await sb
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', id);
 
-        alert(`✅ Usuario creado correctamente.\nNOTA: Si se cerró tu sesión, vuelve a entrar.`);
-        window.location.reload();
-
-    } catch (err) {
-        alert("Error: " + err.message);
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
-        closeRegisterModal();
+    if (error) {
+        alert("Error al actualizar: " + error.message);
+    } else {
+        alert("✅ Rol actualizado correctamente.");
+        document.getElementById('modalEditRole').style.display = 'none';
+        loadUsers(); // Recargar tabla
     }
+    btn.disabled = false; btn.innerText = "Guardar Cambios";
 });
 
-// LOGOUT
-window.logout = async () => {
+// ==========================================
+// 3. UTILIDADES
+// ==========================================
+window.filterUsers = () => {
+    const search = document.getElementById('searchUser').value.toLowerCase();
+    const roleFilter = document.getElementById('filterRole').value;
+
+    const filtered = allUsers.filter(u => {
+        const matchSearch = (u.full_name || '').toLowerCase().includes(search) || (u.email || '').toLowerCase().includes(search);
+        const matchRole = roleFilter === 'all' || u.role === roleFilter;
+        return matchSearch && matchRole;
+    });
+
+    renderTable(filtered);
+};
+
+window.deleteUser = async (id) => {
+    if(confirm("⚠️ ¿Estás seguro de eliminar este usuario?\nEsta acción puede romper historiales de tickets si el usuario ya tiene actividad.")) {
+        // Nota: Esto solo borra el perfil. El usuario de Auth (Login) requiere Service Role para borrarse desde cliente.
+        // Para esta versión, borramos el perfil para que no aparezca en listas.
+        const { error } = await sb.from('profiles').delete().eq('id', id);
+        if(error) alert("Error: " + error.message);
+        else loadUsers();
+    }
+};
+
+window.logoutSystem = async () => {
     await sb.auth.signOut();
     window.location.href = 'index.html';
 };
+
+const escapeHTML = (str) => str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : '';
