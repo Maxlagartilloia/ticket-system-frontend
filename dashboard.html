@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        /* --- ESTILOS ADICIONALES PARA EL SUPER DASHBOARD --- */
+        /* --- TUS ESTILOS ORIGINALES (MANTENIDOS) --- */
         .control-bar {
             background: white; padding: 15px 20px; border-radius: 12px; margin-bottom: 25px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.03); display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; justify-content: space-between;
@@ -45,6 +45,12 @@
         .action-icon:hover { color: #3b82f6; }
         .pdf-icon { color: #ef4444; } /* Rojo PDF */
 
+        /* KPI Grid - Aseguramos compatibilidad */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .kpi-title { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; }
+        .kpi-value { font-size: 28px; font-weight: 800; color: #0f172a; margin-bottom: 5px; }
+
         /* Ocultar elementos en impresión */
         @media print {
             .sidebar, .top-bar, .control-bar, .modal-overlay { display: none !important; }
@@ -54,6 +60,14 @@
         
         /* Plantilla PDF Oculta */
         #pdf-template-container { display: none; }
+
+        /* Estilos Modales (Necesarios para el modal que ya tienes) */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; }
+        .modal-title { margin-top:0; margin-bottom:20px; color:#0f172a; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .btn-cancel { background: white; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
+        .btn-confirm { background: #0f172a; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -78,11 +92,11 @@
         <header class="top-bar">
             <div class="page-title">Centro de Operaciones</div>
             <div style="display:flex; align-items:center; gap:15px;">
-                <div class="user-badge" onclick="openProfileModal()" style="cursor:pointer; display:flex; align-items:center; gap:10px;">
+                <div class="user-badge" style="cursor:default; display:flex; align-items:center; gap:10px;">
                     <span id="userName" style="font-weight:600; font-size:14px;">Cargando...</span>
                     <span id="userRoleBadge" class="status-badge st-process">...</span>
                 </div>
-                <button class="btn-logout" id="logoutBtn" title="Cerrar Sesión"><i class="fas fa-power-off"></i></button>
+                <button class="btn-logout" onclick="logoutSystem()" title="Cerrar Sesión"><i class="fas fa-power-off"></i></button>
             </div>
         </header>
 
@@ -98,7 +112,7 @@
                         <label>Hasta</label>
                         <input type="date" id="dateTo">
                     </div>
-                    <button class="btn-action btn-filter" onclick="aplicarFiltros()">
+                    <button class="btn-action btn-filter" onclick="cargarDatosDashboard()">
                         <i class="fas fa-filter"></i> Filtrar
                     </button>
                 </div>
@@ -107,7 +121,7 @@
                     <button class="btn-action btn-report" onclick="generarReporteConsolidado()">
                         <i class="fas fa-file-excel"></i> Exportar Lista
                     </button>
-                    <button id="btnNewTicket" class="btn-action btn-new" style="display:none;" onclick="abrirModalTicket()">
+                    <button id="btnNewTicket" class="btn-action btn-new" style="display:none;" onclick="location.href='tickets.html'">
                         <i class="fas fa-plus-circle"></i> Solicitar Servicio
                     </button>
                 </div>
@@ -125,7 +139,7 @@
                     <small style="color:#f59e0b;">Técnicos en Sitio</small>
                 </div>
                 <div class="card" style="border-left: 4px solid #3b82f6;">
-                    <div class="kpi-title">Atendidos (Mes)</div>
+                    <div class="kpi-title">Atendidos (Periodo)</div>
                     <div class="kpi-value" id="closedMonth">--</div>
                     <small style="color:#3b82f6;">Servicios Finalizados</small>
                 </div>
@@ -151,11 +165,11 @@
                             <th>Falla Reportada</th>
                             <th>Técnico</th>
                             <th>Estado</th>
-                            <th style="text-align:right;">Acciones</th>
+                            <th style="text-align:right;">Reporte</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        <tr><td colspan="8" style="text-align:center; padding:30px;">Cargando datos...</td></tr>
+                        <tr><td colspan="8" style="text-align:center; padding:30px;">Cargando datos del sistema...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -166,28 +180,9 @@
     <div id="newTicketModal" class="modal-overlay">
         <div class="modal-box">
             <h3 class="modal-title">Solicitar Servicio Técnico</h3>
-            <form onsubmit="crearTicket(event)">
-                <div style="margin-bottom:15px;">
-                    <label style="font-size:12px; font-weight:bold; color:#64748b;">Equipo Afectado</label>
-                    <select id="deviceSelect" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;" required>
-                        <option value="">Cargando sus equipos...</option>
-                        <option value="Ricoh MP 501">Ricoh MP 501 - RRHH</option>
-                        <option value="Epson WF">Epson WF - Contabilidad</option>
-                    </select>
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="font-size:12px; font-weight:bold; color:#64748b;">Descripción de la Falla</label>
-                    <textarea id="issueDesc" rows="4" style="width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:6px;" placeholder="Describa el problema..." required></textarea>
-                </div>
-                <div style="margin-bottom:20px;">
-                    <label style="font-size:12px; font-weight:bold; color:#64748b;">Evidencia (Opcional)</label>
-                    <input type="file" accept="image/*">
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="cerrarModal('newTicketModal')">Cancelar</button>
-                    <button type="submit" class="btn-confirm" style="background:#ef4444;">Enviar Solicitud</button>
-                </div>
-            </form>
+            <div style="text-align:center; padding:20px; color:#64748b;">
+                Redirigiendo al módulo de Tickets...
+            </div>
         </div>
     </div>
 
@@ -214,146 +209,8 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase.js"></script>
     <script src="js/security.js"></script>
-    
-    <script>
-        // CONFIGURACIÓN Y LÓGICA
-        const sb = supabase.createClient('https://esxojlfcjwtahkcrqxkd.supabase.co', 'sb_publishable_j0IUHsFoKc8IK7tZbYwEGw_bN4bOD_y');
-        let currentUser = null;
-        let userRole = null;
-        let dbTickets = []; // Almacén local temporal para filtros
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            // 1. Auth Check
-            const { data: { session } } = await sb.auth.getSession();
-            if(!session) window.location.href = 'index.html';
-            currentUser = session.user;
-
-            // 2. Obtener Rol
-            const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
-            userRole = profile.role; // 'supervisor', 'technician', 'client'
-
-            document.getElementById('userName').innerText = profile.full_name;
-            document.getElementById('userRoleBadge').innerText = userRole.toUpperCase();
-
-            // 3. Configurar UI según Rol
-            if(userRole === 'client') {
-                document.getElementById('btnNewTicket').style.display = 'inline-flex';
-            }
-
-            // 4. Fechas por Defecto (Mes Actual)
-            const date = new Date();
-            document.getElementById('dateTo').valueAsDate = date;
-            document.getElementById('dateFrom').valueAsDate = new Date(date.getFullYear(), date.getMonth(), 1);
-
-            // 5. Cargar Datos
-            cargarDatos();
-        });
-
-        async function cargarDatos() {
-            // AQUÍ CONECTARÍAS CON TU TABLA 'tickets' REAL
-            // Simulamos datos para que veas el diseño YA
-            dbTickets = [
-                {id: 1001, date: '2026-01-18', client: 'RRHH', device: 'Ricoh MP 501', issue: 'Atasco papel', tech: 'Alex Loor', status: 'closed', solution: 'Limpieza de rodillos'},
-                {id: 1002, date: '2026-01-19', client: 'Contabilidad', device: 'Epson WF', issue: 'Error Tinta', tech: 'Cristian L.', status: 'open', solution: ''},
-                {id: 1003, date: '2026-01-19', client: 'Gerencia', device: 'Canon IR', issue: 'No escanea', tech: 'Alex Loor', status: 'in_progress', solution: ''}
-            ];
-            
-            aplicarFiltros(); // Renderiza la tabla con el filtro de fechas actual
-        }
-
-        function aplicarFiltros() {
-            const from = document.getElementById('dateFrom').value;
-            const to = document.getElementById('dateTo').value;
-            
-            // Filtrar array local
-            const filtrados = dbTickets.filter(t => t.date >= from && t.date <= to);
-            
-            // Actualizar KPIs visuales
-            document.getElementById('openTickets').innerText = filtrados.filter(t => t.status === 'open').length;
-            document.getElementById('inProgress').innerText = filtrados.filter(t => t.status === 'in_progress').length;
-            document.getElementById('closedMonth').innerText = filtrados.filter(t => t.status === 'closed').length;
-            
-            renderTable(filtrados);
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = '';
-            document.getElementById('recordCount').innerText = `Mostrando ${data.length} registros`;
-
-            data.forEach(t => {
-                let badgeClass = 'st-open';
-                let statusText = 'Abierto';
-                if(t.status === 'in_progress') { badgeClass = 'st-process'; statusText = 'En Proceso'; }
-                if(t.status === 'closed') { badgeClass = 'st-closed'; statusText = 'Cerrado'; }
-
-                let actions = '';
-                // Si está cerrado, mostrar PDF
-                if(t.status === 'closed') {
-                    actions += `<i class="fas fa-file-pdf action-icon pdf-icon" onclick='generarTicketPDF(${JSON.stringify(t)})' title="Ver Ticket"></i>`;
-                } else if (userRole === 'technician') {
-                    // Si es técnico y está abierto, mostrar icono de atender
-                    actions += `<i class="fas fa-tools action-icon" onclick="alert('Ir a Tickets.html para atender')" title="Atender"></i>`;
-                }
-
-                const row = `
-                    <tr>
-                        <td><strong>#${t.id}</strong></td>
-                        <td>${t.date}</td>
-                        <td>${t.client}</td>
-                        <td>${t.device}</td>
-                        <td>${t.issue}</td>
-                        <td>${t.tech}</td>
-                        <td><span class="status-badge ${badgeClass}">${statusText}</span></td>
-                        <td style="text-align:right;">${actions}</td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-            });
-        }
-
-        // --- GENERACIÓN DE REPORTES ---
-        
-        // 1. TICKET INDIVIDUAL (El que pediste)
-        window.generarTicketPDF = function(ticket) {
-            // Llenar plantilla oculta
-            document.getElementById('pdf-id').innerText = "#" + ticket.id;
-            document.getElementById('pdf-client').innerText = ticket.client;
-            document.getElementById('pdf-device').innerText = ticket.device;
-            document.getElementById('pdf-tech').innerText = ticket.tech;
-            document.getElementById('pdf-date').innerText = ticket.date;
-            document.getElementById('pdf-issue').innerText = ticket.issue;
-            document.getElementById('pdf-solution').innerText = ticket.solution;
-
-            // Generar
-            const element = document.getElementById('pdf-content');
-            const opt = { margin: 10, filename: `Ticket_${ticket.id}.pdf` };
-            html2pdf().set(opt).from(element).save();
-        }
-
-        // 2. REPORTE CONSOLIDADO (Lista visible)
-        window.generarReporteConsolidado = function() {
-            const element = document.querySelector('.table-wrapper');
-            const opt = { margin: 10, filename: 'Reporte_Consolidado.pdf', jsPDF: { orientation: 'landscape' } };
-            html2pdf().set(opt).from(element).save();
-        }
-
-        // --- UTILIDADES ---
-        function abrirModalTicket() { document.getElementById('newTicketModal').style.display = 'flex'; }
-        function cerrarModal(id) { document.getElementById(id).style.display = 'none'; }
-        
-        function crearTicket(e) {
-            e.preventDefault();
-            // Aquí iría el INSERT a Supabase
-            alert("Solicitud enviada. El técnico asignado ha sido notificado.");
-            cerrarModal('newTicketModal');
-            // Recargar datos...
-        }
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/supabase.js"></script>
-<script src="js/security.js"></script>
-<script src="js/dashboard.js"></script>
+    <script src="js/dashboard.js"></script>
 </body>
 </html>
