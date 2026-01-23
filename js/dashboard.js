@@ -1,4 +1,4 @@
-// js/dashboard.js - Lógica adaptada a tu diseño v7.5
+// js/dashboard.js - Lógica Dashboard v7.5 (Corregido)
 
 let currentUser = null;
 let userProfile = null;
@@ -13,16 +13,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     currentUser = session.user;
 
-    // 2. Obtener Perfil (Para saber nombre y rol)
+    // 2. Obtener Perfil
     const { data: profile } = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
     userProfile = profile;
 
-    // 3. Pintar Header con tus IDs
+    // 3. Pintar Header
     document.getElementById('userName').innerText = profile.full_name || 'Usuario';
     document.getElementById('userRoleBadge').innerText = profile.role.toUpperCase();
 
     // 4. Configurar Botón "Solicitar Servicio"
-    // Si es cliente, lo mostramos. Al hacer clic, va a tickets.html que tiene el modal completo.
     if(profile.role === 'client') {
         const btn = document.getElementById('btnNewTicket');
         if(btn) btn.style.display = 'inline-flex';
@@ -44,14 +43,15 @@ async function cargarDatosDashboard() {
     const fromDate = document.getElementById('dateFrom').value;
     const toDate = document.getElementById('dateTo').value;
 
-    // Query a Supabase (JOINs para traer nombres reales)
+    // --- CORRECCIÓN AQUÍ ---
+    // Usamos '!technician_id' para decirle a Supabase qué relación usar explícitamente
     let query = sb
         .from('tickets')
         .select(`
             *,
             institutions(name),
             equipment(model),
-            technician:profiles(full_name)
+            technician:profiles!technician_id(full_name) 
         `)
         .gte('created_at', fromDate + 'T00:00:00')
         .lte('created_at', toDate + 'T23:59:59')
@@ -68,6 +68,7 @@ async function cargarDatosDashboard() {
 
     if (error) {
         tbody.innerHTML = `<tr><td colspan="8" style="color:red; text-align:center;">Error: ${error.message}</td></tr>`;
+        console.error(error);
         return;
     }
 
@@ -77,18 +78,15 @@ async function cargarDatosDashboard() {
 }
 
 function calcularKPIs(data) {
-    // Filtramos usando los estados de tu sistema
     const open = data.filter(t => t.status === 'open').length;
     const progress = data.filter(t => t.status === 'progress' || t.status === 'in_progress').length;
     const closed = data.filter(t => t.status === 'closed').length;
     const total = data.length;
 
-    // Actualizamos TUS IDs del HTML original
     document.getElementById('openTickets').innerText = open;
     document.getElementById('inProgress').innerText = progress;
     document.getElementById('closedMonth').innerText = closed;
 
-    // SLA Simulado (Efectividad)
     const rate = total > 0 ? Math.round((closed / total) * 100) : 0;
     document.getElementById('slaRate').innerText = rate + "%";
 }
@@ -104,23 +102,18 @@ function renderTable(data) {
     }
 
     data.forEach(t => {
-        // Mapeo de estilos a TUS clases CSS
         let badgeClass = 'st-open';
         let statusText = 'Abierto';
         if(t.status === 'progress' || t.status === 'in_progress') { badgeClass = 'st-process'; statusText = 'En Proceso'; }
         if(t.status === 'closed') { badgeClass = 'st-closed'; statusText = 'Cerrado'; }
 
-        // Datos (Safe check por si se borró el cliente/equipo)
         const clientName = t.institutions ? escapeHTML(t.institutions.name) : '---';
         const deviceName = t.equipment ? escapeHTML(t.equipment.model) : '---';
         const techName = t.technician ? escapeHTML(t.technician.full_name) : 'Sin Asignar';
         const dateStr = new Date(t.created_at).toLocaleDateString();
 
-        // Acciones: Solo mostrar PDF si está cerrado
         let actions = '';
         if(t.status === 'closed') {
-            // Pasamos el objeto ticket entero a la función de PDF
-            // Usamos replace para evitar romper el HTML con comillas simples en el JSON
             const ticketJson = JSON.stringify(t).replace(/'/g, "&#39;");
             actions = `<i class="fas fa-file-pdf action-icon pdf-icon" onclick='generarTicketPDF(${ticketJson})' title="Ver Reporte"></i>`;
         } else {
@@ -144,11 +137,10 @@ function renderTable(data) {
 }
 
 // ==========================================
-// GENERACIÓN DE REPORTES (Usando TU plantilla)
+// REPORTES
 // ==========================================
 
 window.generarTicketPDF = (ticket) => {
-    // 1. Llenar los IDs de TU plantilla oculta con datos reales
     document.getElementById('pdf-id').innerText = "#" + ticket.ticket_number;
     document.getElementById('pdf-client').innerText = ticket.institutions?.name || '-';
     document.getElementById('pdf-device').innerText = ticket.equipment?.model || '-';
@@ -158,7 +150,6 @@ window.generarTicketPDF = (ticket) => {
     document.getElementById('pdf-issue').innerText = ticket.description || '';
     document.getElementById('pdf-solution').innerText = ticket.solution || 'Servicio finalizado correctamente.';
 
-    // 2. Ejecutar html2pdf sobre tu contenedor #pdf-content
     const element = document.getElementById('pdf-content');
     const opt = { 
         margin: 10, 
@@ -169,7 +160,7 @@ window.generarTicketPDF = (ticket) => {
 };
 
 window.generarReporteConsolidado = () => {
-    const element = document.querySelector('.table-wrapper'); // Exportamos tu tabla bonita
+    const element = document.querySelector('.table-wrapper'); 
     const opt = { 
         margin: 10, 
         filename: 'Reporte_Consolidado.pdf', 
@@ -178,14 +169,9 @@ window.generarReporteConsolidado = () => {
     html2pdf().set(opt).from(element).save();
 };
 
-// ==========================================
-// UTILIDADES
-// ==========================================
-
 window.logoutSystem = async () => {
     await sb.auth.signOut();
     window.location.href = 'index.html';
 };
 
-// Función para sanitizar texto y evitar inyecciones HTML
 const escapeHTML = (str) => str ? str.replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])) : '';
