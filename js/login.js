@@ -1,74 +1,105 @@
-// ==========================================
-// LÓGICA DE LOGIN (VINCULADA AL MAESTRO)
-// ==========================================
+// js/login.js - Autenticación y Registro
 
-// IMPORTANTE: Este archivo asume que 'sb' ya existe (cargado desde js/supabase.js)
+let isLoginMode = true;
 
-document.getElementById('loginForm').addEventListener('submit', async (e) => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Verificar si ya hay sesión activa
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+        window.location.href = 'dashboard.html';
+    }
+});
+
+// Alternar entre Login y Registro
+window.toggleMode = () => {
+    isLoginMode = !isLoginMode;
+    const title = document.getElementById('formTitle');
+    const subtitle = document.getElementById('formSubtitle');
+    const btn = document.querySelector('#submitBtn span');
+    const toggleText = document.getElementById('toggleText');
+    const toggleBtn = document.getElementById('toggleBtn');
+    const nameGroup = document.getElementById('nameGroup');
+
+    if (isLoginMode) {
+        title.innerText = "Iniciar Sesión";
+        subtitle.innerText = "Accede al panel de control";
+        btn.innerText = "Ingresar";
+        toggleText.innerText = "¿No tienes cuenta?";
+        toggleBtn.innerText = "Regístrate aquí";
+        nameGroup.style.display = 'none';
+        document.getElementById('fullName').required = false;
+    } else {
+        title.innerText = "Crear Cuenta";
+        subtitle.innerText = "Registra tu organización o perfil";
+        btn.innerText = "Registrarse";
+        toggleText.innerText = "¿Ya tienes cuenta?";
+        toggleBtn.innerText = "Inicia sesión";
+        nameGroup.style.display = 'block';
+        document.getElementById('fullName').required = true;
+    }
+};
+
+document.getElementById('authForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
-    // 1. Elementos de la interfaz
-    const btn = document.getElementById('btnLog');
-    const errorMsg = document.getElementById('errorMsg');
-    
-    // 2. Estado de "Cargando"
-    btn.disabled = true;
-    const textoOriginal = btn.innerText;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
-    errorMsg.style.display = 'none';
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('submitBtn');
+    const errorBox = document.getElementById('errorBox');
 
-    // 3. Capturar datos (Limpiando espacios accidentales)
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
+    // UI Loading
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+    errorBox.style.display = 'none';
 
     try {
-        // Validación rápida
-        if (!email || !password) throw new Error("Por favor completa ambos campos.");
+        if (isLoginMode) {
+            // --- LOGIN ---
+            const { data, error } = await sb.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
 
-        // 4. LOGIN (Usando la conexión 'sb' del archivo maestro)
-        console.log("🔐 Intentando entrar en BD:", sb.supabaseUrl); // Debe salir la URL ...kkuz
-
-        const { data: authData, error: authError } = await sb.auth.signInWithPassword({
-            email: email,
-            password: password
-        });
-
-        if (authError) throw authError;
-
-        // 5. VERIFICAR ROL (Seguridad)
-        const { data: profile, error: profileError } = await sb
-            .from('profiles')
-            .select('role')
-            .eq('id', authData.user.id)
-            .single();
-
-        if (profileError || !profile) {
-            throw new Error("Usuario validado pero sin perfil de sistema.");
-        }
-
-        // 6. REDIRECCIONAR SEGÚN RANGO
-        console.log("✅ Acceso permitido. Rol:", profile.role);
-
-        if (profile.role === 'supervisor') {
+            if (error) throw error;
             window.location.href = 'dashboard.html';
-        } else {
-            // Técnicos y Clientes van al Help Desk
-            window.location.href = 'tickets.html';
-        }
 
-    } catch (error) {
-        console.error("❌ Error de Login:", error);
-        
-        // Restaurar botón
+        } else {
+            // --- REGISTRO ---
+            const fullName = document.getElementById('fullName').value;
+
+            // 1. Crear Usuario en Auth
+            const { data: authData, error: authError } = await sb.auth.signUp({
+                email: email,
+                password: password
+            });
+
+            if (authError) throw authError;
+
+            if (authData.user) {
+                // 2. Crear Perfil en tabla pública 'profiles'
+                // Nota: Asignamos rol 'client' por defecto. El admin lo cambia después.
+                const { error: profileError } = await sb.from('profiles').insert([
+                    {
+                        id: authData.user.id,
+                        full_name: fullName,
+                        email: email,
+                        role: 'client' // Seguridad por defecto
+                    }
+                ]);
+
+                if (profileError) {
+                    console.error("Error creando perfil:", profileError);
+                    // No bloqueamos el flujo, pero avisamos
+                    alert("Cuenta creada, pero hubo un error configurando el perfil. Contacte soporte.");
+                } else {
+                    alert("✅ Registro exitoso. Bienvenido a CopierMaster.");
+                    window.location.href = 'dashboard.html';
+                }
+            }
+        }
+    } catch (err) {
+        errorBox.innerText = "Error: " + err.message;
+        errorBox.style.display = 'block';
         btn.disabled = false;
-        btn.innerText = textoOriginal;
-        
-        // Mostrar mensaje amigable
-        let mensaje = "Credenciales incorrectas.";
-        if (error.message.includes("network")) mensaje = "Error de conexión con el servidor.";
-        if (error.message.includes("sin perfil")) mensaje = "Tu usuario no tiene perfil asignado.";
-        
-        errorMsg.innerText = `⚠️ ${mensaje}`;
-        errorMsg.style.display = 'block';
+        btn.innerHTML = isLoginMode ? '<span>Ingresar</span> <i class="fas fa-arrow-right"></i>' : '<span>Registrarse</span> <i class="fas fa-arrow-right"></i>';
     }
 });
