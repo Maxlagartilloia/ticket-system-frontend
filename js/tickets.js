@@ -1,276 +1,279 @@
-// ==========================================
-// CONTROLADOR DE TICKETS (V8.0 - GAD ENTERPRISE)
-// ==========================================
+// js/tickets.js - Lógica de HelpDesk (Cliente y Técnico)
 
 let currentUser = null;
-let userRole = null;
-let selectedFile = null; // Variable para retener la foto antes de subir
+let userProfile = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        await verifySession();
-        await loadDashboard();
-        setupImagePreview(); // Inicializar listener de fotos
-    } catch (e) {
-        console.error("Critical Error:", e);
+    // 1. Verificar Sesión
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+        window.location.href = 'index.html';
+        return;
     }
+    currentUser = session.user;
+
+    // 2. Obtener Perfil del Usuario (Rol e Institución)
+    const { data: profile, error } = await sb
+        .from('profiles')
+        .select('*')
+        .eq('id', currentUser.id)
+        .single();
+
+    if (error) {
+        alert("Error cargando perfil: " + error.message);
+        return;
+    }
+    userProfile = profile;
+
+    // 3. Configurar UI según Rol
+    setupUIByRole();
+
+    // 4. Cargar Tickets
+    loadTickets();
+    
+    // 5. Configurar Listeners de UI (Fotos, Forms)
+    setupEventListeners();
 });
 
-// 1. CONFIGURACIÓN DE PREVISUALIZACIÓN DE FOTOS
-function setupImagePreview() {
-    const fileInput = document.getElementById('fileEvidence');
-    if(!fileInput) return;
+// ==========================================
+// 1. GESTIÓN DE UI Y ROLES
+// ==========================================
 
-    fileInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+function setupUIByRole() {
+    const userDisplay = document.getElementById('userDisplay');
+    const btnCreate = document.getElementById('btnCreateTicket');
+    const title = document.getElementById('dashboardTitle');
 
-        // Validar tipo y tamaño
-        if (!file.type.startsWith('image/')) { alert('Solo se permiten imágenes (JPG, PNG).'); return; }
-        if (file.size > 5 * 1024 * 1024) { alert('La imagen no puede superar los 5MB.'); return; }
+    userDisplay.innerHTML = `<i class="fas fa-user-circle"></i> ${userProfile.full_name} (${userProfile.role === 'client' ? 'Cliente' : 'Técnico'})`;
 
-        selectedFile = file; // Guardar en memoria
-        
-        // Mostrar preview
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = document.getElementById('imagePreview');
-            const container = document.getElementById('previewContainer');
-            const dropzone = document.getElementById('uploadDropZone');
-            
-            img.src = ev.target.result;
-            container.style.display = 'block';
-            dropzone.style.display = 'none'; // Ocultar zona de carga
-        }
-        reader.readAsDataURL(file);
-    });
-}
-
-window.removeImage = () => {
-    document.getElementById('fileEvidence').value = '';
-    document.getElementById('previewContainer').style.display = 'none';
-    document.getElementById('uploadDropZone').style.display = 'block';
-    selectedFile = null;
-};
-
-// 2. SESIÓN Y ROL
-async function verifySession() {
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) { window.location.href = 'index.html'; return; }
-    currentUser = user;
-
-    const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
-    userRole = profile.role; 
-
-    // UI Header
-    const roleMap = { 'technician': 'Técnico', 'client': 'Cliente', 'supervisor': 'Supervisor' };
-    document.getElementById('userDisplay').innerHTML = `<b>${profile.first_name || 'Usuario'}</b> (${roleMap[userRole]})`;
-
-    // Configuración Vistas
-    if (userRole === 'client') {
-        document.getElementById('btnCreateTicket').style.display = 'flex';
-        document.getElementById('dashboardTitle').innerText = 'Mis Reportes de Servicio';
-        loadClientEquipments();
-    } else if (userRole === 'technician') {
-        document.getElementById('dashboardTitle').innerText = 'Mis Asignaciones';
+    if (userProfile.role === 'client') {
+        // VISTA CLIENTE
+        btnCreate.style.display = 'flex'; // Mostrar botón de crear
+        title.innerText = "Mis Reportes de Servicio";
     } else {
-        document.getElementById('dashboardTitle').innerText = 'Supervisión Global';
+        // VISTA TÉCNICO
+        btnCreate.style.display = 'none'; // Ocultar botón de crear
+        title.innerText = "Tickets Asignados / Pendientes";
     }
 }
 
-// 3. CARGAR DASHBOARD (Tickets)
-async function loadDashboard() {
-    const container = document.getElementById('ticketsGrid');
+// ==========================================
+// 2. CARGA DE DATOS (TICKETS)
+// ==========================================
+
+async function loadTickets() {
+    const grid = document.getElementById('ticketsGrid');
     const loading = document.getElementById('loadingMsg');
     
-    // Consulta Enterprise: Tickets + Equipos + Instituciones
-    let query = sb.from('tickets')
+    // Consulta base: Traer ticket + datos del equipo
+    let query = sb
+        .from('tickets')
         .select(`
-            *, 
-            equipment ( model, brand, serial, physical_location ), 
-            institutions ( name )
+            *,
+            equipment ( model, serial, brand, physical_location )
         `)
         .order('created_at', { ascending: false });
 
-    // Filtros RLS Lógicos
-    if (userRole === 'client') query = query.eq('client_id', currentUser.id);
-    else if (userRole === 'technician') query = query.eq('technician_id', currentUser.id);
+    // FILTRO DE SEGURIDAD SEGÚN ROL
+    if (userProfile.role === 'client') {
+        // Clientes: Solo ven tickets de SU institución
+        // Asumiendo que 'client_id' es el usuario o filtramos por 'institution_id'
+        // Si usas institution_id en tickets:
+        query = query.eq('institution_id', userProfile.institution_id); 
+    } else {
+        // Técnicos: Ven tickets asignados a ellos O tickets sin asignar de sus clientes
+        // Para simplificar V7.5, mostramos tickets donde él es el técnico
+        query = query.eq('technician_id', userProfile.id);
+        
+        // Opcional: Si quieres que vea todos los abiertos, quita el filtro anterior
+    }
 
     const { data: tickets, error } = await query;
-    if(loading) loading.style.display = 'none';
 
-    if (error) { container.innerHTML = `<p style="color:red">Error DB: ${error.message}</p>`; return; }
+    loading.style.display = 'none';
 
-    container.innerHTML = '';
-    if (!tickets || tickets.length === 0) {
-        container.innerHTML = `
-            <div style="grid-column:1/-1; text-align:center; padding:50px; border:2px dashed #cbd5e1; border-radius:12px; color:#64748b;">
-                <i class="fas fa-clipboard-check" style="font-size:32px; margin-bottom:10px;"></i>
-                <p>No hay tickets pendientes.</p>
-            </div>`;
+    if (error) {
+        grid.innerHTML = `<div style="color:red; grid-column:1/-1; text-align:center;">Error: ${error.message}</div>`;
         return;
     }
 
-    tickets.forEach(t => container.appendChild(createTicketCard(t)));
-}
-
-// 4. RENDERIZADO VISUAL (Cards)
-function createTicketCard(t) {
-    const div = document.createElement('div');
-    const statusClass = `status-${t.status}`; 
-    const labels = { 'open': 'PENDIENTE', 'in_progress': 'EN PROCESO', 'closed': 'CERRADO' };
-    
-    // Datos seguros
-    const clientName = t.institutions?.name || 'Cliente';
-    const model = t.equipment ? `${t.equipment.brand || ''} ${t.equipment.model || ''}` : 'Equipo General';
-    const location = t.equipment?.physical_location || 'Ubicación no especificada';
-    const priority = t.priority || 'Media';
-    
-    // Iconos
-    const photoBadge = t.photo_url ? `<i class="fas fa-camera" title="Ver Evidencia" style="color:#3b82f6; margin-left:5px;"></i>` : '';
-    const priorityColor = priority === 'Alta' ? '#dc2626' : (priority === 'Baja' ? '#059669' : '#ea580c');
-
-    div.className = `ticket-card ${statusClass}`;
-    
-    let actionBtn = '';
-    // Lógica Botones
-    if (userRole === 'technician' && t.status !== 'closed') {
-        actionBtn = `<button onclick="openAttendModal('${t.id}', '${t.ticket_number}', '${model}')" class="btn-card" style="background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; margin-top:15px; width:100%; padding:10px; cursor:pointer;">
-                        <i class="fas fa-tools"></i> Atender Ticket
-                     </button>`;
-    } else if (t.status === 'closed') {
-        actionBtn = `<button onclick="window.open('print_ticket.html?id=${t.id}', '_blank')" class="btn-card" style="background:#f0fdf4; color:#059669; border:1px solid #bbf7d0; margin-top:15px; width:100%; padding:10px; cursor:pointer;">
-                        <i class="fas fa-print"></i> Ver Reporte Oficial
-                     </button>`;
-    } else {
-        actionBtn = `<div style="text-align:center; margin-top:15px; font-size:12px; color:#f59e0b; background:#fffbeb; padding:8px; border-radius:6px;">
-                        <i class="fas fa-clock"></i> Asignado al técnico
-                     </div>`;
+    if (!tickets || tickets.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#94a3b8; padding:40px;">
+            <i class="fas fa-folder-open" style="font-size:40px; margin-bottom:10px;"></i><br>
+            No hay tickets registrados.
+        </div>`;
+        return;
     }
 
-    div.innerHTML = `
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#64748b;">
-            <span>#${t.ticket_number} ${photoBadge}</span>
-            <span style="font-weight:bold;">${labels[t.status]}</span>
-        </div>
-        <h3 style="margin:0 0 5px 0; font-size:16px; color:#1e293b;">${clientName}</h3>
-        <div style="font-weight:600; color:#2563eb; font-size:14px;">${model}</div>
-        <div style="font-size:12px; color:#64748b; margin-bottom:8px;">${location}</div>
-        
-        <div style="font-size:12px; margin-bottom:10px;">
-            <span style="color:#64748b;">Prioridad: </span> 
-            <span style="font-weight:bold; color:${priorityColor}">${priority}</span>
-        </div>
-
-        <p style="font-size:13px; color:#334155; font-style:italic; background:#f8fafc; padding:10px; border-radius:8px; border-left:3px solid #cbd5e1;">
-            "${t.description}"
-        </p>
-        ${actionBtn}
-    `;
-    return div;
+    renderTickets(tickets);
 }
 
-// 5. LÓGICA DE CLIENTE: CARGAR EQUIPOS + AUTO-ASIGNACIÓN (CRÍTICO)
-async function loadClientEquipments() {
-    // CORRECCIÓN V8.0: Usamos 'technician_id' (según radiografía), NO 'default_technician_id'
-    const { data } = await sb.from('equipment')
-        .select(`
-            id, model, brand, serial, physical_location, institution_id,
-            institutions ( technician_id ) 
-        `);
-    
-    const select = document.getElementById('selectEquipment');
-    if(!select) return;
-    select.innerHTML = '<option value="">Seleccione el equipo afectado...</option>';
-    
-    if(data) {
-        data.forEach(eq => {
-            const opt = document.createElement('option');
-            opt.value = eq.id;
-            // Guardamos datos para usarlos al guardar
-            opt.dataset.institution = eq.institution_id;
-            opt.dataset.tech = eq.institutions?.technician_id || ''; // <--- AQUÍ ESTÁ LA MAGIA CORREGIDA
-            opt.innerText = `${eq.brand} ${eq.model} - ${eq.physical_location}`;
-            select.appendChild(opt);
-        });
-    }
-}
+function renderTickets(tickets) {
+    const grid = document.getElementById('ticketsGrid');
+    grid.innerHTML = '';
 
-// 6. CREAR TICKET (SUBMIT)
-const formCreate = document.getElementById('formCreate');
-if(formCreate) {
-    formCreate.addEventListener('submit', async (e) => {
-        e.preventDefault();
+    tickets.forEach(t => {
+        // Mapeo de Estados para colores CSS
+        const statusClass = `status-${t.status}`; // open, in_progress, closed
         
-        // UI Loading
-        const btn = document.getElementById('btnSubmitReport');
-        const originalContent = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+        // Mapeo de Textos
+        let statusText = 'Abierto';
+        let statusIcon = 'fa-exclamation-circle';
+        let statusColor = '#ef4444'; // Red
 
-        try {
-            const select = document.getElementById('selectEquipment');
-            const equipId = select.value;
-            const instId = select.options[select.selectedIndex].dataset.institution;
-            const techId = select.options[select.selectedIndex].dataset.tech; // Auto-Asignación
-            const desc = document.getElementById('txtDescription').value;
-            
-            // Obtener Prioridad
-            const priorityInput = document.querySelector('input[name="priority"]:checked');
-            const priority = priorityInput ? priorityInput.value : 'Media';
+        if(t.status === 'in_progress') { statusText = 'En Proceso'; statusIcon = 'fa-tools'; statusColor = '#f59e0b'; }
+        if(t.status === 'closed') { statusText = 'Finalizado'; statusIcon = 'fa-check-circle'; statusColor = '#10b981'; }
 
-            let photoUrl = null;
+        const equipModel = t.equipment?.model || 'Modelo Desconocido';
+        const equipSerial = t.equipment?.serial || 'S/N --';
+        const dateStr = new Date(t.created_at).toLocaleDateString();
 
-            // A. SUBIR FOTO (Si existe)
-            if (selectedFile) {
-                const fileName = `${Date.now()}_${Math.floor(Math.random()*1000)}`;
-                // Subir al bucket 'evidence'
-                const { error: uploadError } = await sb.storage
-                    .from('evidence')
-                    .upload(fileName, selectedFile);
-
-                if (uploadError) throw new Error("Error subiendo foto: " + uploadError.message);
-
-                const { data: urlData } = sb.storage.from('evidence').getPublicUrl(fileName);
-                photoUrl = urlData.publicUrl;
-            }
-
-            // B. CREAR TICKET
-            const { error } = await sb.from('tickets').insert({
-                client_id: currentUser.id,
-                equipment_id: equipId,
-                institution_id: instId,
-                technician_id: techId || null, // Se asigna aquí
-                description: desc,
-                priority: priority,
-                photo_url: photoUrl,
-                status: 'open',
-                ticket_number: Math.floor(Math.random() * 90000) + 10000
-            });
-
-            if (error) throw error;
-
-            closeModals();
-            loadDashboard();
-            alert("✅ Reporte enviado exitosamente.");
-            
-            // Reset
-            formCreate.reset();
-            removeImage();
-
-        } catch (err) {
-            alert("Error: " + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalContent;
+        // Botón de acción según rol
+        let actionBtn = '';
+        if (userProfile.role !== 'client' && t.status !== 'closed') {
+            actionBtn = `
+                <button onclick="openAttendModal('${t.id}', '${equipModel}', '${t.description}')" class="btn-card" style="background:#0f172a; color:white; padding:8px 15px; width:100%; cursor:pointer;">
+                    <i class="fas fa-screwdriver"></i> Atender Ticket
+                </button>
+            `;
+        } else if (t.status === 'closed') {
+            actionBtn = `<div style="text-align:center; font-size:12px; color:#10b981; font-weight:600;"><i class="fas fa-check-double"></i> Servicio Completado</div>`;
+        } else {
+            actionBtn = `<div style="text-align:center; font-size:12px; color:#64748b;">Esperando atención técnica...</div>`;
         }
+
+        const card = `
+            <div class="ticket-card ${statusClass}">
+                <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:10px;">
+                    <div style="font-weight:700; color:#1e293b;">#${t.ticket_number}</div>
+                    <div style="font-size:12px; font-weight:600; color:${statusColor}; display:flex; align-items:center; gap:5px;">
+                        <i class="fas ${statusIcon}"></i> ${statusText}
+                    </div>
+                </div>
+                
+                <h4 style="margin:0 0 5px 0; color:#334155;">${equipModel}</h4>
+                <div style="font-size:12px; color:#64748b; margin-bottom:15px;">S/N: ${equipSerial}</div>
+                
+                <p style="font-size:13px; color:#475569; background:#f8fafc; padding:10px; border-radius:6px; margin-bottom:15px; min-height:40px;">
+                    "${t.description}"
+                </p>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; font-size:12px; color:#94a3b8;">
+                    <span><i class="far fa-calendar"></i> ${dateStr}</span>
+                    <span>Prioridad: <strong>${t.priority}</strong></span>
+                </div>
+
+                ${actionBtn}
+            </div>
+        `;
+        grid.innerHTML += card;
     });
 }
 
-// 7. ATENDER TICKET (TÉCNICO)
-window.openAttendModal = (id, num, model) => {
+// ==========================================
+// 3. CREACIÓN DE TICKETS (MODAL)
+// ==========================================
+
+window.showCreateModal = async () => {
+    // 1. Cargar equipos de la institución del cliente
+    const select = document.getElementById('selectEquipment');
+    select.innerHTML = '<option>Cargando...</option>';
+    
+    const { data: equips } = await sb
+        .from('equipment')
+        .select('id, model, serial')
+        .eq('institution_id', userProfile.institution_id);
+
+    select.innerHTML = '';
+    if (equips && equips.length > 0) {
+        equips.forEach(eq => {
+            select.innerHTML += `<option value="${eq.id}">${eq.model} (S/N: ${eq.serial})</option>`;
+        });
+    } else {
+        select.innerHTML = '<option value="">No hay equipos registrados</option>';
+    }
+
+    // 2. Mostrar Modal
+    document.getElementById('modalCreate').style.display = 'flex';
+};
+
+// Listener del Formulario Crear
+document.getElementById('formCreate').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('btnSubmitReport');
+    const spinner = btn.querySelector('.loading-spinner');
+    const btnText = btn.querySelector('.btn-text');
+    
+    // UI Loading
+    btn.disabled = true;
+    spinner.style.display = 'inline-block';
+    btnText.innerText = "Enviando...";
+
+    try {
+        const equipId = document.getElementById('selectEquipment').value;
+        const priority = document.querySelector('input[name="priority"]:checked').value;
+        const description = document.getElementById('txtDescription').value;
+        const fileInput = document.getElementById('fileEvidence');
+        let photoUrl = null;
+
+        // 1. Subir Foto (Si existe)
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${userProfile.institution_id}/${Date.now()}.${fileExt}`;
+
+            const { error: uploadError } = await sb.storage
+                .from('evidence')
+                .upload(fileName, file);
+
+            if (uploadError) throw uploadError;
+
+            const { data: { publicUrl } } = sb.storage
+                .from('evidence')
+                .getPublicUrl(fileName);
+            
+            photoUrl = publicUrl;
+        }
+
+        // 2. Insertar Ticket (Auto-assign Institution)
+        const newTicket = {
+            institution_id: userProfile.institution_id,
+            client_id: userProfile.id,
+            equipment_id: equipId,
+            description: description,
+            priority: priority,
+            status: 'open',
+            photo_url: photoUrl
+            // technician_id: SE ASIGNA VIA TRIGGER EN SUPABASE O MANUALMENTE LUEGO
+            // Si quieres asignarlo aquí directo, necesitas saber quién es el técnico de la institución.
+        };
+
+        const { error: insertError } = await sb.from('tickets').insert([newTicket]);
+        if (insertError) throw insertError;
+
+        // Éxito
+        closeModals();
+        e.target.reset();
+        removeImage(); // Limpiar preview
+        loadTickets(); // Recargar grid
+        alert("✅ Reporte creado exitosamente.");
+
+    } catch (err) {
+        alert("Error: " + err.message);
+    } finally {
+        btn.disabled = false;
+        spinner.style.display = 'none';
+        btnText.innerText = "Enviar Reporte Oficial";
+    }
+});
+
+// ==========================================
+// 4. ATENCIÓN DE TICKETS (TÉCNICO)
+// ==========================================
+
+window.openAttendModal = (id, model, desc) => {
     document.getElementById('attendId').value = id;
-    document.getElementById('attendTicketInfo').innerText = `Ticket #${num} - ${model}`;
+    document.getElementById('attendTicketInfo').innerHTML = `Servicio para: <strong style="color:#0f172a">${model}</strong><br>"${desc}"`;
     document.getElementById('modalAttend').style.display = 'flex';
 };
 
@@ -278,23 +281,64 @@ document.getElementById('formAttend').addEventListener('submit', async (e) => {
     e.preventDefault();
     const id = document.getElementById('attendId').value;
     
-    const { error } = await sb.from('tickets').update({
+    const updates = {
         diagnosis: document.getElementById('txtDiagnosis').value,
         solution: document.getElementById('txtSolution').value,
         status: document.getElementById('selStatus').value,
-        updated_at: new Date()
-    }).eq('id', id);
+        // Opcional: registrar fecha de cierre si status es 'closed'
+    };
 
-    if (!error) {
-        closeModals();
-        loadDashboard();
-        alert("✅ Servicio registrado.");
+    const { error } = await sb.from('tickets').update(updates).eq('id', id);
+
+    if (error) {
+        alert("Error al actualizar: " + error.message);
     } else {
-        alert("Error: " + error.message);
+        alert("✅ Servicio registrado.");
+        closeModals();
+        e.target.reset();
+        loadTickets();
     }
 });
 
-// UTILIDADES
-window.showCreateModal = () => { document.getElementById('modalCreate').style.display = 'flex'; };
-window.closeModals = () => { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none'); };
-window.logoutSystem = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
+// ==========================================
+// 5. MANEJO DE IMÁGENES (PREVIEW)
+// ==========================================
+
+function setupEventListeners() {
+    // Dropzone click
+    document.getElementById('uploadDropZone').addEventListener('click', () => {
+        document.getElementById('fileEvidence').click();
+    });
+
+    // File Change
+    document.getElementById('fileEvidence').addEventListener('change', function(e) {
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('previewContainer').style.display = 'block';
+                document.getElementById('uploadDropZone').style.display = 'none'; // Ocultar zona de carga
+            };
+            reader.readAsDataURL(this.files[0]);
+        }
+    });
+}
+
+window.removeImage = () => {
+    document.getElementById('fileEvidence').value = ''; // Reset input
+    document.getElementById('previewContainer').style.display = 'none';
+    document.getElementById('uploadDropZone').style.display = 'block'; // Mostrar zona de carga
+};
+
+// ==========================================
+// 6. UTILIDADES GLOBALES
+// ==========================================
+
+window.closeModals = () => {
+    document.querySelectorAll('.modal-overlay').forEach(m => m.style.display = 'none');
+};
+
+window.logoutSystem = async () => {
+    await sb.auth.signOut();
+    window.location.href = 'index.html';
+};
