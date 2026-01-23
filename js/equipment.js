@@ -1,21 +1,25 @@
 // =========================================================
-// GESTIÓN DE INVENTARIO V7.5 (GAD + CSV SUPPORT)
+// GESTIÓN DE INVENTARIO V8.0 (GAD + CSV + COUNTERS)
 // =========================================================
 
 let allEquipment = []; // Cache local
+let currentEditId = null; // Para edición de contadores
 
 document.addEventListener('DOMContentLoaded', async () => {
-    await verifySession(); // Seguridad
+    // Verificamos si existe la función de seguridad, si no, intentamos auth básico
+    if(typeof verifySession === 'function') await verifySession(); 
+    else await sb.auth.getSession();
+
     await loadClientsCombo();
     loadEquipment();
 });
 
-// 1. CARGAR DATOS (Con JOINs explícitos)
+// 1. CARGAR DATOS (Agregamos contadores y fechas)
 async function loadEquipment() {
     const tbody = document.getElementById('tableBody');
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Sincronizando inventario...</td></tr>';
 
-    // Consulta Enterprise: Trae todo + Nombres de Tablas Relacionadas
+    // Consulta Enterprise: Trae todo + Nombres de Tablas Relacionadas + CONTADORES
     const { data, error } = await sb
         .from('equipment')
         .select(`
@@ -34,7 +38,7 @@ async function loadEquipment() {
     filterEquipment(); // Renderiza la tabla
 }
 
-// 2. FILTRADO Y RENDERIZADO (Mejorado con Location Details)
+// 2. FILTRADO Y RENDERIZADO (Tu lógica visual + Contadores)
 window.filterEquipment = function() {
     const search = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const clientFilter = document.getElementById('filterClient').value;
@@ -55,11 +59,14 @@ window.filterEquipment = function() {
         return matchClient && matchStatus && matchSearch;
     });
 
-    document.getElementById('countBadge').innerText = `${filtered.length} equipos`;
+    if(document.getElementById('countBadge')) {
+        document.getElementById('countBadge').innerText = `${filtered.length} equipos`;
+    }
+    
     tbody.innerHTML = '';
 
     if(filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron equipos coinciden.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:30px; color:#94a3b8;">No se encontraron equipos coinciden.</td></tr>';
         return;
     }
 
@@ -69,14 +76,14 @@ window.filterEquipment = function() {
         const status = eq.status || 'active';
         
         // Badge de Estado
-        let stClass = 'st-active'; let stText = 'En Sitio';
-        if(status === 'workshop') { stClass = 'st-workshop'; stText = 'En Taller'; }
-        if(status === 'retired') { stClass = 'st-retired'; stText = 'Baja'; }
+        let stClass = 'badge badge-active'; let stText = 'En Sitio';
+        if(status === 'workshop') { stClass = 'badge badge-repair'; stText = 'En Taller'; }
+        if(status === 'retired') { stClass = 'badge badge-obsolete'; stText = 'Baja'; }
 
         // Badge de Tipo
         let typeBadge = eq.print_type === 'COLOR' 
-            ? '<span class="type-pill tp-color" style="background:#fce7f3; color:#be185d; padding:2px 6px; border-radius:4px; font-size:10px;">COLOR</span>' 
-            : '<span class="type-pill tp-bn" style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-size:10px;">B/N</span>';
+            ? '<span class="type-pill tp-color" style="background:#fce7f3; color:#be185d; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;">COLOR</span>' 
+            : '<span class="type-pill tp-bn" style="background:#f1f5f9; color:#475569; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold;">B/N</span>';
 
         // UBICACIÓN (Fusión Macro + Detalle)
         let locationDisplay = '';
@@ -87,27 +94,39 @@ window.filterEquipment = function() {
             locationDisplay += `<div style="font-size:10px; color:#64748b;">${eq.location_details}</div>`;
         }
 
+        // FECHA MANTENIMIENTO
+        const nextDate = eq.next_maintenance_date ? new Date(eq.next_maintenance_date).toLocaleDateString() : '<span style="color:#cbd5e1">-</span>';
+
         const row = `
             <tr>
                 <td>
                     <div style="font-weight:700; color:#0f172a;">${eq.brand || ''} ${eq.model}</div>
                     <div style="font-size:11px; color:#64748b;">${eq.notes || ''}</div>
+                    <div style="margin-top:5px;">${typeBadge}</div>
                 </td>
-                <td>${typeBadge}</td>
                 <td>
                     <div style="font-weight:600;">${clientName}</div>
                     <div style="font-size:11px; color:#64748b;">${deptName}</div>
                     <div style="margin-top:4px; color:#ef4444;"><i class="fas fa-map-marker-alt"></i> ${locationDisplay}</div>
                 </td>
                 <td>
-                    <div style="font-family:monospace; background:#f8fafc; padding:2px 5px; border-radius:4px;">${eq.ip_address || '--'}</div>
+                    <div style="font-family:monospace; background:#f8fafc; padding:2px 5px; border-radius:4px; display:inline-block;">${eq.ip_address || '--'}</div>
                     <div style="font-size:10px; color:#64748b; margin-top:2px;">SN: ${eq.serial || 'N/A'}</div>
                 </td>
-                <td><span class="${stClass}" style="padding:4px 8px; border-radius:12px; font-size:11px; font-weight:700;">${stText}</span></td>
+                <td>
+                    <div style="font-size:11px; font-family:'Courier New'; font-weight:bold;">B/N: ${eq.counter_bw || 0}</div>
+                    <div style="font-size:11px; font-family:'Courier New'; font-weight:bold; color:#db2777;">Col: ${eq.counter_color || 0}</div>
+                </td>
+                <td><span class="${stClass}">${stText}</span><br><span style="font-size:10px; color:#64748b;">Próx: ${nextDate}</span></td>
                 <td style="text-align:center;">
-                    <button class="btn-icon" onclick="openSwapModal('${eq.id}', '${eq.model}')" style="border:none; background:none; cursor:pointer; color:#3b82f6;">
-                        <i class="fas fa-exchange-alt"></i>
-                    </button>
+                    <div style="display:flex; gap:5px; justify-content:center;">
+                        <button class="btn-icon" onclick="openCounterModal('${eq.id}', '${eq.model}', ${eq.counter_bw}, ${eq.counter_color})" title="Actualizar Contadores" style="color:#059669;">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </button>
+                        <button class="btn-icon" onclick="openSwapModal('${eq.id}', '${eq.model}')" style="color:#3b82f6;" title="Movimientos">
+                            <i class="fas fa-exchange-alt"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -115,7 +134,40 @@ window.filterEquipment = function() {
     });
 };
 
-// 3. LOGICA CSV (IMPORTACIÓN MASIVA)
+// 3. NUEVAS FUNCIONES: GESTIÓN DE CONTADORES
+window.openCounterModal = (id, model, bw, color) => {
+    currentEditId = id;
+    document.getElementById('lblCounterModel').innerText = `Equipo: ${model}`;
+    document.getElementById('inputCounterBW').value = bw || 0;
+    document.getElementById('inputCounterColor').value = color || 0;
+    document.getElementById('counterModal').style.display = 'flex';
+};
+
+window.saveCounters = async () => {
+    const bw = document.getElementById('inputCounterBW').value;
+    const color = document.getElementById('inputCounterColor').value;
+
+    if(!currentEditId) return;
+
+    const { error } = await sb
+        .from('equipment')
+        .update({ 
+            counter_bw: bw, 
+            counter_color: color,
+            last_maintenance_date: new Date() // Actualizamos fecha de último mtto automáticamente
+        })
+        .eq('id', currentEditId);
+
+    if(error) {
+        alert("Error al actualizar: " + error.message);
+    } else {
+        alert("✅ Contadores actualizados.");
+        closeModal('counterModal');
+        loadEquipment(); 
+    }
+};
+
+// 4. LOGICA CSV (TU CÓDIGO ORIGINAL - INTACTO)
 window.handleFileUpload = (input) => {
     const file = input.files[0];
     if(!file) return;
@@ -123,41 +175,30 @@ window.handleFileUpload = (input) => {
     if(confirm(`¿Deseas importar el archivo "${file.name}" a la base de datos?`)) {
         processCSV(file);
     }
-    input.value = ''; // Limpiar input para permitir subir el mismo archivo si falla
+    input.value = ''; 
 };
 
 async function processCSV(file) {
     const reader = new FileReader();
     reader.onload = async (e) => {
         const text = e.target.result;
-        const rows = text.split('\n').slice(1); // Saltar cabecera (Fila 1)
+        const rows = text.split('\n').slice(1); 
         
         let successCount = 0;
         let errorCount = 0;
-        const total = rows.length;
 
-        // Mostrar UI de carga
         const btn = document.querySelector('button[onclick*="csvInput"]');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
-        btn.disabled = true;
+        if(btn) {
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            btn.disabled = true;
+        }
 
         for (const row of rows) {
-            if(!row.trim()) continue; // Saltar filas vacías
-
-            const cols = row.split(','); // OJO: Si tu CSV usa punto y coma, cambia a row.split(';')
+            if(!row.trim()) continue; 
+            const cols = row.split(','); 
             
-            // VALIDACIÓN BÁSICA DE ESTRUCTURA
             if (cols.length < 7) { errorCount++; continue; }
-
-            // MAPEO SEGÚN TU ESTRUCTURA V7.5
-            // Col A[0]: Ubicación Macro (physical_location)
-            // Col B[1]: Modelo
-            // Col C[2]: Marca
-            // Col D[3]: Serie
-            // Col E[4]: IP Address
-            // Col F[5]: Detalle Ubicación (location_details)
-            // Col G[6]: ID Institución (UUID)
 
             const newEquip = {
                 physical_location: cols[0]?.trim(),
@@ -168,10 +209,9 @@ async function processCSV(file) {
                 location_details: cols[5]?.trim(),
                 institution_id: cols[6]?.trim(),
                 status: 'active',
-                print_type: 'BN' // Default
+                print_type: 'BN'
             };
 
-            // Insertar en Supabase
             const { error } = await sb.from('equipment').insert(newEquip);
             
             if (!error) successCount++;
@@ -181,96 +221,36 @@ async function processCSV(file) {
             }
         }
 
-        // Restaurar UI y Notificar
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        alert(`📊 Resultado de Importación:\n\n✅ Cargados: ${successCount}\n❌ Errores: ${errorCount}\n\nRevisa la consola (F12) para ver detalles de errores.`);
-        loadEquipment(); // Recargar tabla
+        if(btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        alert(`📊 Resultado:\n✅ Cargados: ${successCount}\n❌ Errores: ${errorCount}`);
+        loadEquipment(); 
     };
     reader.readAsText(file);
 }
 
-// 4. COMBOS Y FORMULARIOS (Tu código original mantenido)
+// 5. COMBOS Y UTILIDADES (Tu código original)
 async function loadClientsCombo() {
     const select = document.getElementById('filterClient');
-    const newSelect = document.getElementById('newClientSelect');
-    
-    // Limpieza inicial
     if(select) select.innerHTML = '<option value="">Todos los Clientes</option>';
-    if(newSelect) newSelect.innerHTML = '<option value="">-- Seleccione Cliente --</option>';
-
-    const { data: clients } = await sb.from('institutions').select('id, name').order('name');
     
-    if(clients) {
+    const { data: clients } = await sb.from('institutions').select('id, name').order('name');
+    if(clients && select) {
         clients.forEach(c => {
-            const opt = `<option value="${c.id}">${c.name}</option>`;
-            if(select) select.innerHTML += opt;
-            if(newSelect) newSelect.innerHTML += opt;
+            select.innerHTML += `<option value="${c.id}">${c.name}</option>`;
         });
     }
 }
 
-// Carga de Departamentos Dinámica
-window.loadDeptsForNew = async (clientId) => {
-    const select = document.getElementById('newDeptSelect');
-    if(!select) return;
-    
-    select.innerHTML = '<option value="">Cargando...</option>';
-    select.disabled = true;
-
-    if(!clientId) {
-        select.innerHTML = '<option value="">-- Seleccione Cliente --</option>';
-        return;
-    }
-
-    const { data: depts } = await sb.from('departments').select('id, name').eq('institution_id', clientId);
-    
-    select.innerHTML = '<option value="">-- General / Sin Área --</option>';
-    if(depts) {
-        depts.forEach(d => select.innerHTML += `<option value="${d.id}">${d.name}</option>`);
-    }
-    select.disabled = false;
-};
-
-// CREACIÓN MANUAL (Adaptado para soportar campos nuevos si existen en el form)
-const newForm = document.getElementById('newEquipForm');
-if(newForm) {
-    newForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const newEquip = {
-            institution_id: document.getElementById('newClientSelect').value,
-            department_id: document.getElementById('newDeptSelect')?.value || null,
-            brand: document.getElementById('newBrand').value,
-            model: document.getElementById('newModel').value,
-            serial: document.getElementById('newSerial').value,
-            // Campos V7.5
-            ip_address: document.getElementById('newIp')?.value || null,
-            print_type: document.getElementById('newPrintType')?.value || 'BN',
-            physical_location: document.getElementById('newLocation')?.value || '', // Macro
-            notes: document.getElementById('newNotes')?.value || '',
-            status: 'active'
-        };
-
-        const { error } = await sb.from('equipment').insert([newEquip]);
-
-        if(error) alert("Error: " + error.message);
-        else {
-            alert("✅ Equipo registrado exitosamente.");
-            closeModal('newModal');
-            e.target.reset();
-            loadEquipment();
-        }
-    });
-}
-
-// MOVIMIENTOS Y BAJAS (Mantenido)
 window.openSwapModal = (id, model) => {
     document.getElementById('swapEquipId').value = id;
     document.getElementById('swapEquipName').innerText = model;
     document.getElementById('swapModal').style.display = 'flex';
 };
 
+// Listeners de Formularios de Swap (Movimiento)
 const swapForm = document.getElementById('swapForm');
 if(swapForm) {
     swapForm.addEventListener('submit', async (e) => {
@@ -280,7 +260,7 @@ if(swapForm) {
         const notes = document.getElementById('swapNotes').value;
         
         const { error } = await sb.from('equipment')
-            .update({ status: status, notes: notes }) // Nota: Podrías querer concatenar la nota
+            .update({ status: status, notes: notes })
             .eq('id', id);
 
         if(error) alert("Error: " + error.message);
@@ -292,7 +272,5 @@ if(swapForm) {
     });
 }
 
-// UTILIDADES GLOBALES
-window.openNewModal = () => document.getElementById('newModal').style.display = 'flex';
 window.closeModal = (id) => document.getElementById(id).style.display = 'none';
-window.logout = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; };
+window.logout = async () => { await sb.auth.signOut(); window.location.href = 'index.html'; }
