@@ -3,76 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso | CopierMaster</title>
-    <link rel="stylesheet" href="css/styles.css">
+    <title>Acceso | CopierMaster Enterprise</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Estilos específicos del Login */
-        body.login-bg {
-            background-color: #f1f5f9;
+        body { margin: 0; font-family: 'Inter', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+        
+        /* COLUMNA IZQUIERDA (BRANDING) */
+        .brand-section {
+            flex: 1;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: white;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
-            font-family: 'Inter', sans-serif;
+            padding: 60px;
+            position: relative;
         }
-        .login-box {
+        .brand-pattern {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(#334155 1px, transparent 1px);
+            background-size: 30px 30px;
+            opacity: 0.1;
+        }
+        
+        /* COLUMNA DERECHA (FORMULARIO) */
+        .auth-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #f8fafc;
+            padding: 40px;
+        }
+
+        .auth-card {
             background: white;
             padding: 40px;
             border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
             width: 100%;
             max-width: 400px;
-            text-align: center;
         }
-        .login-input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            box-sizing: border-box;
+
+        .input-group { margin-bottom: 20px; }
+        .input-label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+        .input-field { 
+            width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; 
+            font-size: 14px; box-sizing: border-box; transition: all 0.2s;
         }
-        .btn-login {
-            width: 100%;
-            background-color: #0f172a;
-            color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
+        .input-field:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+
+        .btn-primary {
+            width: 100%; background: #0f172a; color: white; border: none; padding: 12px;
+            border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+            font-size: 14px; display: flex; justify-content: center; align-items: center; gap: 8px;
         }
-        .btn-login:hover { background-color: #334155; }
-        .btn-login:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        .btn-primary:hover { background: #1e293b; }
+        
+        .toggle-link {
+            text-align: center; margin-top: 20px; font-size: 13px; color: #64748b;
+        }
+        .toggle-link a { color: #3b82f6; text-decoration: none; font-weight: 600; cursor: pointer; }
+
+        .error-msg {
+            background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 6px;
+            font-size: 13px; margin-bottom: 20px; display: none; text-align: center;
+        }
+
+        @media (max-width: 900px) {
+            .brand-section { display: none; }
+        }
     </style>
 </head>
-<body class="login-bg">
-    <div class="login-box">
-        <h2 style="margin: 0; color: #0f172a; font-weight: 800; font-size: 28px;">CopierMaster</h2>
-        <p style="color: #64748b; margin: 5px 0 30px; font-size: 14px;">Plataforma de Gestión v4.5</p>
+<body>
 
-        <div id="errorMsg" style="background:#fee2e2; color:#b91c1c; padding:10px; border-radius:6px; font-size:13px; margin-bottom:20px; display:none; text-align: left; border: 1px solid #fca5a5;"></div>
-
-        <form id="loginForm" style="text-align: left;">
-            <label style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:5px; display:block;">CORREO ELECTRÓNICO</label>
-            <input type="email" id="email" class="login-input" placeholder="usuario@copiermaster.com" required>
-
-            <label style="font-size:12px; font-weight:700; color:#64748b; margin-bottom:5px; display:block;">CONTRASEÑA</label>
-            <input type="password" id="password" class="login-input" placeholder="••••••••" required>
-
-            <button type="submit" id="btnLog" class="btn-login">
-                Iniciar Sesión
-            </button>
-        </form>
-        
-        <div style="margin-top: 30px; font-size: 12px; color: #94a3b8;">
-            &copy; 2026 CopierMaster C&G Solutions
+    <div class="brand-section">
+        <div class="brand-pattern"></div>
+        <div style="z-index: 1;">
+            <h1 style="font-size: 48px; margin: 0 0 20px 0; letter-spacing: -1px;">CopierMaster</h1>
+            <p style="font-size: 18px; color: #cbd5e1; line-height: 1.6;">
+                Gestión integral de flotas de impresión y servicio técnico inteligente.
+            </p>
+            <div style="margin-top: 40px; display: flex; gap: 15px;">
+                <div style="background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 8px;">
+                    <i class="fas fa-check-circle" style="color: #3b82f6;"></i> Control de Tickets
+                </div>
+                <div style="background: rgba(255,255,255,0.1); padding: 10px 20px; border-radius: 8px;">
+                    <i class="fas fa-check-circle" style="color: #3b82f6;"></i> Inventario
+                </div>
+            </div>
         </div>
     </div>
-    
+
+    <div class="auth-section">
+        <div class="auth-card">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 id="formTitle" style="margin: 0; color: #0f172a;">Iniciar Sesión</h2>
+                <p id="formSubtitle" style="color: #64748b; font-size: 14px; margin-top: 5px;">Accede al panel de control</p>
+            </div>
+
+            <div id="errorBox" class="error-msg"></div>
+
+            <form id="authForm">
+                <div class="input-group" id="nameGroup" style="display: none;">
+                    <label class="input-label">Nombre Completo</label>
+                    <input type="text" id="fullName" class="input-field" placeholder="Ej: Juan Pérez">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Correo Electrónico</label>
+                    <input type="email" id="email" class="input-field" placeholder="nombre@empresa.com" required>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Contraseña</label>
+                    <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    <span>Ingresar</span> <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <div class="toggle-link">
+                <span id="toggleText">¿No tienes cuenta?</span>
+                <a onclick="toggleMode()" id="toggleBtn">Regístrate aquí</a>
+            </div>
+        </div>
+        <p style="margin-top: 30px; font-size: 12px; color: #94a3b8;">&copy; 2026 CopierMaster Enterprise v7.5</p>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase.js"></script>
     <script src="js/login.js"></script>
