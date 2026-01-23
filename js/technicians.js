@@ -1,4 +1,4 @@
-// js/technicians.js - CopierMaster Admin v7.5
+// js/technicians.js - Gestión de Perfiles y Roles (Diseño Blindado v2)
 
 let allUsers = [];
 
@@ -7,15 +7,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: { session } } = await sb.auth.getSession();
     if (!session) window.location.href = 'index.html';
     
-    document.getElementById('userDisplay').innerText = session.user.email;
+    // Mostrar usuario
+    if(session.user.email) document.getElementById('userDisplay').innerText = session.user.email;
 
-    // 2. Load Data
+    // 2. Cargar Datos
     loadUsers();
 });
 
+// ==========================================
+// 1. CARGA DE USUARIOS
+// ==========================================
 async function loadUsers() {
     const tbody = document.getElementById('usersTable');
-    
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px;"><i class="fas fa-spinner fa-spin"></i> Cargando perfiles...</td></tr>';
+
     const { data, error } = await sb
         .from('profiles')
         .select('*')
@@ -40,7 +45,7 @@ function renderTable(users) {
     }
 
     users.forEach(u => {
-        // Initials Logic (First Letter of Name + First Letter of Last Name if exists)
+        // Iniciales para el Avatar (Seguro contra nombres vacíos)
         let initials = "US";
         if (u.full_name) {
             const parts = u.full_name.trim().split(" ");
@@ -48,7 +53,7 @@ function renderTable(users) {
             else initials = parts[0].substring(0, 2).toUpperCase();
         }
 
-        // Role Styling
+        // Clases para Badges (Coinciden con el nuevo CSS)
         let badgeClass = 'role-client';
         let icon = 'fa-user';
         let roleText = 'CLIENTE';
@@ -56,10 +61,11 @@ function renderTable(users) {
         if(u.role === 'supervisor') { badgeClass = 'role-supervisor'; icon = 'fa-user-shield'; roleText = 'SUPERVISOR'; }
         if(u.role === 'technician') { badgeClass = 'role-technician'; icon = 'fa-wrench'; roleText = 'TÉCNICO'; }
 
-        // Date Format (DD/MM/YYYY)
+        // Fecha
         const dateObj = new Date(u.created_at);
         const dateStr = `${dateObj.getDate()}/${dateObj.getMonth() + 1}/${dateObj.getFullYear()}`;
 
+        // Construcción de la Fila (Estructura "Blindada" para Mobile/Desktop)
         const row = `
             <tr>
                 <td>
@@ -71,7 +77,7 @@ function renderTable(users) {
                         </div>
                     </div>
                 </td>
-                <td style="color: #475569; font-size: 13px;">
+                <td style="font-size: 13px; color: #475569;">
                     ${escapeHTML(u.email)}
                 </td>
                 <td>
@@ -79,9 +85,9 @@ function renderTable(users) {
                         <i class="fas ${icon}"></i> ${roleText}
                     </span>
                 </td>
-                <td style="color: #64748b; font-size: 13px;">${dateStr}</td>
+                <td style="font-size: 13px; color: #64748b;">${dateStr}</td>
                 <td>
-                    <div class="btn-action-group" style="justify-content: flex-end;">
+                    <div class="btn-action-group">
                         <button onclick="openEditRole('${u.id}', '${escapeHTML(u.full_name)}', '${u.role}')" class="btn-mini" title="Editar">
                             <i class="fas fa-user-edit"></i> Editar
                         </button>
@@ -96,21 +102,25 @@ function renderTable(users) {
     });
 }
 
-// --- FILTERS ---
+// ==========================================
+// 2. FILTROS
+// ==========================================
 window.filterUsers = () => {
     const search = document.getElementById('searchUser').value.toLowerCase();
     const role = document.getElementById('filterRole').value;
 
     const filtered = allUsers.filter(u => {
-        const matchesSearch = (u.full_name || '').toLowerCase().includes(search) || (u.email || '').toLowerCase().includes(search);
-        const matchesRole = role === 'all' || u.role === role;
-        return matchesSearch && matchesRole;
+        const matchSearch = (u.full_name || '').toLowerCase().includes(search) || (u.email || '').toLowerCase().includes(search);
+        const matchRole = role === 'all' || u.role === role;
+        return matchSearch && matchRole;
     });
 
     renderTable(filtered);
 };
 
-// --- ACTIONS ---
+// ==========================================
+// 3. ACCIONES (MODAL)
+// ==========================================
 window.openEditRole = (id, name, role) => {
     document.getElementById('editUserId').value = id;
     document.getElementById('editUserName').innerText = name;
@@ -122,6 +132,7 @@ document.getElementById('formEditRole').addEventListener('submit', async (e) => 
     e.preventDefault();
     const btn = e.target.querySelector('button[type="submit"]');
     const originalText = btn.innerText;
+    
     btn.disabled = true; btn.innerText = "Guardando...";
 
     const id = document.getElementById('editUserId').value;
@@ -139,7 +150,7 @@ document.getElementById('formEditRole').addEventListener('submit', async (e) => 
 });
 
 window.deleteUser = async (id) => {
-    if(confirm("⚠️ ¿Eliminar este usuario?\nSe perderá su acceso al sistema.")) {
+    if(confirm("⚠️ ¿Eliminar este usuario definitivamente?")) {
         const { error } = await sb.from('profiles').delete().eq('id', id);
         if(error) alert("Error: " + error.message);
         else loadUsers();
